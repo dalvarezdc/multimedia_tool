@@ -136,8 +136,14 @@ def create_app():
             return {"status": "not_started"}
         return store["tasks"][chapter_id]
 
+    # Mount UI static directory if it exists
+    ui_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ui")
+    if os.path.exists(ui_dir):
+        app.mount("/", StaticFiles(directory=ui_dir, html=True), name="ui")
+
     return app
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("src.server:create_app", factory=True, host="0.0.0.0", port=8000, reload=True)
+
