@@ -129,28 +129,72 @@ flowchart TB
   * `sign_chime.wav`: Retro arcade success chime when a signpost illuminates.
 * **Audio Ducking**: Automatically ducks background music by $-14\text{ dB}$ whenever speech narration is active.
 
-### 3.5. Transition & Compositing Subsystem
-The engine supports two primary cutscene integration modes:
-1. **Full-Screen Pixel Dissolve Cutscene**:
-   * As the character reaches the sign, the camera zooms in slightly, triggering a retro mosaic/pixel-dissolve transition directly into the 16:9 Seedance AI video.
-   * After the video segment concludes, the mosaic resolves back into the game world, and the avatar sets off toward the next node.
-2. **In-World Picture-in-Picture (Crystal Portal / Magic Mirror)**:
-   * A framed ancient artifact or hovering rune on the platform acts as a projection screen, playing the Seedance video directly inside the 2D pixel world while the avatar gestures toward it.
+### 3.6. Global Context & Knowledge Ingestion Subsystem
+* **Role**: Ensures generated video content reflects extensive technical documentation, lore, project whitepapers, or specific tone guidelines rather than isolated prompts.
+* **Mechanism**:
+  * The user inputs raw domain materials (e.g. system design docs, research papers, scripts, brand guidelines).
+  * The **Director Agent** (`seed-2-0-lite-260228`) maintains this context in its system prompt window.
+  * Extracted chapter titles, technical explanations, and visual prompts for Seedance inherit contextual continuity, maintaining terminology, tone, and visual symbolism throughout the entire video.
+
+### 3.7. Multimodal Character Consistency Subsystem
+Character consistency operates across both visual realms:
+1. **2D Pixel World Consistency**:
+   * A unified sprite profile (e.g., Hermes: golden winged helmet, blue tunic, golden caduceus) is loaded from the asset registry.
+   * Remotion uses identical sprite sheets, bounding boxes, and palette animations across every platform hop.
+2. **Seedance AI Cutscene Character Consistency**:
+   * **Multimodal Reference Ingestion**: When calling `client.content_generation.tasks.create` via `arkruntime`, the client passes a canonical character reference image (`character_reference.png` via public URL or asset library reference).
+   * **Omni-Reference Prompting**: The text prompt references the image explicitly:
+     ```text
+     "Featuring the character shown in Image 1, wearing the golden winged helmet and blue tunic, standing inside a high-tech datacenter..."
+     ```
+   * **Persistent Character Tokenizer**: A structured character definition (hair style, color, equipment, clothing colors, facial structure) is injected into every chapter prompt to guarantee identity preservation across cuts.
+
+### 3.8. Web Frontend Architecture & Interactive Studio
+To provide a non-CLI, interactive creator experience, the platform includes a modern web studio:
+* **Technology Stack**:
+  * **Framework**: React / Next.js with Tailwind CSS.
+  * **Live Video Engine**: `@remotion/player` for client-side zero-latency video scrubbing, frame-stepping, and playback without rendering MP4s.
+  * **API Layer**: Lightweight FastAPI / Next.js API endpoints handling pipeline actions.
+* **Studio Modules**:
+  1. **Context & Lore Ingestion Panel**: Rich text input for technical docs, style tags, and target audience settings.
+  2. **Character Consistency Studio**: Reference image uploader, trait tag editor, and sprite selector.
+  3. **Interactive Visual Storyboard**: Drag-and-drop platform node reordering, sign label editing, and prompt tweaking.
+  4. **Live Remotion Player**: Real-time canvas preview of pixel jumps, sign illumination, and transition effects.
+  5. **Cutscene Inspector & Re-roll**: Preview generated watermark-free Seedance clips; one-click re-generation for individual chapters.
+  6. **Render & Export Hub**: Trigger headless Remotion export with real-time progress bar.
 
 ---
 
 ## 4. Data Specifications & Schemas
 
-### 4.1. Storyboard Specification (`storyboard.json`)
+### 4.1. Master Storyboard Specification (`storyboard.json`)
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "StoryboardSpec",
   "type": "object",
-  "required": ["project_id", "theme", "resolution", "fps", "chapters"],
+  "required": ["project_id", "theme", "global_context", "character_profile", "resolution", "fps", "chapters"],
   "properties": {
     "project_id": { "type": "string" },
     "theme": { "type": "string", "enum": ["greek_night_sky", "cyberpunk_ruins", "dungeon_keep"] },
+    "global_context": {
+      "type": "object",
+      "properties": {
+        "domain_notes": { "type": "string" },
+        "tone": { "type": "string" },
+        "target_audience": { "type": "string" }
+      }
+    },
+    "character_profile": {
+      "type": "object",
+      "required": ["name", "reference_image_url", "prompt_tokens", "sprite_id"],
+      "properties": {
+        "name": { "type": "string" },
+        "reference_image_url": { "type": "string" },
+        "prompt_tokens": { "type": "string" },
+        "sprite_id": { "type": "string" }
+      }
+    },
     "resolution": {
       "type": "object",
       "properties": {
@@ -191,6 +235,7 @@ The engine supports two primary cutscene integration modes:
 
 ## 5. Security, Secrets & Environment
 
-* **API Keys**: Never hardcoded. Injected through `.env` and validated at pipeline startup.
-* **Sandbox Isolation**: Media rendering and FFmpeg processing run in isolated temporary working directories (`temp/renders/`) to prevent workspace corruption.
-* **Storage**: Video binaries and heavy renders are excluded from Git via `.gitignore`. Only static reusable pixel sprite templates are committed.
+* **API Keys**: Injected through `.env` (`ARK_API_KEY`) and validated at pipeline startup.
+* **Asset Privacy**: Character reference images and generated cutscenes are held in local cache directories excluded from version control.
+* **Sandbox Isolation**: Media rendering and FFmpeg processing execute in isolated working directories (`temp/renders/`).
+

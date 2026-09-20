@@ -1,13 +1,15 @@
 """BytePlus ModelArk Seedance Video Generation Client.
 
-Handles task submission, watermark-free configuration, asynchronous status polling,
-and asset downloading.
+Handles task submission, multimodal character references, watermark-free configuration,
+asynchronous status polling, and asset downloading.
 """
 
 import os
 import time
+import base64
 import logging
-from typing import Optional, Dict, Any
+import mimetypes
+from typing import Optional, Dict, Any, List
 import requests
 from arkruntime import Ark
 
@@ -34,10 +36,25 @@ class SeedanceClient:
             api_key=self.api_key,
         )
 
+    def _prepare_image_reference(self, image_source: str) -> str:
+        """Converts a local file path or returns a remote URL for multimodal input."""
+        if image_source.startswith("http://") or image_source.startswith("https://"):
+            return image_source
+        
+        if os.path.exists(image_source):
+            mime_type, _ = mimetypes.guess_type(image_source)
+            mime_type = mime_type or "image/png"
+            with open(image_source, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode("utf-8")
+            return f"data:{mime_type};base64,{encoded}"
+        
+        return image_source
+
     def generate_video(
         self,
         prompt: str,
         output_path: str,
+        character_reference_image: Optional[str] = None,
         watermark: bool = False,
         duration: int = 5,
         ratio: str = "16:9",
@@ -49,6 +66,7 @@ class SeedanceClient:
         Args:
             prompt: Text prompt describing the desired video scene.
             output_path: Local file path where the completed video will be saved.
+            character_reference_image: Local path or URL to character reference image for identity consistency.
             watermark: If False, disables the default ByteDance watermark on the video.
             duration: Video length in seconds (default 5).
             ratio: Aspect ratio (e.g., '16:9').
@@ -64,15 +82,26 @@ class SeedanceClient:
         # Enforce negative prompt constraints to guarantee no watermarks or text overlays
         clean_prompt = f"{prompt.strip()} --no watermark, text, logo, subtitles, ui, timestamps"
 
+        content_payload: List[Dict[str, Any]] = [
+            {
+                "type": "text",
+                "text": clean_prompt
+            }
+        ]
+
+        # Multimodal Character Consistency Injection
+        if character_reference_image:
+            image_ref = self._prepare_image_reference(character_reference_image)
+            content_payload.append({
+                "type": "image_url",
+                "image_url": {"url": image_ref}
+            })
+            logger.info("Injected character reference image for identity consistency.")
+
         logger.info(f"Submitting Seedance task (model={self.model_id}, watermark={watermark})...")
         task_response = self.client.content_generation.tasks.create(
             model=self.model_id,
-            content=[
-                {
-                    "type": "text",
-                    "text": clean_prompt
-                }
-            ],
+            content=content_payload,
             watermark=watermark,  # Explicitly toggles off watermark
             duration=duration,
             ratio=ratio,
