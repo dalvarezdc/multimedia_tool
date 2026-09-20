@@ -300,8 +300,6 @@
           <input id="video-last-frame" type="text" />
           <input id="video-image-ref" type="text" />
           <select id="video-select-ip-preset"><option value="anime_hero_aura">Anime</option></select>
-          <select id="video-aspect-ratio"><option value="16:9" selected>16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select>
-          <select id="video-duration"><option value="5" selected>5s</option><option value="10">10s</option></select>
           <div id="video-dynamic-inputs"></div>
           <button data-video-mode="ref_to_video">Ref-to-video</button>
           <button data-video-mode="first_last_frame">First/last frame</button>
@@ -1043,19 +1041,50 @@ print("Task submitted:", task.id)`;
       const pillsBar = document.getElementById("dynamic-pills-bar");
       if (pillsBar) {
         let html = "";
+        const selClass = "bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[11px] font-medium rounded-lg px-2.5 py-1 cursor-pointer focus:ring-0";
         if (model.mode_selector && model.mode_selector.enabled) {
           html += `
-            <div class="relative inline-block">
-              <select id="studio-active-mode-select" class="bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[11px] font-medium rounded-lg px-2.5 py-1 cursor-pointer focus:ring-0">
-                ${(model.mode_selector.options || []).map(opt => `<option value="${opt}" ${opt === model.mode_selector.default ? 'selected' : ''} class="bg-[#11131C] text-white">${opt}</option>`).join('')}
-              </select>
-            </div>
+            <select id="studio-active-mode-select" class="${selClass}">
+              ${(model.mode_selector.options || []).map(opt => `<option value="${opt}" ${opt === model.mode_selector.default ? 'selected' : ''} class="bg-[#11131C]">${opt}</option>`).join('')}
+            </select>
           `;
         }
-        (model.pills || []).forEach(p => {
-          html += `<span class="bg-white/[0.04] border border-white/[0.07] px-2 py-1 rounded-md text-[11px] text-slate-300">${p}</span>`;
-        });
+        const ratios = model.ratios && model.ratios.length ? model.ratios : ["16:9", "9:16", "1:1"];
+        html += `<select id="video-aspect-ratio" class="${selClass}" title="Aspect ratio">
+          ${ratios.map(r => `<option value="${r}" class="bg-[#11131C]">${r}</option>`).join('')}
+        </select>`;
+        const resolutions = model.resolutions || [];
+        if (resolutions.length) {
+          html += `<select id="video-resolution" class="${selClass}" title="Resolution">
+            ${resolutions.map(r => `<option value="${r}" class="bg-[#11131C]">${String(r).toUpperCase()}</option>`).join('')}
+          </select>`;
+        }
+        const durations = model.durations && model.durations.length ? model.durations : [5, 10];
+        html += `<select id="video-duration" class="${selClass}" title="Duration">
+          ${durations.map(d => `<option value="${d}" class="bg-[#11131C]">${d} seconds</option>`).join('')}
+        </select>`;
+        if (model.supports_audio) {
+          html += `<select id="video-audio" class="${selClass}" title="Audio">
+            <option value="on" selected class="bg-[#11131C]">Sound on</option>
+            <option value="off" class="bg-[#11131C]">Sound off</option>
+          </select>`;
+        }
+        const clips = model.clip_counts && model.clip_counts.length ? model.clip_counts : [1];
+        html += `<select id="video-clip-count" class="${selClass}" title="Number of videos">
+          ${clips.map(n => `<option value="${n}" class="bg-[#11131C]">${n} video${n === 1 ? '' : 's'}</option>`).join('')}
+        </select>`;
+        if (model.supports_draft) {
+          html += `<select id="video-draft" class="${selClass}" title="Draft mode">
+            <option value="off" selected class="bg-[#11131C]">Final</option>
+            <option value="on" class="bg-[#11131C]">Draft mode</option>
+          </select>`;
+        }
         pillsBar.innerHTML = html;
+        const ratioEl = document.getElementById("video-aspect-ratio");
+        const durEl = document.getElementById("video-duration");
+        if (ratioEl) ratioEl.onchange = updatePreviewSpec;
+        if (durEl) durEl.onchange = updatePreviewSpec;
+        updatePreviewSpec();
       }
 
       // 7. Cost Label
@@ -1117,15 +1146,26 @@ print("Task submitted:", task.id)`;
         modelSelect.innerHTML = "";
         modelCatalogData = {};
 
-        // Only video models can be sent to /api/cutscenes/generate.
         const videoModels = catalog.video || [];
+        const groups = { seedance: "BytePlus Seedance", grok: "xAI Grok" };
+        const grouped = { seedance: [], grok: [] };
         videoModels.forEach(m => {
           modelCatalogData[m.id] = m;
-          const opt = document.createElement("option");
-          opt.value = m.id;
-          opt.innerText = m.display_name;
-          if (m.id === activeVideoModel) opt.selected = true;
-          modelSelect.appendChild(opt);
+          const key = (m.provider === "grok") ? "grok" : "seedance";
+          grouped[key].push(m);
+        });
+        Object.entries(grouped).forEach(([key, list]) => {
+          if (!list.length) return;
+          const grp = document.createElement("optgroup");
+          grp.label = groups[key];
+          list.forEach(m => {
+            const opt = document.createElement("option");
+            opt.value = m.id;
+            opt.innerText = m.display_name;
+            if (m.id === activeVideoModel) opt.selected = true;
+            grp.appendChild(opt);
+          });
+          modelSelect.appendChild(grp);
         });
 
         if (!modelCatalogData[activeVideoModel]) {
@@ -1699,13 +1739,16 @@ print("Task submitted:", task.id)`;
     }
 
     function updatePreviewSpec() {
-      const ratio = document.getElementById("video-aspect-ratio").value;
-      const duration = document.getElementById("video-duration").value;
-      document.getElementById("preview-spec-badge").innerText = `${ratio} · ${duration}s`;
+      const ratioEl = document.getElementById("video-aspect-ratio");
+      const durationEl = document.getElementById("video-duration");
+      const resEl = document.getElementById("video-resolution");
+      const badge = document.getElementById("preview-spec-badge");
+      if (!badge) return;
+      const ratio = (ratioEl && ratioEl.value) || "16:9";
+      const duration = (durationEl && durationEl.value) || "5";
+      const res = resEl ? resEl.value : "";
+      badge.innerText = res ? `${ratio} · ${res} · ${duration}s` : `${ratio} · ${duration}s`;
     }
-    document.getElementById("video-aspect-ratio").onchange = updatePreviewSpec;
-    document.getElementById("video-duration").onchange = updatePreviewSpec;
-    updatePreviewSpec();
 
     async function pollCutscene(chapterId, model) {
       for (let i = 0; i < 80; i++) {
@@ -1743,8 +1786,13 @@ print("Task submitted:", task.id)`;
         btnGenVideo.disabled = false;
         return;
       }
-      const duration = parseInt(document.getElementById("video-duration").value);
-      const ratio = document.getElementById("video-aspect-ratio").value;
+      const durationEl = document.getElementById("video-duration");
+      const ratioEl = document.getElementById("video-aspect-ratio");
+      const duration = parseInt((durationEl && durationEl.value) || "5", 10);
+      const ratio = (ratioEl && ratioEl.value) || "16:9";
+      const resolutionEl = document.getElementById("video-resolution");
+      const audioEl = document.getElementById("video-audio");
+      const draftEl = document.getElementById("video-draft");
       const isGrok = model.includes("grok");
 
       if (isGrok && !localXaiKey) {
@@ -1771,7 +1819,10 @@ print("Task submitted:", task.id)`;
         video_model: model,
         generation_mode: selectedVideoMode,
         reference_assets: importedAssets.map(a => ({ id: a.id })),
-        api_key: isGrok ? localXaiKey : localApiKey
+        api_key: isGrok ? localXaiKey : localApiKey,
+        resolution: resolutionEl ? resolutionEl.value : "720p",
+        generate_audio: audioEl ? audioEl.value !== "off" : false,
+        draft_mode: draftEl ? draftEl.value === "on" : false
       };
 
 

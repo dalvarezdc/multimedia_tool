@@ -13,7 +13,7 @@ from src.models_registry import (
 )
 
 def test_model_catalog_completeness():
-    assert len(MODEL_CATALOG) == 27
+    assert len(MODEL_CATALOG) == 28
     
     expected_ids = [
         "skylark-embedding-vision-251215",
@@ -42,18 +42,37 @@ def test_model_catalog_completeness():
         "deepseek-v4-1-flash-260910",
         "bytedance-seedance-1-0-pro-fast-251015",
         "bytedance-seedance-1-5-pro-251215",
-        "bytedance-seedream-4-5-251128"
+        "bytedance-seedream-4-5-251128",
+        "grok-imagine-video-1.5",
     ]
     for mid in expected_ids:
         assert mid in MODEL_CATALOG, f"Missing model {mid} in catalog"
 
 def test_categories_grouping():
     grouped = get_all_models_grouped()
-    assert len(grouped["video"]) == 6
+    assert len(grouped["video"]) == 7
     assert len(grouped["director_llm"]) == 14
     assert len(grouped["image"]) == 4
     assert len(grouped["3d"]) == 2
     assert len(grouped["vision_embedding"]) == 1
+
+def test_grok_video_capabilities():
+    grok = get_model_info("grok-imagine-video-1.5")
+    assert grok is not None
+    assert grok.category == "video"
+    assert grok.provider == "grok"
+    assert 15 in grok.durations
+    assert "16:9" in grok.ratios
+    assert grok.resolutions == []
+
+
+def test_seedance_25_capability_controls():
+    m = get_model_info("dreamina-seedance-2-5-260628")
+    assert "1080p" in m.resolutions
+    assert 10 in m.durations
+    assert m.supports_audio is True
+    assert m.provider == "seedance"
+
 
 def test_defaults():
     assert DEFAULT_VIDEO_MODEL == "dreamina-seedance-2-5-260628"

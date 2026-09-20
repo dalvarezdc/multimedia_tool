@@ -114,7 +114,7 @@ def test_api_models_endpoint(client):
     response = client.get("/api/models")
     assert response.status_code == 200
     data = response.json()
-    assert data["total_models"] == 27
+    assert data["total_models"] == 28
     assert "video" in data["catalog"]
     assert "director_llm" in data["catalog"]
     assert data["active_video_model"] == "dreamina-seedance-2-5-260628"
@@ -255,6 +255,15 @@ def test_cutscene_generate_with_reference_assets(client, monkeypatch):
     data = response.json()
     assert data["status"] == "started"
     assert data["chapter_id"] == 42
+
+def test_api_models_includes_grok_video(client):
+    data = client.get("/api/models").json()
+    video_ids = [m["id"] for m in data["catalog"]["video"]]
+    assert "grok-imagine-video-1.5" in video_ids
+    grok = next(m for m in data["catalog"]["video"] if m["id"] == "grok-imagine-video-1.5")
+    assert grok["provider"] == "grok"
+    assert 15 in grok["durations"]
+
 
 def test_ui_contains_reference_import_elements(client):
     response = client.get("/app")

@@ -62,6 +62,9 @@ class SeedanceClient:
         watermark: bool = False,
         duration: int = 5,
         ratio: str = "16:9",
+        resolution: Optional[str] = None,
+        generate_audio: Optional[bool] = None,
+        draft_mode: bool = False,
         reference_assets: Optional[List[Dict[str, Any]]] = None,
         poll_interval: int = 3,
         timeout_seconds: int = 300,
@@ -156,13 +159,20 @@ class SeedanceClient:
         })
 
         logger.info(f"Submitting Seedance task (model={self.model_id}, watermark={watermark})...")
-        task_response = self.client.content_generation.tasks.create(
-            model=self.model_id,
-            content=content_payload,
-            watermark=watermark,  # Explicitly toggles off watermark
-            duration=duration,
-            ratio=ratio,
-        )
+        create_kwargs: Dict[str, Any] = {
+            "model": self.model_id,
+            "content": content_payload,
+            "watermark": watermark,
+            "duration": duration,
+            "ratio": ratio,
+        }
+        if resolution:
+            create_kwargs["resolution"] = resolution
+        if generate_audio is not None:
+            create_kwargs["generate_audio"] = generate_audio
+        if draft_mode:
+            create_kwargs["draft"] = True
+        task_response = self.client.content_generation.tasks.create(**create_kwargs)
 
         task_id = getattr(task_response, "id", None) or task_response.get("id")
         if not task_id:

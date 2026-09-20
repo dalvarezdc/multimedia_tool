@@ -456,6 +456,9 @@ def create_app():
                         "last_frame_image": req.last_frame_image,
                         "ip_effect_name": req.ip_effect_name,
                         "reference_assets": resolved_assets or None,
+                        "resolution": req.resolution,
+                        "generate_audio": req.generate_audio,
+                        "draft_mode": req.draft_mode,
                     })
 
                 generator.generate_video(**gen_kwargs)

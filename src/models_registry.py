@@ -28,10 +28,17 @@ class ModelInfo:
     placeholder: str = "Use @to quickly reference uploaded files, such as referring to actions in @Video 1 to generate videos of characters fighting in @Pictures 2 and @Pictures 3."
     input_slots: List[Dict[str, str]] = field(default_factory=lambda: [{"id": "reference", "label": "Reference", "icon": "plus"}])
     mode_selector: Optional[Dict[str, Any]] = None
-    pills: List[str] = field(default_factory=lambda: ["16:9", "720P", "5 seconds", "1 videos"])
+    pills: List[str] = field(default_factory=list)
     sample_cost: str = "USD 0.6048"
     has_template_library: bool = False
     sample_examples: List[Dict[str, str]] = field(default_factory=list)
+    provider: str = "seedance"
+    ratios: List[str] = field(default_factory=lambda: ["16:9", "9:16", "1:1"])
+    resolutions: List[str] = field(default_factory=lambda: ["720p"])
+    durations: List[int] = field(default_factory=lambda: [5, 10])
+    supports_audio: bool = False
+    supports_draft: bool = False
+    clip_counts: List[int] = field(default_factory=lambda: [1])
 
 SAMPLE_INSPIRATIONS = [
     {
@@ -73,9 +80,14 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         placeholder="Use @to quickly reference uploaded files, such as referring to actions in @Video 1 to generate videos of characters fighting in @Pictures 2 and @Pictures 3.",
         input_slots=[{"id": "reference", "label": "Reference", "icon": "plus"}],
         mode_selector={"enabled": True, "default": "Ref-to-video", "options": ["Ref-to-video", "Text-to-video"]},
-        pills=["16:9", "1080P", "5 seconds", "sound", "1 videos"],
         sample_cost="USD 0.6048",
-        sample_examples=SAMPLE_INSPIRATIONS
+        sample_examples=SAMPLE_INSPIRATIONS,
+        provider="seedance",
+        ratios=["16:9", "9:16", "1:1", "4:3", "21:9"],
+        resolutions=["720p", "1080p"],
+        durations=[5, 10],
+        supports_audio=True,
+        clip_counts=[1],
     ),
     "dreamina-seedance-2-0-fast-260128": ModelInfo(
         id="dreamina-seedance-2-0-fast-260128",
@@ -89,9 +101,14 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         placeholder="Use @to quickly reference uploaded files, such as referring to actions in @Video 1 to generate videos of characters fighting in @Pictures 2 and @Pictures 3.",
         input_slots=[{"id": "reference", "label": "Reference", "icon": "plus"}],
         mode_selector={"enabled": True, "default": "Ref-to-video", "options": ["Ref-to-video", "Text-to-video"]},
-        pills=["16:9", "720P", "5 seconds", "sound", "1 videos"],
         sample_cost="USD 0.6048",
-        sample_examples=SAMPLE_INSPIRATIONS
+        sample_examples=SAMPLE_INSPIRATIONS,
+        provider="seedance",
+        ratios=["16:9", "9:16", "1:1"],
+        resolutions=["480p", "720p"],
+        durations=[5, 10],
+        supports_audio=True,
+        clip_counts=[1],
     ),
     "bytedance-seedance-1-5-pro-251215": ModelInfo(
         id="bytedance-seedance-1-5-pro-251215",
@@ -107,10 +124,16 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
             {"id": "first_frame", "label": "first frame", "icon": "plus"},
             {"id": "last_frame", "label": "last frame", "icon": "plus"}
         ],
-        pills=["16:9", "720P", "5 seconds", "sound", "1 videos", "Draft mode", "offline generation"],
         sample_cost="USD 0.2592",
         has_template_library=True,
-        sample_examples=SAMPLE_INSPIRATIONS
+        sample_examples=SAMPLE_INSPIRATIONS,
+        provider="seedance",
+        ratios=["16:9", "9:16", "1:1"],
+        resolutions=["720p", "1080p"],
+        durations=[5, 10],
+        supports_audio=True,
+        supports_draft=True,
+        clip_counts=[1],
     ),
     "bytedance-seedance-1-0-pro-fast-251015": ModelInfo(
         id="bytedance-seedance-1-0-pro-fast-251015",
@@ -123,9 +146,14 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         icon_type="video",
         placeholder="(Optional) Enter the description based on the image.",
         input_slots=[{"id": "first_frame", "label": "first frame", "icon": "plus"}],
-        pills=["16:9", "720P", "5 seconds", "1 videos"],
         sample_cost="USD 0.1030",
-        sample_examples=SAMPLE_INSPIRATIONS
+        sample_examples=SAMPLE_INSPIRATIONS,
+        provider="seedance",
+        ratios=["16:9", "9:16", "1:1"],
+        resolutions=["720p"],
+        durations=[5],
+        supports_audio=False,
+        clip_counts=[1],
     ),
     "dreamina-seedance-2-0-260128": ModelInfo(
         id="dreamina-seedance-2-0-260128",
@@ -139,9 +167,14 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         placeholder="Use @to quickly reference uploaded files, such as referring to actions in @Video 1 to generate videos of characters fighting in @Pictures 2 and @Pictures 3.",
         input_slots=[{"id": "reference", "label": "Reference", "icon": "plus"}],
         mode_selector={"enabled": True, "default": "Ref-to-video", "options": ["Ref-to-video", "First/last frame", "IP effects"]},
-        pills=["16:9", "720P", "5 seconds", "sound", "1 videos"],
         sample_cost="USD 0.4500",
-        sample_examples=SAMPLE_INSPIRATIONS
+        sample_examples=SAMPLE_INSPIRATIONS,
+        provider="seedance",
+        ratios=["16:9", "9:16", "1:1", "4:3"],
+        resolutions=["720p", "1080p"],
+        durations=[5, 10],
+        supports_audio=True,
+        clip_counts=[1],
     ),
     "dreamina-seedance-2-0-mini-260615": ModelInfo(
         id="dreamina-seedance-2-0-mini-260615",
@@ -154,9 +187,36 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         icon_type="video",
         placeholder="Enter creative description for quick mini generation.",
         input_slots=[{"id": "reference", "label": "Reference", "icon": "plus"}],
-        pills=["16:9", "720P", "5 seconds", "1 videos"],
         sample_cost="USD 0.0800",
-        sample_examples=SAMPLE_INSPIRATIONS
+        sample_examples=SAMPLE_INSPIRATIONS,
+        provider="seedance",
+        ratios=["16:9", "9:16", "1:1"],
+        resolutions=["720p"],
+        durations=[5],
+        supports_audio=False,
+        clip_counts=[1],
+    ),
+
+    "grok-imagine-video-1.5": ModelInfo(
+        id="grok-imagine-video-1.5",
+        display_name="Grok Imagine Video 1.5",
+        category="video",
+        description="xAI Grok Imagine video generation via api.x.ai.",
+        recommended_for="Prompt-to-video when using an xAI key instead of BytePlus.",
+        ui_layout_type="video_ref",
+        headline="Generate video with Grok Imagine",
+        icon_type="video",
+        placeholder="Describe the shot. Optional reference image is attached as image_url.",
+        input_slots=[{"id": "reference", "label": "Reference", "icon": "plus"}],
+        mode_selector={"enabled": True, "default": "Ref-to-video", "options": ["Ref-to-video", "Text-to-video"]},
+        sample_cost="",
+        sample_examples=SAMPLE_INSPIRATIONS,
+        provider="grok",
+        ratios=["16:9", "9:16", "1:1", "4:3", "3:2", "2:3"],
+        resolutions=[],
+        durations=[5, 10, 15],
+        supports_audio=False,
+        clip_counts=[1],
     ),
 
     # -------------------------------------------------------------------------
