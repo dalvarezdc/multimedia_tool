@@ -173,3 +173,99 @@ def test_usage_starts_empty(client):
     assert data["records"] == []
     assert data["watermark_free_rate"] == "n/a"
 
+def test_reference_assets_upload_tokens_and_delete(client, tmp_path):
+    # Test uploading multiple files (images and video)
+    image1_bytes = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4"
+    image2_bytes = b"\xff\xd8\xff\xe0\x00\x10JFIF"
+    video_bytes = b"\x00\x00\x00 ftypisom"
+
+    files = [
+        ("files", ("character_pose.png", image1_bytes, "image/png")),
+        ("files", ("scenery_bg.jpg", image2_bytes, "image/jpeg")),
+        ("files", ("action_reference.mp4", video_bytes, "video/mp4")),
+    ]
+
+    response = client.post("/api/upload", files=files)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    assert len(data["uploaded"]) == 3
+
+    assets = data["assets"]
+    assert assets[0]["filename"] == "character_pose.png"
+    assert assets[0]["token"] == "@Pictures 1"
+    assert assets[0]["type"] == "image"
+
+    assert assets[1]["filename"] == "scenery_bg.jpg"
+    assert assets[1]["token"] == "@Pictures 2"
+    assert assets[1]["type"] == "image"
+
+    assert assets[2]["filename"] == "action_reference.mp4"
+    assert assets[2]["token"] == "@Video 1"
+    assert assets[2]["type"] == "video"
+
+    # Test GET /api/upload/assets
+    res_get = client.get("/api/upload/assets")
+    assert res_get.status_code == 200
+    assert len(res_get.json()["assets"]) == 3
+
+    # Test deleting one asset and verifying re-indexing
+    first_id = assets[0]["id"]
+    res_del = client.delete(f"/api/upload/assets/{first_id}")
+    assert res_del.status_code == 200
+    remaining = res_del.json()["assets"]
+    assert len(remaining) == 2
+    # The remaining image should now be re-indexed to @Pictures 1
+    assert remaining[0]["filename"] == "scenery_bg.jpg"
+    assert remaining[0]["token"] == "@Pictures 1"
+    assert remaining[1]["token"] == "@Video 1"
+
+    # Test clearing all assets
+    res_clear = client.delete("/api/upload/assets")
+    assert res_clear.status_code == 200
+    assert len(res_clear.json()["assets"]) == 0
+
+def test_cutscene_generate_with_reference_assets(client, monkeypatch):
+    monkeypatch.setenv("ARK_API_KEY", "test_mock_key")
+    payload = {
+        "chapter_id": 42,
+        "prompt": "Hermes executing combat maneuver matching @Video 1 dressed as @Pictures 1",
+        "generation_mode": "ref_to_video",
+        "provider": "seedance",
+        "video_model": "dreamina-seedance-2-5-260628",
+        "reference_assets": [
+            {
+                "id": "asset1",
+                "filename": "hermes_suit.png",
+                "token": "@Pictures 1",
+                "type": "image",
+                "url": "/uploads/reference_assets/asset1_hermes_suit.png"
+            },
+            {
+                "id": "asset2",
+                "filename": "sword_slash.mp4",
+                "token": "@Video 1",
+                "type": "video",
+                "url": "/uploads/reference_assets/asset2_sword_slash.mp4"
+            }
+        ]
+    }
+    response = client.post("/api/cutscenes/generate", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "started"
+    assert data["chapter_id"] == 42
+
+def test_ui_contains_reference_import_elements(client):
+    response = client.get("/app")
+    assert response.status_code == 200
+    html = response.text
+    assert "ref-upload-menu" in html
+    assert "btn-menu-upload-files" in html
+    assert "btn-menu-upload-folder" in html
+    assert "imported-assets-tray" in html
+    assert "mention-autocomplete-popup" in html
+    assert "ref-file-input" in html
+    assert "ref-folder-input" in html
+
+

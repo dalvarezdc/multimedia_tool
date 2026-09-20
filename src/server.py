@@ -12,7 +12,9 @@ Exposes REST endpoints for:
 import os
 import logging
 import time
-from typing import Optional, Dict, Any
+import uuid
+import shutil
+from typing import Optional, Dict, Any, List
 import requests
 from pydantic import BaseModel, Field
 from src.director.planner import DirectorPlanner
@@ -27,12 +29,13 @@ from src.models_registry import (
 )
 
 try:
-    from fastapi import FastAPI, HTTPException, BackgroundTasks
+    from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.staticfiles import StaticFiles
     from fastapi.responses import FileResponse
 except ImportError:
     FastAPI = None
+
 
 logger = logging.getLogger("multimedia_server")
 
@@ -73,6 +76,7 @@ class CutsceneGenerateRequest(BaseModel):
     resolution: str = "720p"
     generate_audio: bool = True
     draft_mode: bool = False
+    reference_assets: Optional[List[Dict[str, Any]]] = None
 
 class MasterRenderRequest(BaseModel):
     storyboard: Dict[str, Any]
@@ -100,7 +104,8 @@ def create_app():
     store = {
         "storyboard": None,
         "tasks": {},
-        "usage_records": []
+        "usage_records": [],
+        "reference_assets": []
     }
 
     ui_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ui")
@@ -284,6 +289,110 @@ def create_app():
         return {"status": "updated", "storyboard": storyboard}
 
     # =========================================================================
+    # 3.5. ASSET UPLOAD & MULTIMODAL REFERENCE API
+    # =========================================================================
+    uploads_dir = os.path.join(os.path.dirname(ui_dir), "uploads", "reference_assets")
+    os.makedirs(uploads_dir, exist_ok=True)
+
+    @app.post("/api/upload")
+    def upload_reference_assets(files: list[UploadFile] = File(...)):
+        """Uploads one or more reference images/videos for Ref-to-video mode.
+        Assigns standard ByteDance ModelArk reference tokens (@Pictures N, @Video N).
+        """
+        uploaded_assets = []
+        video_extensions = {".mp4", ".mov", ".webm", ".avi", ".mkv"}
+
+        for file in files:
+            ext = os.path.splitext(file.filename)[1].lower()
+            is_video = ext in video_extensions or (file.content_type and "video" in file.content_type)
+
+            asset_type = "video" if is_video else "image"
+
+            # Calculate index for token
+            existing_type_count = sum(1 for a in store["reference_assets"] if a["type"] == asset_type)
+            new_idx = existing_type_count + 1
+
+            if asset_type == "image":
+                token = f"@Pictures {new_idx}"
+            else:
+                token = f"@Video {new_idx}"
+
+            unique_id = str(uuid.uuid4())[:8]
+            safe_basename = os.path.basename(file.filename).replace(" ", "_")
+            safe_filename = f"{unique_id}_{safe_basename}"
+            target_path = os.path.join(uploads_dir, safe_filename)
+
+            with open(target_path, "wb") as f_out:
+                shutil.copyfileobj(file.file, f_out)
+
+            file_size = os.path.getsize(target_path)
+
+            asset_record = {
+                "id": unique_id,
+                "filename": file.filename,
+                "type": asset_type,
+                "token": token,
+                "url": f"/uploads/reference_assets/{safe_filename}",
+                "local_path": target_path,
+                "size": file_size,
+                "uploaded_at": time.time()
+            }
+            store["reference_assets"].append(asset_record)
+            uploaded_assets.append(asset_record)
+
+        return {
+            "status": "success",
+            "uploaded": uploaded_assets,
+            "assets": store["reference_assets"]
+        }
+
+    @app.get("/api/upload/assets")
+    def get_reference_assets():
+        """Returns all imported reference assets."""
+        return {"assets": store["reference_assets"]}
+
+    @app.delete("/api/upload/assets/{asset_id}")
+    def delete_reference_asset(asset_id: str):
+        """Removes a reference asset and re-indexes tokens."""
+        target = next((a for a in store["reference_assets"] if a["id"] == asset_id), None)
+        if not target:
+            raise HTTPException(status_code=404, detail="Asset not found")
+
+        if "local_path" in target and os.path.exists(target["local_path"]):
+            try:
+                os.remove(target["local_path"])
+            except OSError as e:
+                logger.warning(f"Failed to delete {target['local_path']}: {e}")
+
+        store["reference_assets"] = [a for a in store["reference_assets"] if a["id"] != asset_id]
+
+        # Re-index tokens for remaining assets
+        img_idx = 1
+        vid_idx = 1
+        for a in store["reference_assets"]:
+            if a["type"] == "image":
+                a["token"] = f"@Pictures {img_idx}"
+                img_idx += 1
+            else:
+                a["token"] = f"@Video {vid_idx}"
+                vid_idx += 1
+
+        return {"status": "deleted", "assets": store["reference_assets"]}
+
+    @app.delete("/api/upload/assets")
+    def clear_all_reference_assets():
+        """Clears all reference assets."""
+        for a in store["reference_assets"]:
+            if "local_path" in a and os.path.exists(a["local_path"]):
+                try:
+                    os.remove(a["local_path"])
+                except OSError as e:
+                    logger.warning(f"Failed to clear {a['local_path']}: {e}")
+        store["reference_assets"] = []
+        return {"status": "cleared", "assets": []}
+
+
+    # =========================================================================
     # 4. CUTSCENE GENERATION API (SEEDANCE / GROK)
     # =========================================================================
     @app.post("/api/cutscenes/generate")
@@ -338,12 +447,14 @@ def create_app():
                         "first_frame_image": req.first_frame_image,
                         "last_frame_image": req.last_frame_image,
                         "ip_effect_name": req.ip_effect_name,
+                        "reference_assets": req.reference_assets,
                         "resolution": req.resolution,
                         "generate_audio": req.generate_audio,
                         "draft_mode": req.draft_mode
                     })
 
                 generator.generate_video(**gen_kwargs)
+
                 qa = VideoQAAgent()
                 passed, reason = qa.audit_clip(clip_path)
                 public_path = f"/renders/cutscenes/chapter_{req.chapter_id}.mp4"
@@ -414,7 +525,12 @@ def create_app():
     os.makedirs(renders_dir, exist_ok=True)
     app.mount("/renders", StaticFiles(directory=renders_dir), name="renders")
 
+    uploads_base = os.path.join(os.path.dirname(ui_dir), "uploads")
+    os.makedirs(uploads_base, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=uploads_base), name="uploads")
+
     return app
+
 
 if __name__ == "__main__":
     import uvicorn

@@ -65,6 +65,7 @@ class SeedanceClient:
         resolution: str = "720p",
         generate_audio: bool = True,
         draft_mode: bool = False,
+        reference_assets: Optional[List[Dict[str, Any]]] = None,
         poll_interval: int = 3,
         timeout_seconds: int = 300,
         **kwargs
@@ -131,13 +132,25 @@ class SeedanceClient:
 
         # 3. Mode: Ref-to-Video (Default Omni-Reference)
         else:
-            if character_reference_image:
+            if reference_assets:
+                for asset in reference_assets:
+                    asset_path = asset.get("local_path") or asset.get("url")
+                    asset_type = asset.get("type", "image")
+                    if asset_path:
+                        prepared_url = self._prepare_image_reference(asset_path)
+                        content_payload.append({
+                            "type": "video_url" if asset_type == "video" else "image_url",
+                            ("video_url" if asset_type == "video" else "image_url"): {"url": prepared_url},
+                            "role": "reference"
+                        })
+                logger.info(f"Configured Ref-to-Video with {len(reference_assets)} uploaded reference assets.")
+            elif character_reference_image:
                 content_payload.append({
                     "type": "image_url",
                     "image_url": {"url": self._prepare_image_reference(character_reference_image)},
                     "role": "reference"
                 })
-            logger.info("Configured Ref-to-Video mode with multimodal asset reference.")
+                logger.info("Configured Ref-to-Video mode with character reference image.")
 
         # Append text prompt
         content_payload.append({
