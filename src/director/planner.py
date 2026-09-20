@@ -8,6 +8,7 @@ with full support for global domain context and character consistency.
 import os
 import json
 import logging
+import re
 from typing import Dict, Any, Optional
 from arkruntime import Ark
 
@@ -39,7 +40,8 @@ class DirectorPlanner:
         topic_or_transcript: str,
         global_context: Optional[Dict[str, str]] = None,
         character_profile: Optional[Dict[str, Any]] = None,
-        chapter_count: int = 4
+        chapter_count: int = 4,
+        purpose: str = "storyboard",
     ) -> Dict[str, Any]:
         """Decomposes the input content into sequential milestone platforms and video prompts.
 
@@ -88,10 +90,11 @@ class DirectorPlanner:
         Each milestone represents a floating stone platform with a signpost that the character visits.
         For each milestone, provide:
         1. 'title': Very concise signpost label (max 3 words, e.g., 'Hardware Choices').
-        2. 'narration_text': 1-2 sentence spoken explanation of this milestone.
-        3. 'platform_x': Horizontal pixel coordinate across a 1920x1080 canvas (spaced sequentially from left to right, e.g. 100 to 1700).
-        4. 'platform_y': Vertical coordinate between 300 and 700.
+        2. 'speaker': Who speaks at this shrine (usually {char['name']}, or a named guide).
+        3. 'narration_text': 2-sentence in-world spoken explanation the player hears at the shrine.
+        4. 'platform': object with x (350-1750, spaced at least 350px apart left-to-right), y (420-700), width (160-200).
         5. 'seedance_prompt': A vivid, cinematic visual prompt describing a 5-second video illustrating the concept featuring the character in Image 1. Do NOT mention text, captions, or UI.
+        {"" if purpose != "rpg" else "This will be played as an in-browser RPG: keep titles signpost-short, dialogue spoken aloud, and platforms walkable left-to-right."}
 
         Return strictly valid JSON matching this schema:
         {{
@@ -114,8 +117,9 @@ class DirectorPlanner:
             {{
               "id": 1,
               "title": "...",
+              "speaker": "{char['name']}",
               "narration_text": "...",
-              "platform": {{"x": 150, "y": 420, "width": 180}},
+              "platform": {{"x": 350, "y": 620, "width": 180}},
               "seedance_prompt": "Cinematic shot of the character in Image 1...",
               "cutscene_mode": "fullscreen_dissolve",
               "duration_seconds": 6
@@ -124,31 +128,56 @@ class DirectorPlanner:
         }}
         """
 
-        logger.info(f"Invoking Director Model {self.model_id} with context & character consistency...")
+        logger.info(f"Invoking Director Model {self.model_id} ({purpose}) with context & character consistency...")
+        return self._complete_json(user_prompt)
+
+    def improve_storyboard(
+        self,
+        storyboard: Dict[str, Any],
+        instruction: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Rewrites an existing storyboard in-place: clearer shrine titles, dialogue, and spacing."""
+        hint = instruction or (
+            "Tighten pedagogy. Make shrine titles max 3 words, dialogue two spoken sentences, "
+            "and space platform x values left-to-right with at least 350px between shrines."
+        )
+        user_prompt = f"""
+        You are revising an educational RPG storyboard. Return STRICTLY valid JSON in the same schema.
+        Do not drop chapters. Improve titles, speaker names, narration_text (in-world dialogue),
+        platform coordinates, and seedance_prompt quality.
+
+        REVISION GOAL:
+        {hint}
+
+        CURRENT STORYBOARD JSON:
+        {json.dumps(storyboard, indent=2)}
+        """
+        logger.info(f"Improving storyboard with Director Model {self.model_id}...")
+        return self._complete_json(user_prompt)
+
+    def _complete_json(self, user_prompt: str) -> Dict[str, Any]:
         response = self.client.responses.create(
             model=self.model_id,
             input=user_prompt,
         )
-
-        raw_output = ""
         if hasattr(response, "output") and response.output:
             raw_output = response.output[0].text
         else:
             raw_output = str(response)
+        return _parse_json_object(raw_output)
 
-        # Parse JSON and clean any accidental markdown wraps
-        cleaned = raw_output.strip()
-        if cleaned.startswith("```json"):
-            cleaned = cleaned[7:]
-        if cleaned.startswith("```"):
-            cleaned = cleaned[3:]
-        if cleaned.endswith("```"):
-            cleaned = cleaned[:-3]
-        cleaned = cleaned.strip()
 
-        try:
-            plan = json.loads(cleaned)
-            return plan
-        except json.JSONDecodeError as exc:
-            logger.error(f"Failed to parse LLM output as JSON: {cleaned}")
-            raise RuntimeError(f"Director LLM did not return valid JSON: {exc}")
+def _parse_json_object(raw_output: str) -> Dict[str, Any]:
+    cleaned = raw_output.strip()
+    cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+    cleaned = re.sub(r"\s*```$", "", cleaned)
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        raise RuntimeError("Director LLM did not return a JSON object.")
+    snippet = cleaned[start:end + 1]
+    try:
+        return json.loads(snippet)
+    except json.JSONDecodeError as exc:
+        logger.error(f"Failed to parse LLM output as JSON: {snippet[:500]}")
+        raise RuntimeError(f"Director LLM did not return valid JSON: {exc}") from exc

@@ -13,6 +13,7 @@ import os
 import logging
 import time
 from typing import Optional, Dict, Any
+import requests
 from pydantic import BaseModel, Field
 from src.director.planner import DirectorPlanner
 from src.generators import get_video_generator
@@ -42,14 +43,19 @@ class SettingsRequest(BaseModel):
     provider: Optional[str] = None
     director_model: Optional[str] = None
     video_model: Optional[str] = None
+    rpg_resolution: Optional[str] = None
+    chapter_count: Optional[int] = Field(default=None, ge=2, le=8)
 
 class PlanRequest(BaseModel):
-    topic: str
+    topic: str = ""
     global_context: Optional[Dict[str, str]] = None
     character_profile: Optional[Dict[str, Any]] = None
     chapter_count: int = Field(default=4, ge=2, le=8)
     api_key: Optional[str] = None
     director_model: Optional[str] = None
+    purpose: str = "storyboard"
+    storyboard: Optional[Dict[str, Any]] = None
+    instruction: Optional[str] = None
 
 class CutsceneGenerateRequest(BaseModel):
     chapter_id: int
@@ -91,30 +97,7 @@ def create_app():
     store = {
         "storyboard": None,
         "tasks": {},
-        "usage_records": [
-            {
-                "id": "gen-1",
-                "timestamp": "2026-09-21 00:15",
-                "service": "AI Video Studio",
-                "model": "dreamina-seedance-2-5-260628",
-                "mode": "ref_to_video",
-                "prompt": "Hermes running across Greek stone bridge under starlight",
-                "duration": "5s",
-                "status": "succeeded",
-                "watermark_free": True
-            },
-            {
-                "id": "rpg-1",
-                "timestamp": "2026-09-21 00:35",
-                "service": "RPG Studio",
-                "model": "seed-2-0-lite-260228",
-                "mode": "interactive_rpg",
-                "prompt": "How Local LLMs Work on Apple Silicon",
-                "duration": "24s",
-                "status": "completed",
-                "watermark_free": True
-            }
-        ]
+        "usage_records": []
     }
 
     ui_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ui")
@@ -135,6 +118,8 @@ def create_app():
             "director_model": os.getenv("ARK_LLM_MODEL", DEFAULT_DIRECTOR_MODEL),
             "video_model": os.getenv("ARK_SEEDANCE_MODEL", DEFAULT_VIDEO_MODEL),
             "image_model": os.getenv("ARK_SEEDREAM_MODEL", DEFAULT_IMAGE_MODEL),
+            "rpg_resolution": os.getenv("RPG_CANVAS_RESOLUTION", "1080p"),
+            "chapter_count": int(os.getenv("RPG_CHAPTER_COUNT", "4")),
             "ark_key_masked": f"...{ark_key[-4:]}" if len(ark_key) >= 4 else ("✓ Configured" if ark_key else ""),
             "xai_key_masked": f"...{xai_key[-4:]}" if len(xai_key) >= 4 else ("✓ Configured" if xai_key else "")
         }
@@ -161,6 +146,12 @@ def create_app():
         if req.video_model and req.video_model.strip():
             os.environ["ARK_SEEDANCE_MODEL"] = req.video_model.strip()
             updated.append(f"Video Model ({req.video_model.strip()})")
+        if req.rpg_resolution and req.rpg_resolution.strip():
+            os.environ["RPG_CANVAS_RESOLUTION"] = req.rpg_resolution.strip()
+            updated.append(f"RPG Resolution ({req.rpg_resolution.strip()})")
+        if req.chapter_count:
+            os.environ["RPG_CHAPTER_COUNT"] = str(req.chapter_count)
+            updated.append(f"Chapter Count ({req.chapter_count})")
 
         logger.info(f"Updated runtime settings: {', '.join(updated)}")
         return {
@@ -171,28 +162,44 @@ def create_app():
 
     @app.post("/api/settings/test-connection")
     def test_connection(req: SettingsRequest):
-        """Tests connectivity with configured API credentials."""
+        """Hits the provider base URL with the configured key. 401 means a bad key."""
         provider = (req.provider or os.getenv("DEFAULT_VIDEO_PROVIDER", "seedance")).lower()
         if provider in ("seedance", "byteplus", "bytedance"):
             key = req.ark_api_key or os.getenv("ARK_API_KEY")
-            if not key:
-                return {"status": "error", "message": "BytePlus ARK_API_KEY is not configured."}
-            return {"status": "success", "message": "Connected successfully to BytePlus ModelArk API."}
+            base = req.ark_base_url or os.getenv("ARK_BASE_URL", "https://ark.ap-southeast.bytepluses.com/api/v3")
+            label = "BytePlus ModelArk"
         else:
             key = req.xai_api_key or os.getenv("XAI_API_KEY")
-            if not key:
-                return {"status": "error", "message": "xAI XAI_API_KEY is not configured."}
-            return {"status": "success", "message": "Connected successfully to xAI Grok API."}
+            base = os.getenv("XAI_BASE_URL", "https://api.x.ai/v1")
+            label = "xAI"
+        if not key:
+            return {"status": "error", "message": f"{label} API key is not configured."}
+        try:
+            resp = requests.get(
+                base.rstrip("/"),
+                headers={"Authorization": f"Bearer {key}"},
+                timeout=8,
+            )
+            if resp.status_code == 401:
+                return {"status": "error", "message": f"{label} rejected the API key (401)."}
+            return {
+                "status": "success",
+                "message": f"{label} reachable (HTTP {resp.status_code}). Key was sent."
+            }
+        except requests.RequestException as exc:
+            return {"status": "error", "message": f"Could not reach {label}: {exc}"}
 
     @app.get("/api/usage")
     def get_usage():
         """Returns usage records and system metrics."""
         records = store["usage_records"]
+        total = len(records)
+        wm = sum(1 for r in records if r.get("watermark_free"))
         return {
-            "total_generations": len(records),
+            "total_generations": total,
             "video_generations": sum(1 for r in records if r["service"] == "AI Video Studio"),
             "rpg_renders": sum(1 for r in records if r["service"] == "RPG Studio"),
-            "watermark_free_rate": "100%",
+            "watermark_free_rate": f"{int(100 * wm / total)}%" if total else "n/a",
             "active_tasks": len([t for t in store["tasks"].values() if t.get("status") == "processing"]),
             "records": records
         }
@@ -221,20 +228,40 @@ def create_app():
         if not api_key:
             raise HTTPException(
                 status_code=400,
-                detail="ARK_API_KEY is required to generate a storyboard. Please set it in Settings (⚙) or in .env."
+                detail="ARK_API_KEY is required to generate a storyboard. Please set it in API Keys or in .env."
             )
+        if not req.storyboard and not req.topic.strip():
+            raise HTTPException(status_code=400, detail="Provide a topic, or an existing storyboard to improve.")
 
         model_id = req.director_model or os.getenv("ARK_LLM_MODEL", DEFAULT_DIRECTOR_MODEL)
 
         try:
             planner = DirectorPlanner(api_key=api_key, model_id=model_id)
-            storyboard = planner.plan_storyboard(
-                topic_or_transcript=req.topic,
-                global_context=req.global_context,
-                character_profile=req.character_profile,
-                chapter_count=req.chapter_count
-            )
+            if req.storyboard:
+                storyboard = planner.improve_storyboard(
+                    req.storyboard,
+                    instruction=req.instruction,
+                )
+            else:
+                storyboard = planner.plan_storyboard(
+                    topic_or_transcript=req.topic,
+                    global_context=req.global_context,
+                    character_profile=req.character_profile,
+                    chapter_count=req.chapter_count,
+                    purpose=req.purpose,
+                )
             store["storyboard"] = storyboard
+            store["usage_records"].insert(0, {
+                "id": f"rpg-{int(time.time())}",
+                "timestamp": time.strftime("%Y-%m-%d %H:%M"),
+                "service": "RPG Studio",
+                "model": model_id,
+                "mode": "improve" if req.storyboard else req.purpose,
+                "prompt": req.topic or storyboard.get("theme", "storyboard"),
+                "duration": f"{len(storyboard.get('chapters', []))} shrines",
+                "status": "succeeded",
+                "watermark_free": False
+            })
             return {"status": "success", "storyboard": storyboard, "director_model": model_id}
         except Exception as e:
             logger.error(f"Planning failed: {e}")

@@ -41,15 +41,17 @@ def test_api_usage_endpoint(client):
     assert "records" in data
 
 def test_test_connection_endpoint(client, monkeypatch):
-    # Without keys
     monkeypatch.delenv("ARK_API_KEY", raising=False)
     monkeypatch.delenv("XAI_API_KEY", raising=False)
     res = client.post("/api/settings/test-connection", json={"provider": "seedance"})
     assert res.status_code == 200
     assert res.json()["status"] == "error"
 
-    # With keys
+    class FakeResp:
+        status_code = 200
+
     monkeypatch.setenv("ARK_API_KEY", "test_mock_api_key_valid")
+    monkeypatch.setattr("src.server.requests.get", lambda *args, **kwargs: FakeResp())
     res = client.post("/api/settings/test-connection", json={"provider": "seedance"})
     assert res.status_code == 200
     assert res.json()["status"] == "success"
@@ -137,10 +139,37 @@ def test_cutscene_generate_passes_ratio(client, monkeypatch):
 def test_settings_update_models(client, monkeypatch):
     payload = {
         "director_model": "seed-2-0-pro-260328",
-        "video_model": "dreamina-seedance-2-0-fast-260128"
+        "video_model": "dreamina-seedance-2-0-fast-260128",
+        "rpg_resolution": "720p",
+        "chapter_count": 5,
+        "provider": "seedance",
     }
     response = client.post("/api/settings", json=payload)
     assert response.status_code == 200
     assert os.getenv("ARK_LLM_MODEL") == "seed-2-0-pro-260328"
     assert os.getenv("ARK_SEEDANCE_MODEL") == "dreamina-seedance-2-0-fast-260128"
+    assert os.getenv("RPG_CANVAS_RESOLUTION") == "720p"
+    assert os.getenv("RPG_CHAPTER_COUNT") == "5"
+
+    settings = client.get("/api/settings").json()
+    assert settings["rpg_resolution"] == "720p"
+    assert settings["chapter_count"] == 5
+
+def test_plan_requires_topic_or_storyboard(client, monkeypatch):
+    monkeypatch.setenv("ARK_API_KEY", "test_mock_key")
+    response = client.post("/api/plan", json={"topic": "", "purpose": "rpg"})
+    assert response.status_code == 400
+
+def test_docs_describe_actual_usage(client):
+    html = client.get("/docs").text
+    assert "How to use this app" in html
+    assert "Generate world" in html
+    assert "/api/plan" in html
+    assert "Record walk" in html
+
+def test_usage_starts_empty(client):
+    data = client.get("/api/usage").json()
+    assert data["total_generations"] == 0
+    assert data["records"] == []
+    assert data["watermark_free_rate"] == "n/a"
 

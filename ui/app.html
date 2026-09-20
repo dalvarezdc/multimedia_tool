@@ -120,7 +120,7 @@
         <div>
           <div class="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
             <span>Services</span>
-            <span class="text-[9px] text-electric">2 Tools</span>
+            <span class="text-[9px] text-slate-500">2</span>
           </div>
           <div class="space-y-1">
             <button data-view="video" class="sidebar-link active w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-all text-left">
@@ -131,7 +131,7 @@
               <span class="text-base text-celestial">🎮</span>
               <div class="flex-1 flex items-center justify-between">
                 <span class="font-medium">RPG Studio</span>
-                <span class="px-1.5 py-0.5 rounded text-[9px] bg-celestial/10 text-celestial border border-celestial/20">Playable</span>
+                <span class="px-1.5 py-0.5 rounded text-[9px] bg-celestial/10 text-celestial border border-celestial/20">WASD</span>
               </div>
             </button>
           </div>
@@ -170,9 +170,9 @@
       <div class="p-3 rounded-xl bg-surface border border-white/5 flex items-center justify-between text-xs font-mono">
         <div class="flex items-center gap-2">
           <span id="sidebar-key-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-          <span class="text-slate-300 text-[11px]">ModelArk API</span>
+          <span class="text-slate-300 text-[11px]">API key</span>
         </div>
-        <button id="sidebar-btn-models" class="text-[10px] text-electric hover:underline">24 Models ›</button>
+        <button id="sidebar-open-keys" class="text-[10px] text-electric hover:underline">Set key ›</button>
       </div>
     </div>
 
@@ -198,10 +198,6 @@
         <span id="header-badge-model" class="hidden sm:inline-flex px-2.5 py-1 rounded-full bg-surface border border-white/10 text-slate-300 text-[11px]">
           Seedance 2.5 Flagship
         </span>
-        <span class="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] flex items-center gap-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-          <span>Zero Watermark</span>
-        </span>
         <button id="header-btn-api" class="px-3 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-400/30 text-amber-300 hover:text-amber-200 transition-all text-[11px] flex items-center gap-1.5">
           <span id="header-key-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
           <span id="header-key-text">Key Required</span>
@@ -221,7 +217,7 @@
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-xl font-bold text-white mb-1">ByteDance Seedance Video Studio</h2>
-            <p class="text-xs font-mono text-slate-400">High-fidelity generative AI video cutscenes with strict zero-watermark guarantee.</p>
+            <p class="text-xs font-mono text-slate-400">Prompt a Seedance or Grok clip. Watermark is requested off; the file is saved under /renders/cutscenes.</p>
           </div>
           <div class="flex items-center gap-2">
             <button id="btn-video-info-modes" class="px-3 py-1.5 rounded-xl bg-surface hover:bg-surface-light border border-white/10 text-xs font-mono text-slate-300 hover:text-white flex items-center gap-1.5 transition-all">
@@ -251,10 +247,7 @@
                 class="w-full bg-surface rounded-xl p-3.5 text-xs text-white placeholder-slate-500 border border-white/10 focus:border-electric focus:outline-none font-mono resize-none leading-relaxed"
               >Cinematic close-up tracking shot of Hermes with winged golden helmet soaring over ancient Greek stone temples under starry night sky, dramatic volumetric starlight, 1080p photorealistic, highly detailed.</textarea>
 
-              <div class="p-2.5 rounded-xl bg-surface/80 border border-white/5 text-[11px] font-mono text-slate-400 flex items-center justify-between">
-                <span>Negative Prompt:</span>
-                <span class="text-emerald-400">--no watermark, text, logo, subtitles, ui, timestamps</span>
-              </div>
+              <p class="text-[10px] font-mono text-slate-500">The server appends <code class="text-slate-300">--no watermark, text, logo, subtitles, ui, timestamps</code> to every Seedance prompt.</p>
             </div>
 
             <!-- ByteDance Generation Mode & Parameters Card -->
@@ -370,8 +363,8 @@
             <div class="glass-card rounded-2xl p-4 space-y-3">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold font-mono text-slate-200 uppercase">Video Output Preview</span>
-                <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  1080P 60FPS
+                <span id="preview-spec-badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-white/5 text-slate-300 border border-white/10">
+                  16:9 · 5s
                 </span>
               </div>
 
@@ -384,8 +377,8 @@
                   playsinline
                   preload="metadata"
                 ></video>
-                <div class="absolute top-2.5 left-2.5 bg-black/70 px-2 py-0.5 rounded text-[9px] font-mono text-emerald-400 border border-emerald-500/30 z-10">
-                  ✓ ZERO-WATERMARK VERIFIED
+                <div id="preview-empty-hint" class="absolute inset-0 flex items-center justify-center text-[11px] font-mono text-slate-500 pointer-events-none">
+                  No clip yet — generate one
                 </div>
                 <div class="absolute top-2.5 right-2.5 z-10 flex items-center gap-2 bg-black/65 rounded-full px-3 py-1.5">
                   <input id="video-volume" type="range" min="0" max="1" step="0.05" value="0.7" class="volume-slider w-16" />
@@ -412,19 +405,8 @@
                 <span class="text-[10px] font-mono text-slate-500">Auto Saved</span>
               </div>
               <div id="recent-generations-list" class="space-y-2 text-xs font-mono">
-                <div class="p-2.5 rounded-xl bg-surface/70 border border-white/5 flex items-center justify-between">
-                  <div>
-                    <strong class="text-slate-200 text-[11px] block">Hermes Temple Flight (5s)</strong>
-                    <span class="text-[10px] text-slate-500">Seedance 2.5 • Ref-to-video</span>
-                  </div>
-                  <span class="text-emerald-400 text-[10px]">✓ Ready</span>
-                </div>
-                <div class="p-2.5 rounded-xl bg-surface/70 border border-white/5 flex items-center justify-between">
-                  <div>
-                    <strong class="text-slate-200 text-[11px] block">Apple M4 Neural Matrix (5s)</strong>
-                    <span class="text-[10px] text-slate-500">Seedance 2.0 Fast • Text-to-video</span>
-                  </div>
-                  <span class="text-emerald-400 text-[10px]">✓ Ready</span>
+                <div id="recent-empty" class="p-2.5 rounded-xl bg-surface/70 border border-white/5 text-slate-500">
+                  No jobs yet. Generated clips show up here.
                 </div>
               </div>
             </div>
@@ -443,8 +425,8 @@
         <!-- Top RPG Control & Mode Header -->
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 class="text-xl font-bold text-white mb-1">Retro RPG Automated World Generator</h2>
-            <p class="text-xs font-mono text-slate-400">Playable 16-bit retro RPG in-browser (WASD) and automated Remotion MP4 video export.</p>
+            <h2 class="text-xl font-bold text-white mb-1">RPG Studio</h2>
+            <p class="text-xs font-mono text-slate-400">The Director LLM turns a topic into walkable shrines. WASD to play. Improve rewrites the world. Export records the canvas walk.</p>
           </div>
 
           <!-- RPG Mode Switcher: Playable Game vs Auto-Director Record -->
@@ -453,7 +435,7 @@
               <span>🎮 Playable Mode (WASD)</span>
             </button>
             <button id="btn-rpg-mode-director" class="px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
-              <span>🎬 Auto-Director (Export Video)</span>
+              <span>🎬 Auto-walk</span>
             </button>
           </div>
         </div>
@@ -475,13 +457,19 @@
             id="btn-rpg-generate-world" 
             class="px-4 py-2 rounded-xl bg-gradient-to-r from-celestial to-amber-500 text-black font-bold text-xs uppercase font-mono tracking-wider hover:opacity-90 transition-all shadow-glow-gold active:scale-95"
           >
-            Generate RPG World
+            Generate world
+          </button>
+          <button 
+            id="btn-rpg-improve-world" 
+            class="px-4 py-2 rounded-xl bg-lavender/20 border border-lavender/40 text-lavender font-bold text-xs uppercase font-mono tracking-wider hover:bg-lavender hover:text-black transition-all active:scale-95"
+          >
+            Improve with LLM
           </button>
           <button 
             id="btn-rpg-export-mp4" 
             class="px-4 py-2 rounded-xl bg-white text-black font-bold text-xs uppercase font-mono tracking-wider hover:bg-electric transition-all shadow-md active:scale-95 flex items-center gap-1"
           >
-            <span>Export MP4 Video</span>
+            <span>Record walk</span>
             <span>↓</span>
           </button>
         </div>
@@ -495,7 +483,7 @@
             <div class="glass-pill px-3.5 py-2 rounded-xl border border-white/10">
               <div class="text-[10px] font-pixel text-celestial mb-1">⚔ QUEST PROGRESSION</div>
               <div id="rpg-hud-quest" class="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                ACTIVE: HARDWARE ARCHITECTURE (SHRINE 01)
+                Generate a world to place shrines
               </div>
             </div>
             <div class="glass-pill px-3 py-1.5 rounded-lg border border-white/10 text-[10px] font-mono text-slate-400">
@@ -506,9 +494,8 @@
           <!-- Top-Right Hero Status HUD -->
           <div class="absolute top-4 right-4 pointer-events-none">
             <div class="glass-pill px-3.5 py-2 rounded-xl border border-white/10 text-right">
-              <div class="text-[10px] font-mono text-celestial font-bold">HERMES • LVL 14 MESSENGER</div>
-              <div class="text-[10px] font-mono text-emerald-400 mt-0.5">HP: 100/100 | MP: 80/80</div>
-              <div class="text-[9px] font-mono text-slate-400 mt-0.5">GEAR: Golden Caduceus + Winged Helm</div>
+              <div id="rpg-hero-name" class="text-[10px] font-mono text-celestial font-bold">HERMES</div>
+              <div id="rpg-world-topic" class="text-[10px] font-mono text-slate-400 mt-0.5">No world generated</div>
             </div>
           </div>
 
@@ -520,7 +507,7 @@
           </div>
 
           <!-- Classic Retro RPG Dialogue Box Overlay -->
-          <div id="rpg-dialogue-box" class="absolute bottom-4 inset-x-6 glass-card rounded-2xl p-4 sm:p-5 border-2 border-celestial shadow-2xl flex items-start gap-4 transition-all">
+          <div id="rpg-dialogue-box" class="absolute bottom-4 inset-x-6 glass-card rounded-2xl p-4 sm:p-5 border-2 border-celestial shadow-2xl flex items-start gap-4 transition-all hidden">
             <!-- Character Bust Portrait -->
             <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gradient-to-tr from-amber-500/20 to-celestial/20 border border-celestial/40 flex items-center justify-center text-3xl shrink-0 shadow-glow-gold">
               🪽
@@ -532,8 +519,11 @@
                 <span class="text-[10px] font-mono text-slate-400">PRESS SPACE TO ADVANCE ►</span>
               </div>
               <p id="rpg-dialogue-text" class="text-xs sm:text-sm font-mono text-slate-100 leading-relaxed min-h-[44px]">
-                "Welcome traveler! To execute large neural networks on Apple Silicon with zero latency, unified memory architecture allows the GPU and CPU to share weights seamlessly."
+                Generate a world from a topic. Shrines and this dialogue come from the Director LLM.
               </p>
+              <button id="btn-rpg-shrine-cutscene" type="button" class="mt-3 px-3 py-1.5 rounded-lg bg-electric text-black text-[10px] font-mono font-bold uppercase">
+                Generate shrine cutscene
+              </button>
             </div>
           </div>
 
@@ -557,8 +547,8 @@
               <!-- Populated dynamically via JS -->
             </div>
           </div>
-          <div class="text-slate-400 flex items-center gap-1.5">
-            <span class="text-emerald-400">●</span> 60 FPS Retro Remotion Engine
+          <div id="rpg-engine-status" class="text-slate-400 flex items-center gap-1.5">
+            <span class="text-slate-500">●</span> Canvas playfield · Director LLM for content
           </div>
         </div>
 
@@ -637,37 +627,40 @@
       <!-- ========================================================================== -->
       <section id="view-docs" class="content-view space-y-6 max-w-4xl mx-auto hidden">
         <div>
-          <h2 class="text-xl font-bold text-white mb-1">Platform Documentation</h2>
-          <p class="text-xs font-mono text-slate-400">Guides for Seedance 2.5 video modes, RPG generation, and character consistency.</p>
+          <h2 class="text-xl font-bold text-white mb-1">How to use this app</h2>
+          <p class="text-xs font-mono text-slate-400">What each screen actually does.</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs font-mono">
+        <div class="space-y-4 text-sm text-slate-300">
           <div class="glass-card rounded-2xl p-5 space-y-2">
-            <h3 class="text-sm font-bold text-electric">📹 Seedance 2.5 Video Generation</h3>
-            <p class="text-slate-300 font-sans leading-relaxed text-xs">
-              Powered by BytePlus ModelArk, Seedance 2.5 generates 1080p 60fps clips. We enforce <code>watermark: False</code> and automated negative prompts for zero watermarking.
-            </p>
+            <h3 class="text-sm font-bold text-white">1. API Keys</h3>
+            <p class="leading-relaxed text-xs">Paste a BytePlus <code class="font-mono text-electric">ARK_API_KEY</code> for Seedance video and the Director LLM. Paste an xAI key only if you pick Grok. Save writes the key to this browser and the running server process, not to disk. Restarting without <code class="font-mono">.env</code> clears the server copy.</p>
           </div>
-
           <div class="glass-card rounded-2xl p-5 space-y-2">
-            <h3 class="text-sm font-bold text-celestial">🎮 RPG Automated Generator</h3>
-            <p class="text-slate-300 font-sans leading-relaxed text-xs">
-              Deconstructs any topic into an interactive 16-bit RPG world. Supports both direct in-browser playable exploration (WASD) and automated MP4 export via Canvas/Remotion.
-            </p>
+            <h3 class="text-sm font-bold text-white">2. AI Video Studio</h3>
+            <ol class="list-decimal ml-4 space-y-1 text-xs leading-relaxed">
+              <li>Write a prompt. Pick a Seedance or Grok model, aspect ratio, and duration.</li>
+              <li>Ref-to-video attaches the reference image. First/last frame sends start/end stills. IP effects prepend a tag onto the prompt.</li>
+              <li>Generate calls <code class="font-mono">/api/cutscenes/generate</code>, polls status, then loads the file from <code class="font-mono">/renders/cutscenes</code>.</li>
+            </ol>
           </div>
-
           <div class="glass-card rounded-2xl p-5 space-y-2">
-            <h3 class="text-sm font-bold text-lavender">🪽 Character Consistency</h3>
-            <p class="text-slate-300 font-sans leading-relaxed text-xs">
-              Hermes serves as the persistent protagonist. In video modes, SeeDream 5.0 and reference image tokens maintain facial features, helmet wings, and caduceus across shots.
-            </p>
+            <h3 class="text-sm font-bold text-white">3. RPG Studio</h3>
+            <ol class="list-decimal ml-4 space-y-1 text-xs leading-relaxed">
+              <li>Enter a topic. Generate world calls the Director LLM (<code class="font-mono">/api/plan</code>) and places shrines from the returned chapters.</li>
+              <li>WASD walks. Space opens shrine dialogue (the model's narration_text).</li>
+              <li>Improve with LLM sends the current storyboard back for tighter titles, dialogue, and spacing.</li>
+              <li>Generate shrine cutscene sends that shrine's seedance_prompt to video generation.</li>
+              <li>Record walk captures the canvas auto-walk as a WebM in the browser. It does not run Remotion.</li>
+            </ol>
           </div>
-
           <div class="glass-card rounded-2xl p-5 space-y-2">
-            <h3 class="text-sm font-bold text-emerald-400">✓ Automated QA Watermark Gate</h3>
-            <p class="text-slate-300 font-sans leading-relaxed text-xs">
-              The built-in Video QA Agent scans video headers and frame boundaries to ensure no watermarks, logos, or captions leak into output MP4s.
-            </p>
+            <h3 class="text-sm font-bold text-white">4. Settings</h3>
+            <p class="leading-relaxed text-xs">Default video model, director model, provider, shrine count, and canvas resolution. Save posts to <code class="font-mono">/api/settings</code> and localStorage. Video and RPG reads those on the next generate or plan call.</p>
+          </div>
+          <div class="glass-card rounded-2xl p-5 space-y-2">
+            <h3 class="text-sm font-bold text-white">5. Usage</h3>
+            <p class="leading-relaxed text-xs">In-memory log for this server process: finished video jobs and RPG worlds that were planned or improved. It resets when the server restarts.</p>
           </div>
         </div>
       </section>
@@ -677,40 +670,61 @@
       <!-- ========================================================================== -->
       <section id="view-settings" class="content-view space-y-6 max-w-3xl mx-auto hidden">
         <div>
-          <h2 class="text-xl font-bold text-white mb-1">System Settings & Defaults</h2>
-          <p class="text-xs font-mono text-slate-400">Configure default models, rendering resolution, and layout preferences.</p>
+          <h2 class="text-xl font-bold text-white mb-1">Settings</h2>
+          <p class="text-xs font-mono text-slate-400">These values are used by Video Studio generate and RPG plan/improve.</p>
         </div>
 
         <div class="glass-card rounded-2xl p-6 sm:p-8 space-y-5 text-xs font-mono">
           <div>
-            <label class="text-slate-300 font-bold block mb-1">Default Seedance Video Model:</label>
+            <label class="text-slate-300 font-bold block mb-1">Default video model</label>
             <select id="pref-video-model" class="w-full bg-surface text-white rounded-xl px-3.5 py-2.5 border border-white/10">
-              <option value="dreamina-seedance-2-5-260628">🌟 dreamina-seedance-2-5-260628 (Seedance 2.5 Flagship)</option>
-              <option value="dreamina-seedance-2-0-fast-260128">⚡ dreamina-seedance-2-0-fast-260128 (Seedance 2.0 Fast)</option>
-              <option value="dreamina-seedance-2-0-260128">📹 dreamina-seedance-2-0-260128 (Seedance 2.0 Standard)</option>
+              <option value="dreamina-seedance-2-5-260628">dreamina-seedance-2-5-260628</option>
+              <option value="dreamina-seedance-2-0-fast-260128">dreamina-seedance-2-0-fast-260128</option>
+              <option value="dreamina-seedance-2-0-260128">dreamina-seedance-2-0-260128</option>
+              <option value="dreamina-seedance-2-0-mini-260615">dreamina-seedance-2-0-mini-260615</option>
+              <option value="grok-imagine-video-1.5">grok-imagine-video-1.5</option>
             </select>
           </div>
 
           <div>
-            <label class="text-slate-300 font-bold block mb-1">Default Director Planning LLM:</label>
+            <label class="text-slate-300 font-bold block mb-1">Director LLM (RPG world + improve)</label>
             <select id="pref-director-model" class="w-full bg-surface text-white rounded-xl px-3.5 py-2.5 border border-white/10">
-              <option value="seed-2-0-lite-260228">seed-2-0-lite-260228 (Balanced - Default)</option>
-              <option value="seed-2-0-pro-260328">seed-2-0-pro-260328 (Pro Reasoning)</option>
-              <option value="deepseek-v4-1-flash-260910">deepseek-v4-1-flash-260910 (Latest Sept 2026)</option>
+              <option value="seed-2-0-lite-260228">seed-2-0-lite-260228</option>
+              <option value="seed-2-0-lite-260428">seed-2-0-lite-260428</option>
+              <option value="seed-2-0-pro-260328">seed-2-0-pro-260328</option>
             </select>
           </div>
 
           <div>
-            <label class="text-slate-300 font-bold block mb-1">RPG Canvas Resolution:</label>
-            <select id="pref-resolution" class="w-full bg-surface text-white rounded-xl px-3.5 py-2.5 border border-white/10">
-              <option value="1080p">1080P Full HD (60 FPS)</option>
-              <option value="720p">720P Standard (60 FPS)</option>
+            <label class="text-slate-300 font-bold block mb-1">Default video provider</label>
+            <select id="pref-provider" class="w-full bg-surface text-white rounded-xl px-3.5 py-2.5 border border-white/10">
+              <option value="seedance">seedance (BytePlus)</option>
+              <option value="grok">grok (xAI)</option>
             </select>
           </div>
 
+          <div>
+            <label class="text-slate-300 font-bold block mb-1">RPG shrine count</label>
+            <select id="pref-chapter-count" class="w-full bg-surface text-white rounded-xl px-3.5 py-2.5 border border-white/10">
+              <option value="3">3</option>
+              <option value="4" selected>4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-slate-300 font-bold block mb-1">RPG canvas resolution</label>
+            <select id="pref-resolution" class="w-full bg-surface text-white rounded-xl px-3.5 py-2.5 border border-white/10">
+              <option value="1080p">1920×1080</option>
+              <option value="720p">1280×720</option>
+            </select>
+          </div>
+
+          <div id="pref-feedback" class="text-xs font-mono hidden"></div>
           <div class="pt-4 border-t border-white/10 flex justify-end">
             <button id="btn-save-pref" class="px-6 py-2.5 rounded-xl bg-electric text-black font-bold uppercase tracking-wider shadow-glow-cyan">
-              Save Preferences
+              Save settings
             </button>
           </div>
         </div>
@@ -721,27 +735,22 @@
       <!-- ========================================================================== -->
       <section id="view-usage" class="content-view space-y-6 max-w-5xl mx-auto hidden">
         <div>
-          <h2 class="text-xl font-bold text-white mb-1">Usage Records & System Metrics</h2>
-          <p class="text-xs font-mono text-slate-400">Track video generation history, RPG render jobs, and API metrics.</p>
+          <h2 class="text-xl font-bold text-white mb-1">Usage</h2>
+          <p class="text-xs font-mono text-slate-400">Jobs recorded in this server process. Empty until you generate or plan something.</p>
         </div>
 
-        <!-- Metric Stat Cards -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs font-mono">
           <div class="glass-card rounded-2xl p-4">
-            <span class="text-slate-400 text-[10px] uppercase block mb-1">Total Generations</span>
-            <span id="metric-total-gen" class="text-2xl font-bold text-white">2</span>
+            <span class="text-slate-400 text-[10px] uppercase block mb-1">Total</span>
+            <span id="metric-total-gen" class="text-2xl font-bold text-white">0</span>
           </div>
           <div class="glass-card rounded-2xl p-4">
-            <span class="text-slate-400 text-[10px] uppercase block mb-1">Video Studio Jobs</span>
-            <span id="metric-video-jobs" class="text-2xl font-bold text-electric">1</span>
+            <span class="text-slate-400 text-[10px] uppercase block mb-1">Video jobs</span>
+            <span id="metric-video-jobs" class="text-2xl font-bold text-electric">0</span>
           </div>
           <div class="glass-card rounded-2xl p-4">
-            <span class="text-slate-400 text-[10px] uppercase block mb-1">RPG Renders</span>
-            <span id="metric-rpg-jobs" class="text-2xl font-bold text-celestial">1</span>
-          </div>
-          <div class="glass-card rounded-2xl p-4">
-            <span class="text-slate-400 text-[10px] uppercase block mb-1">Zero-Watermark Pass</span>
-            <span class="text-2xl font-bold text-emerald-400">100%</span>
+            <span class="text-slate-400 text-[10px] uppercase block mb-1">RPG plans</span>
+            <span id="metric-rpg-jobs" class="text-2xl font-bold text-celestial">0</span>
           </div>
         </div>
 
@@ -771,7 +780,7 @@
   </div>
 
   <!-- ============================================================================== -->
-  <!-- 3. MODALS: SEEDANCE MODES INFO & 24-MODEL CATALOG                              -->
+  <!-- 3. MODE GUIDE MODAL                                                            -->
   <!-- ============================================================================== -->
 
   <!-- Modal 1: ByteDance Generation Modes Info (i) -->
@@ -801,33 +810,13 @@
         </div>
         <div class="p-4 rounded-2xl bg-surface/80 border border-white/5">
           <h3 class="text-sm font-bold text-celestial mb-1">👤⁺ IP effects (Character Transformations)</h3>
-          <p class="text-slate-300 mb-2 font-sans">Applies stylized shaders (Anime aura, Cyberpunk hologram, 3D clay) while preserving anatomy.</p>
-          <div class="text-slate-400 bg-black/40 p-2 rounded-lg">API Mapping: <code>role: "character_ip"</code> + effect modifier token.</div>
+          <p class="text-slate-300 mb-2 font-sans">Prepends <code>[IP Effect: …]</code> to the prompt and attaches the character image. Not a BytePlus effect catalog.</p>
+          <div class="text-slate-400 bg-black/40 p-2 rounded-lg">API Mapping: image role <code>character_ip</code> plus a prompt prefix.</div>
         </div>
       </div>
 
       <div class="flex justify-end pt-4">
         <button id="btn-got-it" class="px-5 py-2 rounded-xl bg-white text-black font-bold text-xs font-mono uppercase hover:bg-electric transition-all">Got It</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal 2: Complete 24 ModelArk Catalog -->
-  <div id="modal-catalog" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 transition-all">
-    <div class="glass-card max-w-3xl w-full rounded-3xl p-6 sm:p-8 border border-white/15 shadow-2xl relative max-h-[92vh] overflow-y-auto">
-      <div class="flex items-center justify-between pb-4 border-b border-white/10 mb-5">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-electric to-lavender text-black flex items-center justify-center text-sm font-bold">📦</div>
-          <div>
-            <h2 class="text-base font-bold text-slate-100">BytePlus ModelArk Catalog (24 Models)</h2>
-            <p class="text-xs text-slate-400 font-mono">Available Seedance, Seed, SeeDream, and DeepSeek Models</p>
-          </div>
-        </div>
-        <button id="btn-close-catalog" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white text-slate-400 hover:text-black flex items-center justify-center text-sm font-bold">✕</button>
-      </div>
-
-      <div id="catalog-models-list" class="space-y-3 font-mono text-xs max-h-[60vh] overflow-y-auto pr-1">
-        <!-- Loaded via /api/models -->
       </div>
     </div>
   </div>
@@ -842,8 +831,12 @@
     let localBaseUrl = localStorage.getItem("ARK_BASE_URL") || "https://ark.ap-southeast.bytepluses.com/api/v3";
     let activeVideoModel = localStorage.getItem("ARK_SEEDANCE_MODEL") || "dreamina-seedance-2-5-260628";
     let activeDirectorModel = localStorage.getItem("ARK_LLM_MODEL") || "seed-2-0-lite-260228";
+    let localProvider = localStorage.getItem("DEFAULT_VIDEO_PROVIDER") || "seedance";
+    let rpgChapterCount = parseInt(localStorage.getItem("RPG_CHAPTER_COUNT") || "4", 10);
+    let rpgResolution = localStorage.getItem("RPG_CANVAS_RESOLUTION") || "1080p";
     let selectedVideoMode = "ref_to_video";
     let activeView = "video";
+    let rpgStoryboard = null;
 
     // --- Sidebar Navigation Router ---
     const sidebarLinks = document.querySelectorAll(".sidebar-link");
@@ -889,6 +882,7 @@
       breadcrumbCategory.innerText = meta.cat;
 
       if (viewName === "usage") loadUsageMetrics();
+      if (viewName === "settings") fillSettingsForm();
     }
 
     sidebarLinks.forEach(btn => {
@@ -951,6 +945,7 @@
     refreshKeyStatus();
 
     document.getElementById("header-btn-api").onclick = () => switchView("api-keys");
+    document.getElementById("sidebar-open-keys").onclick = () => switchView("api-keys");
 
     // --- API Keys Management Page Logic ---
     const inputArkKey = document.getElementById("keys-page-input-ark");
@@ -1105,6 +1100,8 @@
 
     function prependRecentGeneration(title, meta) {
       const list = document.getElementById("recent-generations-list");
+      const empty = document.getElementById("recent-empty");
+      if (empty) empty.remove();
       const row = document.createElement("div");
       row.className = "p-2.5 rounded-xl bg-surface/70 border border-white/5 flex items-center justify-between";
       row.innerHTML = `
@@ -1112,10 +1109,19 @@
           <strong class="text-slate-200 text-[11px] block">${title}</strong>
           <span class="text-[10px] text-slate-500">${meta}</span>
         </div>
-        <span class="text-emerald-400 text-[10px]">✓ Ready</span>
+        <span class="text-emerald-400 text-[10px]">Ready</span>
       `;
       list.prepend(row);
     }
+
+    function updatePreviewSpec() {
+      const ratio = document.getElementById("video-aspect-ratio").value;
+      const duration = document.getElementById("video-duration").value;
+      document.getElementById("preview-spec-badge").innerText = `${ratio} · ${duration}s`;
+    }
+    document.getElementById("video-aspect-ratio").onchange = updatePreviewSpec;
+    document.getElementById("video-duration").onchange = updatePreviewSpec;
+    updatePreviewSpec();
 
     async function pollCutscene(chapterId, model) {
       for (let i = 0; i < 80; i++) {
@@ -1126,6 +1132,8 @@
             videoPlayer.src = data.path;
             videoPlayer.load();
             showPlayOverlay(true);
+            const hint = document.getElementById("preview-empty-hint");
+            if (hint) hint.classList.add("hidden");
           }
           document.getElementById("player-status-caption").innerText = "Active: " + modelLabel(model) + " Output";
           prependRecentGeneration(
@@ -1222,45 +1230,50 @@
     const rpgHudQuest = document.getElementById("rpg-hud-quest");
     const rpgShrineButtons = document.getElementById("rpg-shrine-buttons");
 
-    // RPG Shrines / Milestones Data
-    const rpgShrines = [
-      {
-        id: 1,
-        title: "Hardware Architecture",
-        x: 350,
-        y: 650,
-        width: 180,
-        speaker: "HERMES [MESSENGER]",
-        dialogue: "Greetings traveler! Local LLMs thrive on Apple Silicon because unified memory lets the CPU and GPU access model weights simultaneously without PCIe transfer bottlenecks."
-      },
-      {
-        id: 2,
-        title: "MLX & Ollama Setup",
-        x: 820,
-        y: 530,
-        width: 180,
-        speaker: "DELPHI SAGE",
-        dialogue: "By invoking Ollama or Apple's native MLX framework, developers can deploy Llama-3 and DeepSeek with a single shell invocation and zero cloud telemetry."
-      },
-      {
-        id: 3,
-        title: "Quantization Shrines",
-        x: 1300,
-        y: 650,
-        width: 180,
-        speaker: "HERMES [MESSENGER]",
-        dialogue: "Behold the 4-bit and 8-bit quantization runestones! They shrink a 70-billion parameter model down to fit inside 36GB of unified memory without losing reasoning fidelity."
-      },
-      {
-        id: 4,
-        title: "KV Cache Sanctuary",
-        x: 1750,
-        y: 520,
-        width: 180,
-        speaker: "ATHENA [ORACLE]",
-        dialogue: "The final trial: KV caching and prompt prefilling! Storing attention keys in fast unified RAM keeps continuous text generation blazing at 45 tokens per second."
+    let rpgShrines = [];
+    let lastDialogueShrine = null;
+    let rpgDirectorPlaying = true;
+    let rpgWalkFrame = 0;
+
+    function chaptersToShrines(storyboard) {
+      return (storyboard.chapters || []).map((ch, i) => ({
+        id: ch.id || i + 1,
+        title: ch.title || `Shrine ${i + 1}`,
+        x: (ch.platform && ch.platform.x) || (350 + i * 400),
+        y: (ch.platform && ch.platform.y) || 620,
+        width: (ch.platform && ch.platform.width) || 180,
+        speaker: ch.speaker || (storyboard.character_profile && storyboard.character_profile.name) || "HERMES",
+        dialogue: ch.narration_text || "",
+        seedance_prompt: ch.seedance_prompt || ""
+      }));
+    }
+
+    function applyRpgWorld(storyboard) {
+      rpgStoryboard = storyboard;
+      rpgShrines = chaptersToShrines(storyboard);
+      rpgWalkFrame = 0;
+      renderShrineButtons();
+      const topic = document.getElementById("rpg-topic-input").value;
+      document.getElementById("rpg-world-topic").innerText = topic || storyboard.theme || "World ready";
+      const hero = (storyboard.character_profile && storyboard.character_profile.name) || "HERMES";
+      document.getElementById("rpg-hero-name").innerText = String(hero).toUpperCase();
+      if (rpgShrines[0]) {
+        player.x = rpgShrines[0].x;
+        player.y = rpgShrines[0].y - 40;
+        triggerDialogue(rpgShrines[0]);
       }
-    ];
+    }
+
+    function applyCanvasResolution() {
+      if (rpgResolution === "720p") {
+        rpgCanvas.width = 1280;
+        rpgCanvas.height = 720;
+      } else {
+        rpgCanvas.width = 1920;
+        rpgCanvas.height = 1080;
+      }
+    }
+    applyCanvasResolution();
 
     function renderShrineButtons() {
       rpgShrineButtons.innerHTML = "";
@@ -1309,9 +1322,10 @@
     let nearShrine = null;
 
     function triggerDialogue(shrine) {
+      lastDialogueShrine = shrine;
       rpgSpeakerName.innerText = shrine.speaker;
       rpgDialogueText.innerText = shrine.dialogue;
-      rpgHudQuest.innerText = `ACTIVE: ${shrine.title.toUpperCase()}`;
+      rpgHudQuest.innerText = shrine.title.toUpperCase();
       rpgDialogueBox.classList.remove("hidden");
     }
 
@@ -1387,10 +1401,10 @@
         } else {
           rpgProximityPrompt.classList.add("hidden");
         }
-      } else {
-        // Auto-Director Mode: smooth cinematic traversal
+      } else if (rpgShrines.length) {
         const cycle = 360 * rpgShrines.length;
-        const currentCycle = rpgFrame % cycle;
+        if (rpgDirectorPlaying) rpgWalkFrame++;
+        const currentCycle = rpgWalkFrame % cycle;
         const shrineIdx = Math.floor(currentCycle / 360);
         const currS = rpgShrines[shrineIdx];
         const prevS = shrineIdx > 0 ? rpgShrines[shrineIdx - 1] : currS;
@@ -1406,13 +1420,21 @@
           player.x = currS.x;
           player.y = currS.y - 40;
         }
+        const scrubber = document.getElementById("rpg-scrubber");
+        scrubber.max = String(cycle);
+        if (document.activeElement !== scrubber) scrubber.value = String(currentCycle);
+        const curSec = Math.floor(currentCycle / 60);
+        const totalSec = Math.floor(cycle / 60);
+        document.getElementById("rpg-director-time").innerText =
+          `${String(Math.floor(curSec / 60)).padStart(2, "0")}:${String(curSec % 60).padStart(2, "0")} / ${String(Math.floor(totalSec / 60)).padStart(2, "0")}:${String(totalSec % 60).padStart(2, "0")}`;
       }
 
-      const cameraX = player.x - 1920 / 2;
+      const viewW = rpgCanvas.width;
+      const viewH = rpgCanvas.height;
+      const cameraX = player.x - viewW / 2;
 
-      // 2. Clear Sky
       rpgCtx.fillStyle = "#070a18";
-      rpgCtx.fillRect(0, 0, 1920, 1080);
+      rpgCtx.fillRect(0, 0, viewW, viewH);
 
       // Stars
       rpgStars.forEach(s => {
@@ -1518,14 +1540,149 @@
     }
     requestAnimationFrame(renderRpgLoop);
 
-    document.getElementById("btn-rpg-generate-world").onclick = () => {
-      const topic = document.getElementById("rpg-topic-input").value;
-      alert(`Director Agent (seed-2-0-lite) generated 4 milestone shrines and dialogue scripts for: "${topic}"!`);
-      triggerDialogue(rpgShrines[0]);
+    async function planRpgWorld(improve) {
+      if (!localApiKey) {
+        switchView("api-keys");
+        alert("BytePlus ARK_API_KEY is required for the Director LLM.");
+        return;
+      }
+      const topic = document.getElementById("rpg-topic-input").value.trim();
+      if (!improve && !topic) {
+        alert("Enter a topic first.");
+        return;
+      }
+      if (improve && !rpgStoryboard) {
+        alert("Generate a world first, then improve it.");
+        return;
+      }
+      const btn = document.getElementById(improve ? "btn-rpg-improve-world" : "btn-rpg-generate-world");
+      const previous = btn.innerText;
+      btn.disabled = true;
+      btn.innerText = improve ? "Improving…" : "Planning…";
+      try {
+        const body = {
+          topic: topic,
+          purpose: "rpg",
+          chapter_count: rpgChapterCount,
+          director_model: activeDirectorModel,
+          api_key: localApiKey,
+          global_context: { domain_notes: topic, tone: "educational retro rpg" }
+        };
+        if (improve) {
+          body.storyboard = rpgStoryboard;
+          body.instruction = "Improve shrine titles, spoken dialogue, and left-to-right platform spacing.";
+        }
+        const res = await fetch("/api/plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Director LLM failed");
+        applyRpgWorld(data.storyboard);
+      } catch (err) {
+        alert(err.message || "Planning failed");
+      } finally {
+        btn.disabled = false;
+        btn.innerText = previous;
+      }
+    }
+
+    document.getElementById("btn-rpg-generate-world").onclick = () => planRpgWorld(false);
+    document.getElementById("btn-rpg-improve-world").onclick = () => planRpgWorld(true);
+
+    document.getElementById("btn-rpg-toggle-play").onclick = () => {
+      rpgDirectorPlaying = !rpgDirectorPlaying;
+      document.getElementById("btn-rpg-toggle-play").innerText = rpgDirectorPlaying ? "⏸" : "▶";
+    };
+    document.getElementById("rpg-scrubber").oninput = (e) => {
+      rpgWalkFrame = parseInt(e.target.value, 10) || 0;
+    };
+    document.getElementById("btn-rpg-next-shrine").onclick = () => {
+      rpgWalkFrame += 360;
+    };
+
+    document.getElementById("btn-rpg-shrine-cutscene").onclick = () => {
+      const shrine = lastDialogueShrine;
+      if (!shrine || !shrine.seedance_prompt) {
+        alert("Generate a world first. Each shrine carries a Seedance prompt from the Director LLM.");
+        return;
+      }
+      document.getElementById("video-prompt-input").value = shrine.seedance_prompt;
+      switchView("video");
+      btnGenVideo.click();
     };
 
     document.getElementById("btn-rpg-export-mp4").onclick = () => {
-      alert("Triggering Remotion Headless Master Video Render of the RPG Playthrough (1080P 60FPS)...");
+      if (!rpgShrines.length) {
+        alert("Generate a world first.");
+        return;
+      }
+      isRpgPlayableMode = false;
+      rpgDirectorPlaying = true;
+      rpgWalkFrame = 0;
+      rpgDirectorControls.classList.remove("hidden");
+      rpgDirectorControls.classList.add("flex");
+      const stream = rpgCanvas.captureStream(30);
+      const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9") ? "video/webm;codecs=vp9" : "video/webm";
+      const recorder = new MediaRecorder(stream, { mimeType: mime });
+      const chunks = [];
+      recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: "video/webm" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "rpg-walk.webm";
+        a.click();
+      };
+      recorder.start();
+      setTimeout(() => recorder.stop(), Math.max(4000, rpgShrines.length * 6000));
+    };
+
+    function fillSettingsForm() {
+      const videoSel = document.getElementById("pref-video-model");
+      const dirSel = document.getElementById("pref-director-model");
+      if (videoSel.querySelector(`option[value="${activeVideoModel}"]`)) videoSel.value = activeVideoModel;
+      if (dirSel.querySelector(`option[value="${activeDirectorModel}"]`)) dirSel.value = activeDirectorModel;
+      document.getElementById("pref-provider").value = localProvider;
+      document.getElementById("pref-chapter-count").value = String(rpgChapterCount);
+      document.getElementById("pref-resolution").value = rpgResolution;
+    }
+
+    document.getElementById("btn-save-pref").onclick = async () => {
+      activeVideoModel = document.getElementById("pref-video-model").value;
+      activeDirectorModel = document.getElementById("pref-director-model").value;
+      localProvider = document.getElementById("pref-provider").value;
+      rpgChapterCount = parseInt(document.getElementById("pref-chapter-count").value, 10);
+      rpgResolution = document.getElementById("pref-resolution").value;
+      localStorage.setItem("ARK_SEEDANCE_MODEL", activeVideoModel);
+      localStorage.setItem("ARK_LLM_MODEL", activeDirectorModel);
+      localStorage.setItem("DEFAULT_VIDEO_PROVIDER", localProvider);
+      localStorage.setItem("RPG_CHAPTER_COUNT", String(rpgChapterCount));
+      localStorage.setItem("RPG_CANVAS_RESOLUTION", rpgResolution);
+      applyCanvasResolution();
+      modelSelect.value = activeVideoModel;
+      syncModelBadge();
+      const feedback = document.getElementById("pref-feedback");
+      try {
+        const res = await fetch("/api/settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            video_model: activeVideoModel,
+            director_model: activeDirectorModel,
+            provider: localProvider,
+            rpg_resolution: rpgResolution,
+            chapter_count: rpgChapterCount
+          })
+        });
+        const data = await res.json();
+        feedback.className = "text-xs font-mono text-emerald-400 block";
+        feedback.innerText = data.message || "Saved.";
+      } catch (err) {
+        feedback.className = "text-xs font-mono text-rose-400 block";
+        feedback.innerText = "Could not save to server: " + err.message;
+      }
     };
 
     // --- Usage Records Fetcher ---
@@ -1540,15 +1697,20 @@
 
           const tbody = document.getElementById("usage-table-body");
           tbody.innerHTML = "";
+          if (!data.records.length) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td class="py-3 text-slate-500" colspan="5">No jobs in this server process yet.</td>`;
+            tbody.appendChild(tr);
+          }
           data.records.forEach(r => {
             const tr = document.createElement("tr");
             tr.className = "hover:bg-white/5";
             tr.innerHTML = `
               <td class="py-2.5 text-slate-400">${r.timestamp}</td>
               <td><span class="px-2 py-0.5 rounded text-[10px] ${r.service.includes('Video') ? 'bg-electric/10 text-electric' : 'bg-celestial/10 text-celestial'}">${r.service}</span></td>
-              <td class="text-slate-300">${r.model.split('-')[1] || r.model} • ${r.mode}</td>
-              <td class="text-slate-200">${r.prompt.slice(0, 40)}...</td>
-              <td><span class="text-emerald-400 font-bold">✓ ${r.status}</span></td>
+              <td class="text-slate-300">${r.model} • ${r.mode}</td>
+              <td class="text-slate-200">${(r.prompt || "").slice(0, 40)}</td>
+              <td class="text-slate-300">${r.status}</td>
             `;
             tbody.appendChild(tr);
           });
@@ -1558,43 +1720,6 @@
       }
     }
     loadUsageMetrics();
-
-    // --- 24-Model Catalog Modal ---
-    const modalCat = document.getElementById("modal-catalog");
-    const catalogList = document.getElementById("catalog-models-list");
-    document.getElementById("sidebar-btn-models").onclick = async () => {
-      modalCat.classList.remove("hidden");
-      catalogList.innerHTML = "<div class='py-4 text-center text-slate-400'>Loading 24 ModelArk Models...</div>";
-      try {
-        const res = await fetch("/api/models");
-        if (res.ok) {
-          const data = await res.json();
-          catalogList.innerHTML = "";
-          Object.entries(data.catalog).forEach(([cat, models]) => {
-            const header = document.createElement("div");
-            header.className = "text-xs font-bold text-electric uppercase border-b border-white/10 pb-1 mt-3";
-            header.innerText = `● ${cat.toUpperCase()} (${models.length} Models)`;
-            catalogList.appendChild(header);
-
-            models.forEach(m => {
-              const item = document.createElement("div");
-              item.className = "p-2.5 rounded-xl bg-surface border border-white/5 flex flex-col gap-0.5 mt-1";
-              item.innerHTML = `
-                <div class="flex items-center justify-between text-white font-bold">
-                  <span>${m.id}</span>
-                  <span class="text-[10px] px-2 py-0.5 rounded bg-white/5 text-slate-400">${m.category}</span>
-                </div>
-                <div class="text-[11px] text-slate-300 font-sans">${m.description}</div>
-              `;
-              catalogList.appendChild(item);
-            });
-          });
-        }
-      } catch (err) {
-        catalogList.innerText = "Error loading catalog: " + err.message;
-      }
-    };
-    document.getElementById("btn-close-catalog").onclick = () => modalCat.classList.add("hidden");
 
     // Modal Info (i)
     const modalInfo = document.getElementById("modal-mode-info");
