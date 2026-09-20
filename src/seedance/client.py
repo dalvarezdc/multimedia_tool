@@ -22,7 +22,7 @@ class SeedanceClient:
         self,
         api_key: Optional[str] = None,
         base_url: str = "https://ark.ap-southeast.bytepluses.com/api/v3",
-        model_id: str = "dreamina-seedance-2-0-260128"
+        model_id: str = "dreamina-seedance-2-5-260628"
     ):
         self.api_key = api_key or os.getenv("ARK_API_KEY")
         if not self.api_key:

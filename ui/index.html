@@ -103,10 +103,10 @@
 
       <!-- Navigation Links -->
       <nav class="hidden md:flex items-center gap-1 bg-surface/60 p-1 rounded-full border border-white/5 text-xs font-medium text-slate-400">
-        <a href="#showcase" class="px-3.5 py-1.5 rounded-full hover:text-white transition-all">Showcase</a>
-        <a href="#modes" class="px-3.5 py-1.5 rounded-full hover:text-white transition-all">Seedance Modes</a>
-        <a href="#features" class="px-3.5 py-1.5 rounded-full hover:text-white transition-all">Capabilities</a>
-        <a href="https://ai.byteplus.com/ark" target="_blank" class="px-3.5 py-1.5 rounded-full hover:text-white transition-all">BytePlus ↗</a>
+        <a href="#showcase" class="px-3 py-1.5 rounded-full hover:text-white transition-all">Showcase</a>
+        <a href="#modes" class="px-3 py-1.5 rounded-full hover:text-white transition-all">Modes</a>
+        <a href="#models" class="px-3 py-1.5 rounded-full hover:text-white transition-all text-electric">24 Models</a>
+        <a href="#features" class="px-3 py-1.5 rounded-full hover:text-white transition-all">Workflow</a>
       </nav>
 
       <!-- Action Buttons -->
@@ -115,7 +115,7 @@
         <button 
           id="btn-open-settings" 
           class="h-9 px-3.5 rounded-full bg-surface hover:bg-surface-light border border-white/10 text-xs font-mono font-medium text-slate-200 hover:text-white flex items-center gap-2 transition-all shadow-sm active:scale-95"
-          title="Configure API Keys manually"
+          title="Configure API Keys and Active Models manually"
         >
           <span id="key-status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
           <span>⚙ Settings</span>
@@ -154,7 +154,7 @@
 
     <p class="text-slate-400 text-sm sm:text-base text-center max-w-2xl mb-8 leading-relaxed font-normal">
       From documentation to fully rendered video — retro platformer level roadmaps, 
-      watermark-free Seedance AI cutscenes, and character consistency in one autonomous pipeline.
+      watermark-free Seedance AI cutscenes, and character consistency powered by BytePlus ModelArk's full 24-model suite.
     </p>
 
     <!-- Quick Action / Launch Studio Input Bar -->
@@ -189,7 +189,7 @@
         <div class="flex items-center gap-3 text-xs font-mono">
           <span class="text-slate-400">AVATAR: <strong class="text-celestial">HERMES</strong></span>
           <span class="text-slate-500">|</span>
-          <span class="text-emerald-400 font-semibold">ZERO WATERMARK</span>
+          <span class="text-emerald-400 font-semibold">SEEDANCE 2.5 • ZERO WATERMARK</span>
         </div>
       </div>
 
@@ -218,7 +218,7 @@
       <div class="mt-4 flex flex-wrap items-center justify-between gap-4 px-2 text-xs font-mono text-slate-400">
         <div class="flex items-center gap-4">
           <span>🎮 <strong>16-Bit Engine:</strong> Remotion / HTML5</span>
-          <span>📹 <strong>Video Model:</strong> Seedance 2.5</span>
+          <span>📹 <strong>Video Model:</strong> dreamina-seedance-2-5-260628</span>
         </div>
         <div class="flex items-center gap-2 text-emerald-400">
           <span>✓ Zero Watermark Automated QA Gate</span>
@@ -244,7 +244,7 @@
               ℹ
             </button>
           </div>
-          <h2 class="text-2xl sm:text-3xl font-bold text-slate-100">Three Production Generation Modes</h2>
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-100">Three Production Video Generation Modes</h2>
         </div>
         <a href="/app" class="hidden sm:inline-flex text-xs font-mono text-electric hover:underline items-center gap-1">
           <span>Test in Studio</span> <span>→</span>
@@ -311,7 +311,166 @@
     </section>
 
     <!-- ============================================================================== -->
-    <!-- 5. FEATURES & CAPABILITIES GRID                                                -->
+    <!-- 5. COMPLETE 24 MODELARK MODELS SUITE SHOWCASE                                  -->
+    <!-- ============================================================================== -->
+    <section id="models" class="w-full max-w-5xl mb-16">
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <span class="text-xs font-mono font-bold uppercase text-electric tracking-wider">FULL PLATFORM COMPATIBILITY</span>
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-100">24 Available BytePlus ModelArk Models</h2>
+        </div>
+        <a href="/app" class="text-xs font-mono text-slate-400 hover:text-electric flex items-center gap-1">
+          <span>Configure in Studio</span> <span>→</span>
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 text-xs font-mono">
+        
+        <!-- Category 1: Video Generation -->
+        <div class="glass-card rounded-2xl p-5 border border-white/10 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold text-electric uppercase flex items-center gap-2">
+                <span>📹</span> Video (4 Models)
+              </h3>
+              <span class="text-[10px] bg-electric/10 text-electric px-2 py-0.5 rounded">Seedance</span>
+            </div>
+            <ul class="space-y-2 text-slate-300">
+              <li class="p-2 rounded bg-surface/80 border border-white/5">
+                <strong class="text-white">dreamina-seedance-2-5-260628</strong>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">Flagship 1080p, Zero Watermark, complex motion</p>
+              </li>
+              <li class="p-2 rounded bg-surface/80 border border-white/5">
+                <strong class="text-slate-200">dreamina-seedance-2-0-fast-260128</strong>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">High-speed turbo cutscene rendering</p>
+              </li>
+              <li class="p-2 rounded bg-surface/80 border border-white/5">
+                <strong class="text-slate-200">dreamina-seedance-2-0-260128</strong>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">Standard omni ref-to-video foundation</p>
+              </li>
+              <li class="p-2 rounded bg-surface/80 border border-white/5">
+                <strong class="text-slate-200">dreamina-seedance-2-0-mini-260615</strong>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">Cost-efficient storyboard preview video</p>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Category 2: Director LLMs -->
+        <div class="glass-card rounded-2xl p-5 border border-white/10 flex flex-col justify-between lg:col-span-2">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold text-lavender uppercase flex items-center gap-2">
+                <span>🧠</span> Director Planning LLMs (14 Models)
+              </h3>
+              <span class="text-[10px] bg-lavender/10 text-lavender px-2 py-0.5 rounded">Seed • DeepSeek • GLM</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-300">
+              <div class="p-2 rounded bg-surface/80 border border-white/5">
+                <strong class="text-white">seed-2-0-lite-260228 / 260428</strong>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">Default Director Agent for JSON roadmaps</p>
+              </div>
+              <div class="p-2 rounded bg-surface/80 border border-white/5">
+                <strong class="text-white">seed-2-0-pro-260328</strong>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">Pro cinematic reasoning & camera direction</p>
+              </div>
+              <div class="p-2 rounded bg-surface/80 border border-white/5">
+                <strong class="text-white">dola-seed-2-1-turbo-260628</strong>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">DOLA low-latency interactive directing</p>
+              </div>
+              <div class="p-2 rounded bg-surface/80 border border-white/5">
+                <strong class="text-white">seed-2-0-code-preview-260328</strong>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">Remotion React/TSX component generation</p>
+              </div>
+              <div class="p-2 rounded bg-surface/80 border border-white/5">
+                <strong class="text-white">deepseek-v4-1-flash-260910</strong>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">Latest Sept 2026 extreme-throughput model</p>
+              </div>
+              <div class="p-2 rounded bg-surface/80 border border-white/5">
+                <strong class="text-white">deepseek-v4-pro-ga-260813</strong>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">Deep architecture & whitepaper breakdown</p>
+              </div>
+              <div class="p-2 rounded bg-surface/80 border border-white/5">
+                <strong class="text-white">glm-5-3-flash-260828 / 5-2</strong>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">High-speed bilingual narration planning</p>
+              </div>
+              <div class="p-2 rounded bg-surface/80 border border-white/5">
+                <strong class="text-white">seed-2-0-mini-260215 / 260428</strong>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">Ultra-compact lightweight title generation</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category 3: Image & Character Anchors -->
+        <div class="glass-card rounded-2xl p-5 border border-white/10 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold text-celestial uppercase flex items-center gap-2">
+                <span>🎨</span> Image & Anchors (3 Models)
+              </h3>
+              <span class="text-[10px] bg-celestial/10 text-celestial px-2 py-0.5 rounded">SeeDream</span>
+            </div>
+            <ul class="space-y-2 text-slate-300">
+              <li class="p-2 rounded bg-surface/80 border border-white/5">
+                <strong class="text-white">seedream-5-0-260128</strong>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">Flagship character anchor & first/last frames</p>
+              </li>
+              <li class="p-2 rounded bg-surface/80 border border-white/5">
+                <strong class="text-slate-200">dola-seedream-5-0-pro-260628</strong>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">Pro multimodal style transfer & turnarounds</p>
+              </li>
+              <li class="p-2 rounded bg-surface/80 border border-white/5">
+                <strong class="text-slate-200">seedream-4-0-20260415</strong>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">Standard SeeDream asset generation</p>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Category 4: 3D Assets & Props -->
+        <div class="glass-card rounded-2xl p-5 border border-white/10 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold text-blue-400 uppercase flex items-center gap-2">
+                <span>📦</span> 3D Generation (2 Models)
+              </h3>
+              <span class="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded">Hyper3D</span>
+            </div>
+            <ul class="space-y-2 text-slate-300">
+              <li class="p-2 rounded bg-surface/80 border border-white/5">
+                <strong class="text-white">hyper3d-gen2-260112</strong>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">3D floating platforms and temple scenes</p>
+              </li>
+              <li class="p-2 rounded bg-surface/80 border border-white/5">
+                <strong class="text-slate-200">hitem3d-2-0-251223</strong>
+                <p class="text-[11px] text-slate-400 font-sans mt-0.5">Hero items: golden caduceus & winged helm</p>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Category 5: Vision Embedding -->
+        <div class="glass-card rounded-2xl p-5 border border-white/10 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold text-emerald-400 uppercase flex items-center gap-2">
+                <span>👁️</span> Vision Embedding (1 Model)
+              </h3>
+              <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded">Skylark</span>
+            </div>
+            <div class="p-2 rounded bg-surface/80 border border-white/5 text-slate-300">
+              <strong class="text-white">skylark-embedding-vision-251215</strong>
+              <p class="text-[11px] text-slate-400 font-sans mt-0.5">Visual similarity embedding vectors for automated QA audit & character drift detection</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================================== -->
+    <!-- 6. FEATURES & CAPABILITIES GRID                                                -->
     <!-- ============================================================================== -->
     <section id="features" class="w-full max-w-5xl mb-16">
       <div class="mb-6">
@@ -325,7 +484,7 @@
           <div class="w-10 h-10 rounded-xl bg-electric/10 text-electric flex items-center justify-center text-lg mb-4">
             ✦
           </div>
-          <h3 class="text-base font-bold text-slate-100 mb-2">Director Agent (Seed-2.0-Lite)</h3>
+          <h3 class="text-base font-bold text-slate-100 mb-2">Director Agent (Seed-2.0-Lite & Pro)</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
             Ingests complex technical specifications and autonomously outputs JSON storyboards with milestone coordinates, physics arcs, narration text, and cinematics.
           </p>
@@ -337,7 +496,7 @@
           </div>
           <h3 class="text-base font-bold text-slate-100 mb-2">Multimodal Character Consistency</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Hermes avatar anchor remains visually identical between pixel platformer sprites and photorealistic AI video cutscenes via reference image embeddings.
+            Hermes avatar anchor remains visually identical between pixel platformer sprites and photorealistic AI video cutscenes via SeeDream 5.0 embeddings.
           </p>
         </div>
 
@@ -365,7 +524,7 @@
     </section>
 
     <!-- ============================================================================== -->
-    <!-- 6. FINAL CALL TO ACTION                                                        -->
+    <!-- 7. FINAL CALL TO ACTION                                                        -->
     <!-- ============================================================================== -->
     <div class="w-full max-w-5xl rounded-3xl p-8 sm:p-12 glass-card border border-white/15 text-center flex flex-col items-center shadow-2xl relative overflow-hidden">
       <div class="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-electric/10 blur-3xl pointer-events-none"></div>
@@ -373,7 +532,7 @@
 
       <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-3">Ready to Build Your Video?</h2>
       <p class="text-slate-400 text-sm max-w-xl mb-8">
-        Enter your API keys in the Settings menu, open the studio workspace, and generate your first interactive roadmap and cutscenes.
+        Enter your API keys in the Settings menu, choose from 24 ModelArk models, and launch the studio workspace.
       </p>
 
       <div class="flex flex-wrap items-center justify-center gap-4">
@@ -388,7 +547,7 @@
           id="btn-footer-settings"
           class="h-12 px-6 rounded-full bg-surface hover:bg-surface-light border border-white/15 text-xs font-mono font-medium text-slate-200 hover:text-white flex items-center gap-2 transition-all active:scale-95"
         >
-          <span>⚙ Configure API Keys</span>
+          <span>⚙ Configure API & Models</span>
         </button>
       </div>
     </div>
@@ -396,7 +555,7 @@
   </main>
 
   <!-- ============================================================================== -->
-  <!-- 7. FOOTER                                                                      -->
+  <!-- 8. FOOTER                                                                      -->
   <!-- ============================================================================== -->
   <footer class="w-full border-t border-white/10 py-8 px-4 text-center text-xs font-mono text-slate-500">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -410,10 +569,10 @@
   </footer>
 
   <!-- ============================================================================== -->
-  <!-- 8. SETTINGS MODAL (MANUAL API KEYS CONFIGURATION)                               -->
+  <!-- 9. SETTINGS MODAL (MANUAL API KEYS & MODEL CONFIGURATION)                       -->
   <!-- ============================================================================== -->
   <div id="modal-settings" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 transition-all">
-    <div class="glass-card max-w-lg w-full rounded-3xl p-6 sm:p-8 border border-white/15 shadow-2xl relative animate-fade-in">
+    <div class="glass-card max-w-lg w-full rounded-3xl p-6 sm:p-8 border border-white/15 shadow-2xl relative animate-fade-in max-h-[92vh] overflow-y-auto">
       
       <div class="flex items-center justify-between pb-4 border-b border-white/10 mb-6">
         <div class="flex items-center gap-3">
@@ -421,7 +580,7 @@
             ⚙
           </div>
           <div>
-            <h2 class="text-base font-bold text-slate-100">API Settings & Credentials</h2>
+            <h2 class="text-base font-bold text-slate-100">API Settings & Models</h2>
             <p class="text-xs text-slate-400 font-mono">Configure BytePlus & xAI Keys manually</p>
           </div>
         </div>
@@ -459,6 +618,29 @@
           />
         </div>
 
+        <!-- Default Video Model -->
+        <div>
+          <label class="text-slate-300 font-bold block mb-1">Seedance Video Model:</label>
+          <select id="settings-video-model" class="w-full bg-surface text-white rounded-xl px-3.5 py-2 border border-white/10 text-xs focus:border-electric focus:outline-none">
+            <option value="dreamina-seedance-2-5-260628">🌟 dreamina-seedance-2-5-260628 (Seedance 2.5 Flagship)</option>
+            <option value="dreamina-seedance-2-0-fast-260128">⚡ dreamina-seedance-2-0-fast-260128 (Seedance 2.0 Fast)</option>
+            <option value="dreamina-seedance-2-0-260128">📹 dreamina-seedance-2-0-260128 (Seedance 2.0 Standard)</option>
+            <option value="dreamina-seedance-2-0-mini-260615">🔹 dreamina-seedance-2-0-mini-260615 (Seedance 2.0 Mini)</option>
+          </select>
+        </div>
+
+        <!-- Default Director LLM Model -->
+        <div>
+          <label class="text-slate-300 font-bold block mb-1">Director Storyboard Planning Model:</label>
+          <select id="settings-director-model" class="w-full bg-surface text-white rounded-xl px-3.5 py-2 border border-white/10 text-xs focus:border-electric focus:outline-none">
+            <option value="seed-2-0-lite-260228">seed-2-0-lite-260228 (Fast & Balanced)</option>
+            <option value="seed-2-0-pro-260328">seed-2-0-pro-260328 (Pro Cinematic Reasoning)</option>
+            <option value="dola-seed-2-1-turbo-260628">dola-seed-2-1-turbo-260628 (DOLA Turbo)</option>
+            <option value="deepseek-v4-1-flash-260910">deepseek-v4-1-flash-260910 (Latest Sept 2026)</option>
+            <option value="deepseek-v4-pro-ga-260813">deepseek-v4-pro-ga-260813 (DeepSeek Pro GA)</option>
+          </select>
+        </div>
+
         <!-- xAI API Key -->
         <div>
           <div class="flex items-center justify-between mb-1.5">
@@ -487,13 +669,13 @@
       </div>
 
       <div class="flex items-center justify-between pt-2">
-        <span id="settings-save-msg" class="text-xs font-mono text-emerald-400 hidden">✓ Settings saved!</span>
+        <a href="/app" class="text-xs font-mono text-electric hover:underline">Launch Studio Workspace →</a>
         <div class="flex gap-2 ml-auto">
           <button id="btn-cancel-settings" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-mono">
             Cancel
           </button>
           <button id="btn-save-settings" class="px-5 py-2 rounded-xl bg-electric text-black font-bold text-xs font-mono uppercase tracking-wider hover:opacity-90 transition-all shadow-glow-cyan">
-            Save Credentials
+            Save Settings
           </button>
         </div>
       </div>
@@ -502,7 +684,7 @@
   </div>
 
   <!-- ============================================================================== -->
-  <!-- 9. INFORMATION SIGN (i) MODAL                                                  -->
+  <!-- 10. INFORMATION SIGN (i) MODAL                                                 -->
   <!-- ============================================================================== -->
   <div id="modal-mode-info" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 transition-all">
     <div class="glass-card max-w-2xl w-full rounded-3xl p-6 sm:p-8 border border-white/15 shadow-2xl relative max-h-[90vh] overflow-y-auto">
@@ -566,7 +748,7 @@
   </div>
 
   <!-- ============================================================================== -->
-  <!-- 10. JAVASCRIPT: PREVIEW CANVAS & SETTINGS MANAGEMENT                            -->
+  <!-- 11. JAVASCRIPT: PREVIEW CANVAS & SETTINGS MANAGEMENT                           -->
   <!-- ============================================================================== -->
   <script>
     // --- Quick Launch Studio with Topic ---
@@ -588,6 +770,8 @@
     let localXaiKey = localStorage.getItem("XAI_API_KEY") || "";
     let localBaseUrl = localStorage.getItem("ARK_BASE_URL") || "https://ark.ap-southeast.bytepluses.com/api/v3";
     let localProvider = localStorage.getItem("DEFAULT_VIDEO_PROVIDER") || "seedance";
+    let localVideoModel = localStorage.getItem("ARK_SEEDANCE_MODEL") || "dreamina-seedance-2-5-260628";
+    let localDirectorModel = localStorage.getItem("ARK_LLM_MODEL") || "seed-2-0-lite-260228";
 
     const modalSettings = document.getElementById("modal-settings");
     const btnOpenSettings = document.getElementById("btn-open-settings");
@@ -603,6 +787,8 @@
     const inputArkBase = document.getElementById("input-ark-base");
     const inputXaiKey = document.getElementById("input-xai-key");
     const selectGlobalProvider = document.getElementById("select-global-provider");
+    const settingsVideoModel = document.getElementById("settings-video-model");
+    const settingsDirectorModel = document.getElementById("settings-director-model");
 
     async function refreshSettingsStatus() {
       try {
@@ -638,6 +824,8 @@
       inputXaiKey.value = localXaiKey;
       inputArkBase.value = localBaseUrl;
       selectGlobalProvider.value = localProvider;
+      settingsVideoModel.value = localVideoModel;
+      settingsDirectorModel.value = localDirectorModel;
       modalSettings.classList.remove("hidden");
     };
 
@@ -653,11 +841,15 @@
       localXaiKey = inputXaiKey.value.trim();
       localBaseUrl = inputArkBase.value.trim();
       localProvider = selectGlobalProvider.value;
+      localVideoModel = settingsVideoModel.value;
+      localDirectorModel = settingsDirectorModel.value;
 
       localStorage.setItem("ARK_API_KEY", localApiKey);
       localStorage.setItem("XAI_API_KEY", localXaiKey);
       localStorage.setItem("ARK_BASE_URL", localBaseUrl);
       localStorage.setItem("DEFAULT_VIDEO_PROVIDER", localProvider);
+      localStorage.setItem("ARK_SEEDANCE_MODEL", localVideoModel);
+      localStorage.setItem("ARK_LLM_MODEL", localDirectorModel);
 
       try {
         await fetch("/api/settings", {
@@ -667,7 +859,9 @@
             ark_api_key: localApiKey,
             xai_api_key: localXaiKey,
             ark_base_url: localBaseUrl,
-            provider: localProvider
+            provider: localProvider,
+            video_model: localVideoModel,
+            director_model: localDirectorModel
           })
         });
       } catch (err) {
