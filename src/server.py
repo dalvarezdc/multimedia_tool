@@ -70,6 +70,9 @@ class CutsceneGenerateRequest(BaseModel):
     api_key: Optional[str] = None
     video_model: Optional[str] = None
     ratio: str = "16:9"
+    resolution: str = "720p"
+    generate_audio: bool = True
+    draft_mode: bool = False
 
 class MasterRenderRequest(BaseModel):
     storyboard: Dict[str, Any]
@@ -334,7 +337,10 @@ def create_app():
                         "generation_mode": req.generation_mode,
                         "first_frame_image": req.first_frame_image,
                         "last_frame_image": req.last_frame_image,
-                        "ip_effect_name": req.ip_effect_name
+                        "ip_effect_name": req.ip_effect_name,
+                        "resolution": req.resolution,
+                        "generate_audio": req.generate_audio,
+                        "draft_mode": req.draft_mode
                     })
 
                 generator.generate_video(**gen_kwargs)

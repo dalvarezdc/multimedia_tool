@@ -147,13 +147,36 @@
   <div class="flex-1 flex flex-col h-screen overflow-hidden">
     
     <!-- Top Console Header Bar -->
-    <header class="h-14 border-b border-white/[0.06] px-6 flex items-center justify-between shrink-0">
-      <h1 id="breadcrumb-title" class="text-[15px] font-medium text-slate-100">Video Studio</h1>
-      <div class="flex items-center gap-3 text-[12px] text-slate-400">
-        <span id="header-badge-model" class="hidden sm:inline">Seedance 2.5</span>
-        <button id="header-btn-api" class="flex items-center gap-1.5 hover:text-white">
+    <header class="h-14 border-b border-white/[0.06] px-6 flex items-center justify-between shrink-0 bg-[#090A0F]/80 backdrop-blur-md z-30">
+      <div class="flex items-center gap-3">
+        <h1 id="breadcrumb-title" class="text-[15px] font-medium text-slate-100 hidden">Video Studio</h1>
+        <div class="flex items-center gap-2 bg-surface/80 border border-white/10 rounded-xl px-3 py-1.5 shadow-sm">
+          <span id="header-model-icon" class="text-purple-400 flex items-center">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h10a2 2 0 0 1 2 2v2.586l3.293-3.293A1 1 0 0 1 21 6v12a1 1 0 0 1-1.707.707L16 15.414V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>
+          </span>
+          <select id="video-select-model" class="bg-transparent border-0 text-white font-medium text-xs sm:text-sm focus:ring-0 cursor-pointer pr-4 py-0">
+            <!-- Populated dynamically from MODEL_CATALOG -->
+          </select>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 sm:gap-3 text-[12px] text-slate-400">
+        <button id="header-btn-api-modal" type="button" class="px-2.5 py-1 rounded-lg bg-white/[0.05] hover:bg-white/10 text-slate-200 font-mono text-xs flex items-center gap-1 border border-white/10 transition-colors cursor-pointer">
+          <span>API</span>
+        </button>
+        <button id="header-btn-docs" type="button" title="Documentation" class="p-1.5 rounded-lg hover:bg-white/5 hover:text-white transition-colors cursor-pointer">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="2"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke-width="2"/></svg>
+        </button>
+        <button id="header-btn-template-lib" type="button" title="Template Library" class="hidden px-2 py-1 rounded-lg bg-white/[0.04] hover:bg-white/10 text-slate-300 text-xs flex items-center gap-1.5 transition-colors cursor-pointer">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12 2 10 5-10 5L2 7l10-5zm0 10 10 5-10 5-10-5 10-5z" stroke-width="2"/></svg>
+          <span class="hidden md:inline">template library</span>
+        </button>
+        <button id="header-btn-settings" type="button" title="Settings & Sliders" class="p-1.5 rounded-lg hover:bg-white/5 hover:text-white transition-colors cursor-pointer">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <div class="h-4 w-px bg-white/10 mx-1"></div>
+        <button id="header-btn-api" class="flex items-center gap-1.5 hover:text-white cursor-pointer">
           <span id="header-key-dot" class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-          <span id="header-key-text">Key required</span>
+          <span id="header-key-text" class="hidden sm:inline">Key required</span>
         </button>
       </div>
     </header>
@@ -162,111 +185,121 @@
     <main class="flex-1 overflow-y-auto p-6 lg:p-8">
 
       <!-- ========================================================================== -->
-      <!-- VIEW 1: AI VIDEO STUDIO (SERVICE 1 - DEDICATED GENERATOR)                  -->
+      <!-- VIEW 1: AI STUDIO (SERVICE 1 - DYNAMIC PER MODELARK SPEC)                  -->
       <!-- ========================================================================== -->
-      <section id="view-video" class="content-view max-w-6xl mx-auto">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div class="lg:col-span-7 space-y-5">
-            <div class="panel p-5 space-y-4">
-              <div class="flex items-center justify-between">
-                <label class="text-sm text-slate-200" for="video-prompt-input">Prompt</label>
-                <button id="btn-video-info-modes" type="button" class="text-[12px] text-slate-500 hover:text-white">Modes</button>
-              </div>
+      <section id="view-video" class="content-view max-w-5xl mx-auto space-y-6 pt-2">
+        <!-- Model Headline -->
+        <div class="text-center pt-2 pb-1">
+          <h2 id="studio-dynamic-headline" class="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            Experience video generation and let creativity shake
+          </h2>
+        </div>
+
+        <!-- Studio Composer Card (BytePlus ModelArk shape) -->
+        <div class="glass-card rounded-2xl p-4 sm:p-5 border border-white/10 shadow-2xl relative transition-all duration-300">
+          <div class="flex flex-col sm:flex-row gap-4 items-start">
+            <!-- Dynamic Dropzone Slots -->
+            <div id="dynamic-dropzones" class="flex items-center gap-2 shrink-0">
+              <!-- Rendered dynamically by JS: e.g. Single [+ Reference], Dual [+ first frame] ⇌ [+ last frame], Single [+ first frame], or [+ Image] -->
+            </div>
+
+            <!-- Textarea with Expand Icon -->
+            <div class="flex-1 w-full relative min-h-[90px]">
               <textarea 
                 id="video-prompt-input" 
-                rows="6" 
-                placeholder="Shot, camera, subject…"
-                class="field resize-none"
+                rows="3" 
+                class="w-full bg-transparent border-0 text-slate-100 placeholder:text-slate-500 text-sm focus:ring-0 resize-none leading-relaxed p-0 pr-8"
+                placeholder="Use @to quickly reference uploaded files, such as referring to actions in @Video 1 to generate videos of characters fighting in @Pictures 2 and @Pictures 3."
               >Cinematic close-up tracking shot of Hermes with winged golden helmet soaring over ancient Greek stone temples under starry night sky, dramatic volumetric starlight, 1080p photorealistic, highly detailed.</textarea>
-
-              <div class="flex flex-wrap gap-1.5">
-                <button data-video-mode="ref_to_video" class="btn-mode-select mode-on px-3 py-1.5 rounded-lg text-[13px]">Ref-to-video</button>
-                <button data-video-mode="first_last_frame" class="btn-mode-select mode-off px-3 py-1.5 rounded-lg text-[13px]">First/last frame</button>
-                <button data-video-mode="ip_effects" class="btn-mode-select mode-off px-3 py-1.5 rounded-lg text-[13px]">IP effects</button>
-                <button id="btn-info-modes-inline" type="button" class="px-2 py-1.5 text-[12px] text-slate-500 hover:text-white">?</button>
-              </div>
-
-              <div id="video-dynamic-inputs" class="space-y-3">
-                <div id="subctrl-ref-to-video">
-                  <label class="label" for="video-ref-image">Reference image</label>
-                  <input id="video-ref-image" type="text" value="assets/characters/hermes_reference.png" placeholder="URL or local path" class="field" />
-                </div>
-                <div id="subctrl-first-last-frame" class="hidden space-y-3">
-                  <div>
-                    <label class="label" for="video-first-frame">First frame</label>
-                    <input id="video-first-frame" type="text" placeholder="Start frame path or URL" class="field" />
-                  </div>
-                  <div>
-                    <label class="label" for="video-last-frame">Last frame (optional)</label>
-                    <input id="video-last-frame" type="text" placeholder="End frame path or URL" class="field" />
-                  </div>
-                </div>
-                <div id="subctrl-ip-effects" class="hidden">
-                  <label class="label" for="video-select-ip-preset">Prompt tag</label>
-                  <select id="video-select-ip-preset" class="field">
-                    <option value="anime_hero_aura">Anime cel-shaded aura</option>
-                    <option value="cyber_hologram">Cyberpunk hologram</option>
-                    <option value="cinematic_clay">Cinematic clay</option>
-                    <option value="pixel_glitch">Pixel glitch</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-3 gap-3">
-                <div class="col-span-3 sm:col-span-1">
-                  <label class="label" for="video-select-model">Model</label>
-                  <select id="video-select-model" class="field">
-                    <option value="dreamina-seedance-2-5-260628" selected>Seedance 2.5</option>
-                    <option value="dreamina-seedance-2-0-fast-260128">Seedance 2.0 Fast</option>
-                    <option value="dreamina-seedance-2-0-260128">Seedance 2.0</option>
-                    <option value="dreamina-seedance-2-0-mini-260615">Seedance Mini</option>
-                    <option value="grok-imagine-video-1.5">Grok Imagine</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="label" for="video-aspect-ratio">Ratio</label>
-                  <select id="video-aspect-ratio" class="field">
-                    <option value="16:9" selected>16:9</option>
-                    <option value="9:16">9:16</option>
-                    <option value="1:1">1:1</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="label" for="video-duration">Length</label>
-                  <select id="video-duration" class="field">
-                    <option value="5" selected>5s</option>
-                    <option value="10">10s</option>
-                  </select>
-                </div>
-              </div>
-
-              <button id="btn-generate-video-action" class="btn-primary w-full">Generate</button>
+              <button id="btn-expand-prompt" type="button" title="Expand Prompt" class="absolute top-0 right-0 p-1 text-slate-500 hover:text-white transition-colors cursor-pointer">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
             </div>
           </div>
 
-          <div class="lg:col-span-5 space-y-4">
-            <div class="panel overflow-hidden">
-              <div class="relative aspect-video bg-black">
-                <video id="main-video-player" class="w-full h-full object-cover" loop playsinline preload="metadata"></video>
-                <div id="preview-empty-hint" class="absolute inset-0 flex items-center justify-center text-[13px] text-slate-500 pointer-events-none">No clip yet</div>
-                <div class="absolute top-3 right-3 z-10 flex items-center gap-2 bg-black/50 rounded-full px-3 py-1">
-                  <input id="video-volume" type="range" min="0" max="1" step="0.05" value="0.7" class="volume-slider w-16" />
-                </div>
-                <button id="btn-video-play" type="button" class="absolute inset-0 z-10 flex items-center justify-center text-white/80 hover:text-white">
-                  <span class="play-triangle"></span>
-                </button>
-              </div>
-              <div class="px-4 py-3 flex items-center justify-between text-[12px] text-slate-400">
-                <span id="player-status-caption">Ready</span>
-                <span id="preview-spec-badge">16:9 · 5s</span>
-                <button id="btn-download-video" class="text-white hover:text-electric">Download</button>
-              </div>
+          <!-- Inside Card Bottom Bar -->
+          <div class="mt-4 pt-3 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3 text-xs">
+            <!-- Left Dynamic Mode and Pills -->
+            <div id="dynamic-pills-bar" class="flex flex-wrap items-center gap-2">
+              <!-- Rendered dynamically by JS: mode dropdown, ratio, resolution, duration, sound, piece count, draft mode -->
             </div>
-            <div>
-              <p class="label mb-2">Recent</p>
-              <div id="recent-generations-list" class="space-y-1.5 text-[13px]">
-                <div id="recent-empty" class="text-slate-500">Nothing generated this session.</div>
+
+            <!-- Right Cost & Submit Button -->
+            <div class="flex items-center gap-3 ml-auto shrink-0">
+              <span id="dynamic-cost-label" class="text-xs text-slate-400 font-mono">USD 0.6048</span>
+              <button 
+                id="btn-generate-video-action" 
+                type="button" 
+                class="w-9 h-9 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white flex items-center justify-center font-bold text-lg shadow-glow-lavender transition-all transform active:scale-95 cursor-pointer"
+                title="Generate"
+              >
+                ↑
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden input elements for state/backward compatibility -->
+        <div class="hidden">
+          <input id="video-ref-image" type="text" value="assets/characters/hermes_reference.png" />
+          <input id="video-first-frame" type="text" />
+          <input id="video-last-frame" type="text" />
+          <input id="video-image-ref" type="text" />
+          <select id="video-select-ip-preset"><option value="anime_hero_aura">Anime</option></select>
+          <select id="video-aspect-ratio"><option value="16:9" selected>16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select>
+          <select id="video-duration"><option value="5" selected>5s</option><option value="10">10s</option></select>
+          <div id="video-dynamic-inputs"></div>
+          <button data-video-mode="ref_to_video">Ref-to-video</button>
+          <button data-video-mode="first_last_frame">First/last frame</button>
+          <button data-video-mode="ip_effects">IP effects</button>
+          <button id="btn-video-info-modes"></button>
+          <button id="btn-info-modes-inline"></button>
+        </div>
+
+        <!-- Try the following example ^ & Prompt manual -->
+        <div class="flex items-center justify-between text-xs px-1 text-slate-400">
+          <button id="btn-toggle-examples" type="button" class="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer py-1">
+            <span>Try the following example</span>
+            <span id="example-chevron" class="text-[11px] transform transition-transform">▲</span>
+          </button>
+          <button id="btn-prompt-manual" type="button" class="flex items-center gap-1.5 hover:text-electric transition-colors cursor-pointer py-1">
+            <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 18h6M10 22h4M12 2v1M12 17a5 5 0 1 0-5-5c0 1.5.8 2.8 2 3.6V17h6v-1.4c1.2-.8 2-2.1 2-3.6a5 5 0 0 0-5-5z" stroke-width="2" stroke-linecap="round"/></svg>
+            <span>Prompt manual</span>
+          </button>
+        </div>
+
+        <!-- Examples Gallery Drawer -->
+        <div id="examples-drawer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 transition-all duration-300">
+          <!-- Populated by JS from model.sample_examples -->
+        </div>
+
+        <!-- Output Result Panel: Player + Generation History -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
+          <div class="lg:col-span-8 panel overflow-hidden rounded-2xl">
+            <div class="relative aspect-video bg-black rounded-t-2xl overflow-hidden">
+              <video id="main-video-player" class="w-full h-full object-cover" loop playsinline preload="metadata"></video>
+              <div id="preview-empty-hint" class="absolute inset-0 flex items-center justify-center text-[13px] text-slate-500 pointer-events-none">No clip generated yet. Submit prompt above to start.</div>
+              <div class="absolute top-3 right-3 z-10 flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-full px-3 py-1 border border-white/10">
+                <span class="text-[10px] font-mono text-emerald-400">Zero Watermark</span>
+                <input id="video-volume" type="range" min="0" max="1" step="0.05" value="0.7" class="volume-slider w-14" />
               </div>
+              <button id="btn-video-play" type="button" class="absolute inset-0 z-10 flex items-center justify-center text-white/80 hover:text-white">
+                <span class="play-triangle"></span>
+              </button>
+            </div>
+            <div class="px-5 py-3.5 flex items-center justify-between text-[12px] text-slate-400 bg-surface">
+              <span id="player-status-caption">Ready for generation</span>
+              <span id="preview-spec-badge" class="font-mono text-slate-300 bg-white/5 px-2.5 py-1 rounded-md">16:9 · 5s</span>
+              <button id="btn-download-video" class="px-3 py-1 rounded-lg bg-electric/10 text-electric border border-electric/30 hover:bg-electric hover:text-black font-medium transition-all cursor-pointer">Download MP4</button>
+            </div>
+          </div>
+          <div class="lg:col-span-4 panel p-4 rounded-2xl space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-white/5">
+              <span class="text-xs font-medium text-slate-200">Recent Creations</span>
+              <span class="text-[10px] text-slate-500">Session log</span>
+            </div>
+            <div id="recent-generations-list" class="space-y-2 text-[12px] max-h-[260px] overflow-y-auto pr-1">
+              <div id="recent-empty" class="text-slate-500 py-4 text-center text-xs">No generations yet in this session.</div>
             </div>
           </div>
         </div>
@@ -544,6 +577,93 @@
     </div>
   </div>
 
+  <!-- Modal 2: BytePlus ModelArk API Reference -->
+  <div id="modal-api-reference" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 transition-all">
+    <div class="panel max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-bold text-xs">API</div>
+          <div>
+            <h2 class="text-sm font-bold text-slate-100">BytePlus ModelArk API Reference</h2>
+            <p class="text-[11px] text-slate-400 font-mono">Region: ap-southeast-1 • ModelArk/1330310</p>
+          </div>
+        </div>
+        <button id="btn-close-modal-api" class="w-7 h-7 rounded-full bg-white/5 hover:bg-white text-slate-400 hover:text-black flex items-center justify-center text-xs font-bold cursor-pointer">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <div class="flex items-center justify-between text-slate-400 mb-1">
+            <span>HTTP POST Endpoint</span>
+            <span class="font-mono text-emerald-400">200 OK</span>
+          </div>
+          <div class="bg-black/60 p-2.5 rounded-lg font-mono text-slate-300 select-all border border-white/5 text-[11px]">
+            POST https://ark.ap-southeast.bytepluses.com/api/v3/contents/generations/tasks
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between text-slate-400 mb-1">
+            <span>cURL Task Submission</span>
+            <button id="btn-copy-curl" class="text-electric hover:underline text-[11px] cursor-pointer">Copy cURL</button>
+          </div>
+          <pre id="api-curl-code" class="bg-black/60 p-3 rounded-lg font-mono text-slate-300 text-[11px] overflow-x-auto border border-white/5 leading-relaxed"></pre>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between text-slate-400 mb-1">
+            <span>Python Ark SDK</span>
+            <button id="btn-copy-python" class="text-electric hover:underline text-[11px] cursor-pointer">Copy Python</button>
+          </div>
+          <pre id="api-python-code" class="bg-black/60 p-3 rounded-lg font-mono text-slate-300 text-[11px] overflow-x-auto border border-white/5 leading-relaxed"></pre>
+        </div>
+
+        <div class="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
+          <a href="https://ai.byteplus.com/ark/region:ap-southeast-1/docs/ModelArk/1330310" target="_blank" rel="noopener" class="text-electric hover:underline flex items-center gap-1">
+            <span>Official ModelArk 1330310 Documentation</span>
+            <span>↗</span>
+          </a>
+          <button id="btn-close-api-footer" class="px-4 py-1.5 rounded-lg bg-white text-black font-semibold hover:bg-electric transition-colors cursor-pointer">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Prompt Manual -->
+  <div id="modal-prompt-manual" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 transition-all">
+    <div class="panel max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-2.5">
+          <span class="text-amber-400 text-lg">💡</span>
+          <div>
+            <h2 class="text-sm font-bold text-slate-100">Seedance & SeeDream Prompt Manual</h2>
+            <p class="text-[11px] text-slate-400 font-mono">Prompt engineering guidelines & token syntax</p>
+          </div>
+        </div>
+        <button id="btn-close-modal-prompt" class="w-7 h-7 rounded-full bg-white/5 hover:bg-white text-slate-400 hover:text-black flex items-center justify-center text-xs font-bold cursor-pointer">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-300 leading-relaxed font-sans">
+        <div class="p-3 rounded-xl bg-surface border border-white/5">
+          <strong class="text-electric block mb-1">1. Referencing Uploaded Files (@ syntax)</strong>
+          <p class="text-slate-400">For Seedance 2.0 and 2.5 in Ref-to-video mode, reference files using <code class="text-purple-300 font-mono">@Video 1</code> for action motions, or <code class="text-purple-300 font-mono">@Pictures 2</code> and <code class="text-purple-300 font-mono">@Pictures 3</code> for character identity and background.</p>
+        </div>
+        <div class="p-3 rounded-xl bg-surface border border-white/5">
+          <strong class="text-lavender block mb-1">2. First / Last Frame Keyframing</strong>
+          <p class="text-slate-400">Provide start and end visual frames. Seedance 1.5 Pro interpolates natural fluid motion between both anchors, obeying physical lighting and character morphology.</p>
+        </div>
+        <div class="p-3 rounded-xl bg-surface border border-white/5">
+          <strong class="text-celestial block mb-1">3. Camera & Atmosphere Keywords</strong>
+          <p class="text-slate-400">Use cinematic terminology: <em>tracking shot, low-angle hero perspective, volumetric lighting, 60fps, 35mm lens, shallow depth of field</em>.</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button id="btn-close-prompt-footer" class="px-4 py-1.5 rounded-lg bg-white text-black font-semibold hover:bg-electric transition-colors cursor-pointer">Got it</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ============================================================================== -->
   <!-- 4. JAVASCRIPT: CONSOLE CONTROLLER, SIDEBAR ROUTER & 2D RPG ENGINE             -->
   <!-- ============================================================================== -->
@@ -735,62 +855,304 @@
       }
     };
 
-    // --- Service 1: AI Video Studio Handlers ---
-    const modeBtns = document.querySelectorAll(".btn-mode-select");
-    const subctrlRef = document.getElementById("subctrl-ref-to-video");
-    const subctrlFrames = document.getElementById("subctrl-first-last-frame");
-    const subctrlIp = document.getElementById("subctrl-ip-effects");
-
-    modeBtns.forEach(b => {
-      b.onclick = () => {
-        selectedVideoMode = b.getAttribute("data-video-mode");
-        modeBtns.forEach(btn => {
-          btn.className = "btn-mode-select mode-off px-3 py-1.5 rounded-lg text-[13px]";
-        });
-        b.className = "btn-mode-select mode-on px-3 py-1.5 rounded-lg text-[13px]";
-
-        if (selectedVideoMode === "ref_to_video") {
-          subctrlRef.classList.remove("hidden");
-          subctrlFrames.classList.add("hidden");
-          subctrlIp.classList.add("hidden");
-        } else if (selectedVideoMode === "first_last_frame") {
-          subctrlRef.classList.add("hidden");
-          subctrlFrames.classList.remove("hidden");
-          subctrlIp.classList.add("hidden");
-        } else if (selectedVideoMode === "ip_effects") {
-          subctrlRef.classList.add("hidden");
-          subctrlFrames.classList.add("hidden");
-          subctrlIp.classList.remove("hidden");
-        }
-      };
-    });
-
+    // --- Service 1: Dynamic ModelArk AI Studio Handlers ---
+    let modelCatalogData = {};
+    const modelSelect = document.getElementById("video-select-model");
+    const headerBadgeModel = document.getElementById("header-badge-model");
     const videoPlayer = document.getElementById("main-video-player");
     const btnVideoPlay = document.getElementById("btn-video-play");
     const videoVolume = document.getElementById("video-volume");
-    const modelSelect = document.getElementById("video-select-model");
-    const headerBadgeModel = document.getElementById("header-badge-model");
+    const btnGenVideo = document.getElementById("btn-generate-video-action");
+    const genBtnLabel = "↑";
 
     function modelLabel(id) {
-      if (id.includes("2-5")) return "Seedance 2.5 Flagship";
-      if (id.includes("fast")) return "Seedance 2.0 Fast";
-      if (id.includes("mini")) return "Seedance 2.0 Mini";
-      if (id.includes("grok")) return "Grok Imagine Video";
-      return "Seedance 2.0 Standard";
+      if (modelCatalogData[id]) return modelCatalogData[id].display_name;
+      return id;
     }
 
-    function syncModelBadge() {
-      const id = modelSelect.value;
-      headerBadgeModel.innerText = modelLabel(id);
-      document.getElementById("player-status-caption").innerText = "Active: " + modelLabel(id) + " Output";
+    function updateApiModal(modelId) {
+      const model = modelCatalogData[modelId] || {};
+      const prompt = (document.getElementById("video-prompt-input") || {}).value || "Cinematic cutscene";
+      const ratio = (model.pills && model.pills.find(p => p.includes(":"))) || "16:9";
+      const resolution = (model.pills && model.pills.find(p => p.toLowerCase().includes("p") || p.toLowerCase().includes("k"))) || "720p";
+
+      const curlCode = `curl -X POST "https://ark.ap-southeast.bytepluses.com/api/v3/contents/generations/tasks" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer $ARK_API_KEY" \\
+  -d '{
+    "model": "${modelId}",
+    "content": {
+      "text": ${JSON.stringify(prompt)},
+      "ratio": "${ratio}",
+      "resolution": "${resolution.toLowerCase()}",
+      "duration": 5,
+      "generate_audio": true,
+      "watermark": false
     }
-    modelSelect.value = activeVideoModel;
+  }'`;
+
+      const pythonCode = `from arkruntime import Ark
+
+client = Ark(
+    base_url="https://ark.ap-southeast.bytepluses.com/api/v3",
+    api_key="YOUR_ARK_API_KEY"
+)
+
+# Submit generation task
+task = client.content_generation.tasks.create(
+    model="${modelId}",
+    content=[
+        {"type": "text", "text": ${JSON.stringify(prompt)}}
+    ],
+    duration=5,
+    ratio="${ratio}",
+    watermark=False
+)
+print("Task submitted:", task.id)`;
+
+      const curlEl = document.getElementById("api-curl-code");
+      const pyEl = document.getElementById("api-python-code");
+      if (curlEl) curlEl.innerText = curlCode;
+      if (pyEl) pyEl.innerText = pythonCode;
+    }
+
+    function updateStudioForModel(modelId) {
+      const model = modelCatalogData[modelId] || {};
+
+      // 1. Headline
+      const headlineEl = document.getElementById("studio-dynamic-headline");
+      if (headlineEl) headlineEl.innerText = model.headline || "Experience video generation and let creativity shake";
+
+      // 2. Header Icon
+      const iconEl = document.getElementById("header-model-icon");
+      if (iconEl) {
+        if (model.icon_type === "image") {
+          iconEl.innerHTML = `<svg class="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>`;
+        } else {
+          iconEl.innerHTML = `<svg class="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h10a2 2 0 0 1 2 2v2.586l3.293-3.293A1 1 0 0 1 21 6v12a1 1 0 0 1-1.707.707L16 15.414V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>`;
+        }
+      }
+
+      // 3. Template Library Button in Header
+      const tplBtn = document.getElementById("header-btn-template-lib");
+      if (tplBtn) {
+        if (model.has_template_library) tplBtn.classList.remove("hidden");
+        else tplBtn.classList.add("hidden");
+      }
+
+      // 4. Dropzone Slots (matching screenshots)
+      const dropzoneEl = document.getElementById("dynamic-dropzones");
+      if (dropzoneEl) {
+        if (model.ui_layout_type === "video_first_last") {
+          dropzoneEl.innerHTML = `
+            <div class="flex items-center gap-1.5">
+              <div id="dropzone-first" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors">
+                <span class="text-base text-slate-400 font-light">+</span>
+                <span class="text-[9px] text-slate-400 leading-none mt-1">first frame</span>
+              </div>
+              <span class="text-slate-500 font-mono text-sm px-0.5">⇌</span>
+              <div id="dropzone-last" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors">
+                <span class="text-base text-slate-400 font-light">+</span>
+                <span class="text-[9px] text-slate-400 leading-none mt-1">last frame</span>
+              </div>
+            </div>
+          `;
+          selectedVideoMode = "first_last_frame";
+        } else if (model.ui_layout_type === "video_first") {
+          dropzoneEl.innerHTML = `
+            <div id="dropzone-first" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors">
+              <span class="text-base text-slate-400 font-light">+</span>
+              <span class="text-[9px] text-slate-400 leading-none mt-1">first frame</span>
+            </div>
+          `;
+          selectedVideoMode = "first_last_frame";
+        } else if (model.ui_layout_type === "image_standard" || model.ui_layout_type === "image_group") {
+          dropzoneEl.innerHTML = `
+            <div id="dropzone-image" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors">
+              <svg class="w-4 h-4 text-slate-400 mb-1" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+              <span class="text-[9px] text-slate-400 leading-none">Image</span>
+            </div>
+          `;
+          selectedVideoMode = "image_generation";
+        } else {
+          // Default: Ref-to-video Reference Slot
+          dropzoneEl.innerHTML = `
+            <div id="dropzone-ref" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors">
+              <span class="text-base text-slate-400 font-light">+</span>
+              <span class="text-[9px] text-slate-400 leading-none mt-1">Reference</span>
+            </div>
+          `;
+          selectedVideoMode = "ref_to_video";
+        }
+      }
+
+      // 5. Placeholder
+      const promptInput = document.getElementById("video-prompt-input");
+      if (promptInput && model.placeholder) {
+        promptInput.placeholder = model.placeholder;
+      }
+
+      // 6. Dynamic Bottom Pills Bar
+      const pillsBar = document.getElementById("dynamic-pills-bar");
+      if (pillsBar) {
+        let html = "";
+        if (model.mode_selector && model.mode_selector.enabled) {
+          html += `
+            <div class="relative inline-block">
+              <select id="studio-active-mode-select" class="bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[11px] font-medium rounded-lg px-2.5 py-1 cursor-pointer focus:ring-0">
+                ${(model.mode_selector.options || []).map(opt => `<option value="${opt}" ${opt === model.mode_selector.default ? 'selected' : ''} class="bg-[#11131C] text-white">${opt}</option>`).join('')}
+              </select>
+            </div>
+          `;
+        }
+        (model.pills || []).forEach(p => {
+          html += `<span class="bg-white/[0.04] border border-white/[0.07] px-2 py-1 rounded-md text-[11px] text-slate-300">${p}</span>`;
+        });
+        pillsBar.innerHTML = html;
+      }
+
+      // 7. Cost Label
+      const costLabel = document.getElementById("dynamic-cost-label");
+      if (costLabel) costLabel.innerText = model.sample_cost || "USD 0.6048";
+
+      // 8. Examples Drawer
+      const examplesDrawer = document.getElementById("examples-drawer");
+      if (examplesDrawer) {
+        const examples = model.sample_examples || [];
+        if (!examples.length) {
+          examplesDrawer.innerHTML = "";
+        } else {
+          examplesDrawer.innerHTML = examples.map((ex) => `
+            <div class="example-card p-2.5 rounded-xl bg-surface/80 border border-white/5 hover:border-purple-500/40 cursor-pointer transition-all hover:scale-[1.02] flex items-center gap-2.5 group" data-prompt="${ex.prompt.replace(/"/g, '&quot;')}">
+              <img src="${ex.thumbnail}" class="w-11 h-11 rounded-lg object-cover shrink-0 border border-white/10 group-hover:border-purple-500/40" />
+              <div class="overflow-hidden">
+                <strong class="text-white text-[11px] block truncate group-hover:text-purple-300">${ex.title}</strong>
+                <p class="text-slate-400 text-[10px] line-clamp-1">${ex.prompt}</p>
+              </div>
+            </div>
+          `).join('');
+
+          examplesDrawer.querySelectorAll(".example-card").forEach(card => {
+            card.onclick = () => {
+              const pr = card.getAttribute("data-prompt");
+              if (pr && promptInput) {
+                promptInput.value = pr;
+                promptInput.focus();
+              }
+            };
+          });
+        }
+      }
+
+      // Update API modal code in sync
+      updateApiModal(modelId);
+      if (headerBadgeModel) headerBadgeModel.innerText = model.display_name || modelId;
+      document.getElementById("player-status-caption").innerText = "Ready for " + (model.display_name || modelId);
+    }
+
+    async function loadModelsCatalog() {
+      try {
+        const res = await fetch("/api/models");
+        if (!res.ok) return;
+        const data = await res.json();
+        const catalog = data.catalog || {};
+
+        modelSelect.innerHTML = "";
+        modelCatalogData = {};
+
+        const catLabels = {
+          video: "Video Generation (Seedance)",
+          image: "Image Generation (SeeDream)",
+          director_llm: "Director & Storyboard LLMs",
+          "3d": "3D Spatial Assets",
+          vision_embedding: "Vision Embedding"
+        };
+
+        for (const [cat, list] of Object.entries(catalog)) {
+          if (!list || !list.length) continue;
+          const grp = document.createElement("optgroup");
+          grp.label = catLabels[cat] || cat.toUpperCase();
+          list.forEach(m => {
+            modelCatalogData[m.id] = m;
+            const opt = document.createElement("option");
+            opt.value = m.id;
+            opt.innerText = m.display_name;
+            if (m.id === activeVideoModel) opt.selected = true;
+            grp.appendChild(opt);
+          });
+          modelSelect.appendChild(grp);
+        }
+
+        if (!modelCatalogData[activeVideoModel]) {
+          activeVideoModel = Object.keys(modelCatalogData)[0] || "dreamina-seedance-2-0-fast-260128";
+        }
+        modelSelect.value = activeVideoModel;
+        updateStudioForModel(activeVideoModel);
+      } catch (err) {
+        console.error("Failed to load models catalog", err);
+      }
+    }
+    loadModelsCatalog();
+
     modelSelect.onchange = () => {
       activeVideoModel = modelSelect.value;
       localStorage.setItem("ARK_SEEDANCE_MODEL", activeVideoModel);
-      syncModelBadge();
+      updateStudioForModel(activeVideoModel);
     };
-    syncModelBadge();
+
+    // Header Action Modals
+    const modalApiRef = document.getElementById("modal-api-reference");
+    const modalPromptManual = document.getElementById("modal-prompt-manual");
+
+    document.getElementById("header-btn-api-modal").onclick = () => {
+      updateApiModal(modelSelect.value);
+      modalApiRef.classList.remove("hidden");
+    };
+    document.getElementById("btn-close-modal-api").onclick = () => modalApiRef.classList.add("hidden");
+    document.getElementById("btn-close-api-footer").onclick = () => modalApiRef.classList.add("hidden");
+
+    document.getElementById("btn-copy-curl").onclick = () => {
+      const curlText = document.getElementById("api-curl-code").innerText;
+      navigator.clipboard.writeText(curlText);
+      const b = document.getElementById("btn-copy-curl");
+      b.innerText = "Copied!";
+      setTimeout(() => b.innerText = "Copy cURL", 1800);
+    };
+    document.getElementById("btn-copy-python").onclick = () => {
+      const pyText = document.getElementById("api-python-code").innerText;
+      navigator.clipboard.writeText(pyText);
+      const b = document.getElementById("btn-copy-python");
+      b.innerText = "Copied!";
+      setTimeout(() => b.innerText = "Copy Python", 1800);
+    };
+
+    document.getElementById("header-btn-docs").onclick = () => switchView("docs");
+    document.getElementById("header-btn-settings").onclick = () => switchView("settings");
+
+    // Toggle examples drawer
+    const btnToggleEx = document.getElementById("btn-toggle-examples");
+    const exDrawer = document.getElementById("examples-drawer");
+    const exChevron = document.getElementById("example-chevron");
+    let exExpanded = true;
+    btnToggleEx.onclick = () => {
+      exExpanded = !exExpanded;
+      exDrawer.classList.toggle("hidden", !exExpanded);
+      exChevron.innerText = exExpanded ? "▲" : "▼";
+    };
+
+    // Prompt manual modal
+    document.getElementById("btn-prompt-manual").onclick = () => modalPromptManual.classList.remove("hidden");
+    document.getElementById("btn-close-modal-prompt").onclick = () => modalPromptManual.classList.add("hidden");
+    document.getElementById("btn-close-prompt-footer").onclick = () => modalPromptManual.classList.add("hidden");
+
+    // Expand prompt textarea
+    const btnExpandPrompt = document.getElementById("btn-expand-prompt");
+    const promptInputEl = document.getElementById("video-prompt-input");
+    let promptExpanded = false;
+    btnExpandPrompt.onclick = () => {
+      promptExpanded = !promptExpanded;
+      promptInputEl.rows = promptExpanded ? 7 : 3;
+    };
 
     function showPlayOverlay(show) {
       btnVideoPlay.classList.toggle("hidden", !show);
@@ -822,7 +1184,7 @@
     };
 
     const btnGenVideo = document.getElementById("btn-generate-video-action");
-    const genBtnLabel = "Generate";
+    const genBtnLabel = "↑";
 
     function prependRecentGeneration(title, meta) {
       const list = document.getElementById("recent-generations-list");

@@ -114,7 +114,7 @@ def test_api_models_endpoint(client):
     response = client.get("/api/models")
     assert response.status_code == 200
     data = response.json()
-    assert data["total_models"] == 24
+    assert data["total_models"] == 27
     assert "video" in data["catalog"]
     assert "director_llm" in data["catalog"]
     assert data["active_video_model"] == "dreamina-seedance-2-5-260628"

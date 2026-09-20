@@ -62,8 +62,12 @@ class SeedanceClient:
         watermark: bool = False,
         duration: int = 5,
         ratio: str = "16:9",
+        resolution: str = "720p",
+        generate_audio: bool = True,
+        draft_mode: bool = False,
         poll_interval: int = 3,
-        timeout_seconds: int = 300
+        timeout_seconds: int = 300,
+        **kwargs
     ) -> str:
         """Submits a video generation task, polls for completion, and saves the resulting MP4.
 
