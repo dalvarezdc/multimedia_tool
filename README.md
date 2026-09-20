@@ -59,6 +59,7 @@ multimedia_tool/
 ## Prerequisites
 
 * **Python**: 3.11 or higher
+* **uv**: Modern, fast Python package manager (`brew install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`)
 * **Node.js**: 20.x or higher (with `npm` or `pnpm`)
 * **FFmpeg**: Installed and accessible on your `PATH`
 * **BytePlus Account**: ModelArk API key with access to:
@@ -75,19 +76,30 @@ cp .env.example .env
 # Edit .env with your ARK_API_KEY and model endpoints
 ```
 
-### 2. Install Dependencies
+### 2. Install Dependencies (Using `uv`)
 ```bash
-# Install Python dependencies
-pip install arkruntime requests pydantic pillow
+# Create virtual environment and install Python dependencies via uv
+uv venv
+uv pip install -r requirements.txt
+uv pip install -e .
 
 # Install Remotion dependencies
 cd remotion && npm install && cd ..
 ```
 
-### 3. Generate a Video
+### 3. Launch the Web Studio
 ```bash
-# Run the pipeline with a custom topic
-python -m src.cli --topic "How Local LLMs Work"
+# Start the FastAPI backend and interactive web studio (http://localhost:8000)
+uv run python -m src.server
+```
+
+### 4. Or Run Headless via CLI
+```bash
+# Run the pipeline with a custom topic and context file
+uv run python -m src.cli \
+  --topic "How Local LLMs Work" \
+  --context-file "notes/architecture.md" \
+  --chapters 4
 ```
 
 The system will:

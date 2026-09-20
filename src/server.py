@@ -43,7 +43,7 @@ class MasterRenderRequest(BaseModel):
 
 def create_app():
     if FastAPI is None:
-        raise RuntimeError("FastAPI is not installed. Run 'pip install fastapi uvicorn' to use the web server.")
+        raise RuntimeError("FastAPI is not installed. Run 'uv pip install -r requirements.txt' to use the web server.")
 
     app = FastAPI(
         title="Multimedia Tool Studio API",
