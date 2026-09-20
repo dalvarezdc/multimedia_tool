@@ -21,14 +21,14 @@ class GrokVideoClient:
         self,
         api_key: Optional[str] = None,
         base_url: str = "https://api.x.ai/v1",
-        model_id: str = "grok-imagine-video-1.5"
+        model_id: Optional[str] = None
     ):
         self.api_key = api_key or os.getenv("XAI_API_KEY")
         if not self.api_key:
             raise ValueError("XAI_API_KEY must be provided or set in environment variables.")
 
         self.base_url = os.getenv("XAI_BASE_URL", base_url).rstrip("/")
-        self.model_id = os.getenv("XAI_VIDEO_MODEL", model_id)
+        self.model_id = model_id or os.getenv("XAI_VIDEO_MODEL") or "grok-imagine-video-1.5"
 
     def _prepare_image_reference(self, image_source: str) -> str:
         """Converts local file path to base64 data URI or returns remote URL."""

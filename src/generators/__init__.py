@@ -24,13 +24,7 @@ def get_video_generator(
     selected_provider = (provider or os.getenv("DEFAULT_VIDEO_PROVIDER", "seedance")).lower()
 
     if selected_provider in ("grok", "xai"):
-        return GrokVideoClient(api_key=api_key)
-    elif selected_provider in ("seedance", "byteplus", "bytedance"):
-        kwargs = {}
-        if api_key:
-            kwargs["api_key"] = api_key
-        if model_id:
-            kwargs["model_id"] = model_id
-        return SeedanceClient(**kwargs)
-    else:
-        raise ValueError(f"Unknown video provider '{selected_provider}'. Choose 'seedance' or 'grok'.")
+        return GrokVideoClient(api_key=api_key, model_id=model_id)
+    if selected_provider in ("seedance", "byteplus", "bytedance"):
+        return SeedanceClient(api_key=api_key, model_id=model_id)
+    raise ValueError(f"Unknown video provider '{selected_provider}'. Choose 'seedance' or 'grok'.")

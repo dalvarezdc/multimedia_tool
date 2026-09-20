@@ -22,14 +22,14 @@ class SeedanceClient:
         self,
         api_key: Optional[str] = None,
         base_url: str = "https://ark.ap-southeast.bytepluses.com/api/v3",
-        model_id: str = "dreamina-seedance-2-5-260628"
+        model_id: Optional[str] = None
     ):
         self.api_key = api_key or os.getenv("ARK_API_KEY")
         if not self.api_key:
             raise ValueError("ARK_API_KEY must be provided or set in environment variables.")
         
         self.base_url = os.getenv("ARK_BASE_URL", base_url)
-        self.model_id = os.getenv("ARK_SEEDANCE_MODEL", model_id)
+        self.model_id = model_id or os.getenv("ARK_SEEDANCE_MODEL") or "dreamina-seedance-2-5-260628"
         
         self.client = Ark(
             base_url=self.base_url,

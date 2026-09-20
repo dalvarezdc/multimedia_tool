@@ -10,9 +10,9 @@ Exposes REST endpoints for:
 """
 
 import os
-import json
 import logging
-from typing import Optional, Dict, Any, List
+import time
+from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
 from src.director.planner import DirectorPlanner
 from src.generators import get_video_generator
@@ -23,7 +23,6 @@ from src.models_registry import (
     DEFAULT_VIDEO_MODEL,
     DEFAULT_IMAGE_MODEL,
     get_all_models_grouped,
-    get_model_info
 )
 
 try:
@@ -64,6 +63,7 @@ class CutsceneGenerateRequest(BaseModel):
     ip_effect_name: Optional[str] = None
     api_key: Optional[str] = None
     video_model: Optional[str] = None
+    ratio: str = "16:9"
 
 class MasterRenderRequest(BaseModel):
     storyboard: Dict[str, Any]
@@ -277,7 +277,10 @@ def create_app():
                     detail="XAI_API_KEY is required for Grok Imagine video generation. Please enter it in Settings (⚙)."
                 )
 
-        video_model_id = req.video_model or os.getenv("ARK_SEEDANCE_MODEL", DEFAULT_VIDEO_MODEL)
+        if provider in ("grok", "xai"):
+            video_model_id = req.video_model or os.getenv("XAI_VIDEO_MODEL", "grok-imagine-video-1.5")
+        else:
+            video_model_id = req.video_model or os.getenv("ARK_SEEDANCE_MODEL", DEFAULT_VIDEO_MODEL)
 
         out_dir = "./renders/cutscenes"
         os.makedirs(out_dir, exist_ok=True)
@@ -296,9 +299,9 @@ def create_app():
                     "output_path": clip_path,
                     "character_reference_image": req.character_reference_image,
                     "watermark": False,
-                    "duration": req.duration_seconds
+                    "duration": req.duration_seconds,
+                    "ratio": req.ratio,
                 }
-                # Pass ByteDance generation mode parameters if using Seedance
                 if provider in ("seedance", "byteplus", "bytedance"):
                     gen_kwargs.update({
                         "generation_mode": req.generation_mode,
@@ -310,13 +313,25 @@ def create_app():
                 generator.generate_video(**gen_kwargs)
                 qa = VideoQAAgent()
                 passed, reason = qa.audit_clip(clip_path)
+                public_path = f"/renders/cutscenes/chapter_{req.chapter_id}.mp4"
                 store["tasks"][req.chapter_id] = {
                     "status": "succeeded" if passed else "qa_warning",
-                    "path": clip_path,
+                    "path": public_path,
                     "reason": reason,
                     "generation_mode": req.generation_mode,
                     "model_used": video_model_id
                 }
+                store["usage_records"].insert(0, {
+                    "id": f"gen-{req.chapter_id}",
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M"),
+                    "service": "AI Video Studio",
+                    "model": video_model_id,
+                    "mode": req.generation_mode,
+                    "prompt": req.prompt,
+                    "duration": f"{req.duration_seconds}s",
+                    "status": "succeeded" if passed else "qa_warning",
+                    "watermark_free": True
+                })
             except Exception as exc:
                 store["tasks"][req.chapter_id] = {
                     "status": "failed",
@@ -361,6 +376,10 @@ def create_app():
 
     if os.path.exists(ui_dir):
         app.mount("/static", StaticFiles(directory=ui_dir), name="static")
+
+    renders_dir = os.path.join(os.path.dirname(ui_dir), "renders")
+    os.makedirs(renders_dir, exist_ok=True)
+    app.mount("/renders", StaticFiles(directory=renders_dir), name="renders")
 
     return app
 

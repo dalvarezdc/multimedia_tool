@@ -8,7 +8,7 @@ Defines all 24 available BytePlus ModelArk models across:
 5. Vision Embedding (Skylark Vision)
 """
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, asdict
 
 @dataclass

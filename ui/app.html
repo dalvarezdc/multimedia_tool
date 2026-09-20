@@ -55,10 +55,34 @@
       border: 1px solid rgba(255, 255, 255, 0.09);
     }
     .sidebar-link.active {
-      background: rgba(0, 229, 255, 0.1);
-      color: #00e5ff;
-      border-right: 3px solid #00e5ff;
+      background: rgba(0, 229, 255, 0.12);
+      color: #f1f5f9;
+      box-shadow: inset 0 0 0 1px rgba(0, 229, 255, 0.4);
       font-weight: 600;
+    }
+    .play-triangle {
+      width: 0;
+      height: 0;
+      border-top: 16px solid transparent;
+      border-bottom: 16px solid transparent;
+      border-left: 26px solid currentColor;
+      margin-left: 4px;
+    }
+    input[type="range"].volume-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      background: rgba(255,255,255,0.45);
+      border-radius: 999px;
+      outline: none;
+    }
+    input[type="range"].volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: #fff;
+      cursor: pointer;
     }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #090a0f; }
@@ -148,7 +172,7 @@
           <span id="sidebar-key-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
           <span class="text-slate-300 text-[11px]">ModelArk API</span>
         </div>
-        <button id="sidebar-btn-models" class="text-[10px] text-electric hover:underline">24 Models ↗</button>
+        <button id="sidebar-btn-models" class="text-[10px] text-electric hover:underline">24 Models ›</button>
       </div>
     </div>
 
@@ -178,7 +202,7 @@
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
           <span>Zero Watermark</span>
         </span>
-        <button id="header-btn-api" class="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white transition-all text-[11px] flex items-center gap-1.5">
+        <button id="header-btn-api" class="px-3 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-400/30 text-amber-300 hover:text-amber-200 transition-all text-[11px] flex items-center gap-1.5">
           <span id="header-key-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
           <span id="header-key-text">Key Required</span>
         </button>
@@ -246,15 +270,15 @@
 
               <!-- Mode Selection Buttons -->
               <div class="grid grid-cols-3 gap-2 text-xs font-mono">
-                <button data-video-mode="ref_to_video" class="btn-mode-select px-3 py-2.5 rounded-xl border border-electric bg-electric/10 text-white font-bold flex flex-col items-center gap-1 text-center">
+                <button data-video-mode="ref_to_video" class="btn-mode-select px-3 py-3 rounded-xl border border-electric bg-electric/10 text-white font-bold flex flex-col items-center gap-1 text-center">
                   <span>📹 Ref-to-video</span>
                   <span class="text-[10px] font-normal text-slate-400">Multi-Asset Ref</span>
                 </button>
-                <button data-video-mode="first_last_frame" class="btn-mode-select px-3 py-2.5 rounded-xl border border-white/10 bg-surface text-slate-400 hover:text-white flex flex-col items-center gap-1 text-center">
+                <button data-video-mode="first_last_frame" class="btn-mode-select px-3 py-3 rounded-xl border border-white/10 bg-surface text-slate-400 hover:text-white flex flex-col items-center gap-1 text-center">
                   <span>🎞️ First/last frame</span>
                   <span class="text-[10px] font-normal text-slate-500">Keyframe Lock</span>
                 </button>
-                <button data-video-mode="ip_effects" class="btn-mode-select px-3 py-2.5 rounded-xl border border-white/10 bg-surface text-slate-400 hover:text-white flex flex-col items-center gap-1 text-center">
+                <button data-video-mode="ip_effects" class="btn-mode-select px-3 py-3 rounded-xl border border-white/10 bg-surface text-slate-400 hover:text-white flex flex-col items-center gap-1 text-center">
                   <span>👤⁺ IP effects</span>
                   <span class="text-[10px] font-normal text-slate-500">Stylized VFX</span>
                 </button>
@@ -308,7 +332,7 @@
                     <option value="dreamina-seedance-2-0-fast-260128">⚡ Seedance 2.0 Fast</option>
                     <option value="dreamina-seedance-2-0-260128">📹 Seedance 2.0 Standard</option>
                     <option value="dreamina-seedance-2-0-mini-260615">🔹 Seedance 2.0 Mini</option>
-                    <option value="grok-1.5">🚀 xAI Grok Imagine Video</option>
+                    <option value="grok-imagine-video-1.5">🚀 xAI Grok Imagine Video</option>
                   </select>
                 </div>
                 <div>
@@ -330,9 +354,9 @@
               <!-- Primary Generate Button -->
               <button 
                 id="btn-generate-video-action" 
-                class="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 via-electric to-cyan-400 text-black font-extrabold text-xs uppercase font-mono tracking-wider transition-all shadow-glow-cyan active:scale-95 flex items-center justify-center gap-2"
+                class="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-500 via-cyan-400 to-cyan-300 text-black font-extrabold text-xs uppercase font-mono tracking-wider transition-all shadow-glow-cyan hover:opacity-95 active:scale-[0.99] flex items-center justify-center gap-2"
               >
-                <span>⚡ Generate Watermark-Free Video</span>
+                <span>✦ Generate Watermark-Free Video</span>
               </button>
 
             </div>
@@ -355,16 +379,21 @@
               <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-white/10 shadow-inner flex items-center justify-center">
                 <video 
                   id="main-video-player" 
-                  src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" 
                   class="w-full h-full object-cover" 
-                  controls 
                   loop 
-                  muted 
                   playsinline
+                  preload="metadata"
                 ></video>
-                <div class="absolute top-2.5 left-2.5 bg-black/70 px-2 py-0.5 rounded text-[9px] font-mono text-emerald-400 border border-emerald-500/30">
+                <div class="absolute top-2.5 left-2.5 bg-black/70 px-2 py-0.5 rounded text-[9px] font-mono text-emerald-400 border border-emerald-500/30 z-10">
                   ✓ ZERO-WATERMARK VERIFIED
                 </div>
+                <div class="absolute top-2.5 right-2.5 z-10 flex items-center gap-2 bg-black/65 rounded-full px-3 py-1.5">
+                  <input id="video-volume" type="range" min="0" max="1" step="0.05" value="0.7" class="volume-slider w-16" />
+                  <span class="text-white/80 text-[11px]">🔊</span>
+                </div>
+                <button id="btn-video-play" type="button" class="absolute inset-0 z-10 flex items-center justify-center text-white/90 hover:text-white bg-black/20">
+                  <span class="play-triangle"></span>
+                </button>
               </div>
 
               <!-- Player Actions -->
@@ -382,7 +411,7 @@
                 <span class="text-xs font-bold font-mono text-slate-300 uppercase">Recent Video Generations</span>
                 <span class="text-[10px] font-mono text-slate-500">Auto Saved</span>
               </div>
-              <div class="space-y-2 text-xs font-mono">
+              <div id="recent-generations-list" class="space-y-2 text-xs font-mono">
                 <div class="p-2.5 rounded-xl bg-surface/70 border border-white/5 flex items-center justify-between">
                   <div>
                     <strong class="text-slate-200 text-[11px] block">Hermes Temple Flight (5s)</strong>
@@ -889,10 +918,12 @@
           const hasArk = data.has_ark_key || Boolean(localApiKey);
           const hasXai = data.has_xai_key || Boolean(localXaiKey);
 
+          const headerBtn = document.getElementById("header-btn-api");
           if (hasArk) {
             sidebarKeyDot.className = "w-2 h-2 rounded-full bg-emerald-400";
             headerKeyDot.className = "w-2 h-2 rounded-full bg-emerald-400";
             headerKeyText.innerText = "Key Configured";
+            headerBtn.className = "px-3 py-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 hover:text-emerald-200 transition-all text-[11px] flex items-center gap-1.5";
             if (keysArkBadge) {
               keysArkBadge.className = "px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
               keysArkBadge.innerText = data.ark_key_masked || "✓ Ready";
@@ -901,6 +932,7 @@
             sidebarKeyDot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
             headerKeyDot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
             headerKeyText.innerText = "Key Required";
+            headerBtn.className = "px-3 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-400/30 text-amber-300 hover:text-amber-200 transition-all text-[11px] flex items-center gap-1.5";
             if (keysArkBadge) {
               keysArkBadge.className = "px-2 py-0.5 rounded text-[10px] bg-amber-400/10 text-amber-400 border border-amber-400/20";
               keysArkBadge.innerText = "Not Set";
@@ -992,9 +1024,9 @@
       b.onclick = () => {
         selectedVideoMode = b.getAttribute("data-video-mode");
         modeBtns.forEach(btn => {
-          btn.className = "btn-mode-select px-3 py-2.5 rounded-xl border border-white/10 bg-surface text-slate-400 hover:text-white flex flex-col items-center gap-1 text-center";
+          btn.className = "btn-mode-select px-3 py-3 rounded-xl border border-white/10 bg-surface text-slate-400 hover:text-white flex flex-col items-center gap-1 text-center";
         });
-        b.className = "btn-mode-select px-3 py-2.5 rounded-xl border border-electric bg-electric/10 text-white font-bold flex flex-col items-center gap-1 text-center";
+        b.className = "btn-mode-select px-3 py-3 rounded-xl border border-electric bg-electric/10 text-white font-bold flex flex-col items-center gap-1 text-center";
 
         if (selectedVideoMode === "ref_to_video") {
           subctrlRef.classList.remove("hidden");
@@ -1012,30 +1044,137 @@
       };
     });
 
+    const videoPlayer = document.getElementById("main-video-player");
+    const btnVideoPlay = document.getElementById("btn-video-play");
+    const videoVolume = document.getElementById("video-volume");
+    const modelSelect = document.getElementById("video-select-model");
+    const headerBadgeModel = document.getElementById("header-badge-model");
+
+    function modelLabel(id) {
+      if (id.includes("2-5")) return "Seedance 2.5 Flagship";
+      if (id.includes("fast")) return "Seedance 2.0 Fast";
+      if (id.includes("mini")) return "Seedance 2.0 Mini";
+      if (id.includes("grok")) return "Grok Imagine Video";
+      return "Seedance 2.0 Standard";
+    }
+
+    function syncModelBadge() {
+      const id = modelSelect.value;
+      headerBadgeModel.innerText = modelLabel(id);
+      document.getElementById("player-status-caption").innerText = "Active: " + modelLabel(id) + " Output";
+    }
+    modelSelect.value = activeVideoModel;
+    modelSelect.onchange = () => {
+      activeVideoModel = modelSelect.value;
+      localStorage.setItem("ARK_SEEDANCE_MODEL", activeVideoModel);
+      syncModelBadge();
+    };
+    syncModelBadge();
+
+    function showPlayOverlay(show) {
+      btnVideoPlay.classList.toggle("hidden", !show);
+    }
+    btnVideoPlay.onclick = (e) => {
+      e.stopPropagation();
+      if (videoPlayer.paused) {
+        videoPlayer.muted = false;
+        videoPlayer.play();
+        showPlayOverlay(false);
+      } else {
+        videoPlayer.pause();
+        showPlayOverlay(true);
+      }
+    };
+    videoPlayer.onclick = () => btnVideoPlay.click();
+    videoPlayer.addEventListener("pause", () => showPlayOverlay(true));
+    videoPlayer.addEventListener("play", () => showPlayOverlay(false));
+    videoPlayer.pause();
+    videoVolume.oninput = () => {
+      videoPlayer.muted = false;
+      videoPlayer.volume = parseFloat(videoVolume.value);
+    };
+    document.getElementById("btn-download-video").onclick = () => {
+      const a = document.createElement("a");
+      a.href = videoPlayer.currentSrc || videoPlayer.src;
+      a.download = "seedance-output.mp4";
+      a.click();
+    };
+
     const btnGenVideo = document.getElementById("btn-generate-video-action");
+    const genBtnLabel = "✦ Generate Watermark-Free Video";
+
+    function prependRecentGeneration(title, meta) {
+      const list = document.getElementById("recent-generations-list");
+      const row = document.createElement("div");
+      row.className = "p-2.5 rounded-xl bg-surface/70 border border-white/5 flex items-center justify-between";
+      row.innerHTML = `
+        <div>
+          <strong class="text-slate-200 text-[11px] block">${title}</strong>
+          <span class="text-[10px] text-slate-500">${meta}</span>
+        </div>
+        <span class="text-emerald-400 text-[10px]">✓ Ready</span>
+      `;
+      list.prepend(row);
+    }
+
+    async function pollCutscene(chapterId, model) {
+      for (let i = 0; i < 80; i++) {
+        const res = await fetch(`/api/cutscenes/status/${chapterId}`);
+        const data = await res.json();
+        if (data.status === "succeeded" || data.status === "qa_warning") {
+          if (data.path) {
+            videoPlayer.src = data.path;
+            videoPlayer.load();
+            showPlayOverlay(true);
+          }
+          document.getElementById("player-status-caption").innerText = "Active: " + modelLabel(model) + " Output";
+          prependRecentGeneration(
+            (document.getElementById("video-prompt-input").value || "Generated clip").slice(0, 28) + ` (${document.getElementById("video-duration").value}s)`,
+            `${modelLabel(model)} • ${selectedVideoMode.replaceAll("_", "-")}`
+          );
+          return;
+        }
+        if (data.status === "failed") {
+          throw new Error(data.error || "Generation failed");
+        }
+        document.getElementById("player-status-caption").innerText = `Generating with ${modelLabel(model)}...`;
+        await new Promise(r => setTimeout(r, 2500));
+      }
+      throw new Error("Timed out waiting for video generation");
+    }
+
     btnGenVideo.onclick = async () => {
       const prompt = document.getElementById("video-prompt-input").value;
-      const model = document.getElementById("video-select-model").value;
+      const model = modelSelect.value;
       const duration = parseInt(document.getElementById("video-duration").value);
+      const ratio = document.getElementById("video-aspect-ratio").value;
+      const isGrok = model.includes("grok");
 
-      if (!localApiKey) {
+      if (isGrok && !localXaiKey) {
+        switchView("api-keys");
+        alert("xAI XAI_API_KEY is required for Grok video generation.");
+        return;
+      }
+      if (!isGrok && !localApiKey) {
         switchView("api-keys");
         alert("BytePlus ARK_API_KEY is required. Please paste it in API Keys!");
         return;
       }
 
-      btnGenVideo.innerText = "⚡ Submitting Generation Task...";
+      btnGenVideo.innerText = "✦ Submitting Generation Task...";
       btnGenVideo.disabled = true;
 
+      const chapterId = Date.now() % 100000;
       const payload = {
-        chapter_id: 1,
+        chapter_id: chapterId,
         prompt: prompt,
         duration_seconds: duration,
-        provider: model.includes("grok") ? "grok" : "seedance",
+        ratio: ratio,
+        provider: isGrok ? "grok" : "seedance",
         video_model: model,
         generation_mode: selectedVideoMode,
         character_reference_image: document.getElementById("video-ref-image").value || null,
-        api_key: localApiKey
+        api_key: isGrok ? localXaiKey : localApiKey
       };
 
       if (selectedVideoMode === "first_last_frame") {
@@ -1052,16 +1191,17 @@
           body: JSON.stringify(payload)
         });
         if (res.ok) {
-          alert(`Video generation task submitted successfully to ${payload.provider} (${model}) in '${selectedVideoMode}' mode!`);
-          document.getElementById("player-status-caption").innerText = `Generating with ${model}...`;
+          document.getElementById("player-status-caption").innerText = `Generating with ${modelLabel(model)}...`;
+          btnGenVideo.innerText = "✦ Generating...";
+          await pollCutscene(chapterId, model);
         } else {
           const err = await res.json();
           alert("Error: " + (err.detail || "Generation failed"));
         }
       } catch (err) {
-        alert("Dispatched generation task in simulation mode.");
+        alert(err.message || "Generation request failed.");
       } finally {
-        btnGenVideo.innerText = "⚡ Generate Watermark-Free Video";
+        btnGenVideo.innerText = genBtnLabel;
         btnGenVideo.disabled = false;
       }
     };

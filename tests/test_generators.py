@@ -34,3 +34,24 @@ def test_seedance_modes_configuration():
     # Verify helper parses local or remote refs correctly
     assert client._prepare_image_reference("https://example.com/ref.png") == "https://example.com/ref.png"
 
+def test_factory_model_id_overrides_env(monkeypatch):
+    monkeypatch.setenv("ARK_API_KEY", "mock_ark_key")
+    monkeypatch.setenv("ARK_SEEDANCE_MODEL", "dreamina-seedance-2-0-260128")
+    client = get_video_generator(
+        "seedance",
+        api_key="mock_ark_key",
+        model_id="dreamina-seedance-2-5-260628",
+    )
+    assert client.model_id == "dreamina-seedance-2-5-260628"
+
+def test_grok_model_id_passthrough(monkeypatch):
+    monkeypatch.setenv("XAI_API_KEY", "mock_xai_key")
+    monkeypatch.setenv("XAI_VIDEO_MODEL", "ignored-env-model")
+    client = get_video_generator(
+        "grok",
+        api_key="mock_xai_key",
+        model_id="grok-imagine-video-1.5",
+    )
+    assert isinstance(client, GrokVideoClient)
+    assert client.model_id == "grok-imagine-video-1.5"
+
