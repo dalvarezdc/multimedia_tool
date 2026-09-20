@@ -303,22 +303,18 @@ def create_app():
         video_extensions = {".mp4", ".mov", ".webm", ".avi", ".mkv"}
 
         for file in files:
-            ext = os.path.splitext(file.filename)[1].lower()
+            original_name = file.filename or "upload.bin"
+            ext = os.path.splitext(original_name)[1].lower()
             is_video = ext in video_extensions or (file.content_type and "video" in file.content_type)
 
             asset_type = "video" if is_video else "image"
 
-            # Calculate index for token
             existing_type_count = sum(1 for a in store["reference_assets"] if a["type"] == asset_type)
             new_idx = existing_type_count + 1
-
-            if asset_type == "image":
-                token = f"@Pictures {new_idx}"
-            else:
-                token = f"@Video {new_idx}"
+            token = f"@Video {new_idx}" if asset_type == "video" else f"@Pictures {new_idx}"
 
             unique_id = str(uuid.uuid4())[:8]
-            safe_basename = os.path.basename(file.filename).replace(" ", "_")
+            safe_basename = os.path.basename(original_name).replace(" ", "_")
             safe_filename = f"{unique_id}_{safe_basename}"
             target_path = os.path.join(uploads_dir, safe_filename)
 
@@ -329,7 +325,7 @@ def create_app():
 
             asset_record = {
                 "id": unique_id,
-                "filename": file.filename,
+                "filename": original_name,
                 "type": asset_type,
                 "token": token,
                 "url": f"/uploads/reference_assets/{safe_filename}",
@@ -433,6 +429,18 @@ def create_app():
                     model_id=video_model_id
                 )
 
+                resolved_assets = []
+                for ref in (req.reference_assets or []):
+                    asset_id = ref.get("id") if isinstance(ref, dict) else None
+                    stored = next((a for a in store["reference_assets"] if a["id"] == asset_id), None)
+                    if stored:
+                        resolved_assets.append({
+                            "id": stored["id"],
+                            "type": stored["type"],
+                            "token": stored["token"],
+                            "local_path": stored["local_path"],
+                        })
+
                 gen_kwargs = {
                     "prompt": req.prompt,
                     "output_path": clip_path,
@@ -447,10 +455,7 @@ def create_app():
                         "first_frame_image": req.first_frame_image,
                         "last_frame_image": req.last_frame_image,
                         "ip_effect_name": req.ip_effect_name,
-                        "reference_assets": req.reference_assets,
-                        "resolution": req.resolution,
-                        "generate_audio": req.generate_audio,
-                        "draft_mode": req.draft_mode
+                        "reference_assets": resolved_assets or None,
                     })
 
                 generator.generate_video(**gen_kwargs)

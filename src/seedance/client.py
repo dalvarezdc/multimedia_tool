@@ -62,13 +62,9 @@ class SeedanceClient:
         watermark: bool = False,
         duration: int = 5,
         ratio: str = "16:9",
-        resolution: str = "720p",
-        generate_audio: bool = True,
-        draft_mode: bool = False,
         reference_assets: Optional[List[Dict[str, Any]]] = None,
         poll_interval: int = 3,
         timeout_seconds: int = 300,
-        **kwargs
     ) -> str:
         """Submits a video generation task, polls for completion, and saves the resulting MP4.
 
@@ -134,15 +130,16 @@ class SeedanceClient:
         else:
             if reference_assets:
                 for asset in reference_assets:
-                    asset_path = asset.get("local_path") or asset.get("url")
+                    asset_path = asset.get("local_path")
+                    if not asset_path or not os.path.isfile(asset_path):
+                        continue
                     asset_type = asset.get("type", "image")
-                    if asset_path:
-                        prepared_url = self._prepare_image_reference(asset_path)
-                        content_payload.append({
-                            "type": "video_url" if asset_type == "video" else "image_url",
-                            ("video_url" if asset_type == "video" else "image_url"): {"url": prepared_url},
-                            "role": "reference"
-                        })
+                    prepared_url = self._prepare_image_reference(asset_path)
+                    content_payload.append({
+                        "type": "video_url" if asset_type == "video" else "image_url",
+                        ("video_url" if asset_type == "video" else "image_url"): {"url": prepared_url},
+                        "role": "reference"
+                    })
                 logger.info(f"Configured Ref-to-Video with {len(reference_assets)} uploaded reference assets.")
             elif character_reference_image:
                 content_payload.append({

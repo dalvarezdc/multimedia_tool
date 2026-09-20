@@ -855,11 +855,11 @@
     const btnTestConn = document.getElementById("btn-test-connection");
     const keysFeedback = document.getElementById("keys-feedback-msg");
 
-    inputArkKey.value = localApiKey;
-    inputBaseUrl.value = localBaseUrl;
-    inputXaiKey.value = localXaiKey;
+    if (inputArkKey) inputArkKey.value = localApiKey;
+    if (inputBaseUrl) inputBaseUrl.value = localBaseUrl;
+    if (inputXaiKey) inputXaiKey.value = localXaiKey;
 
-    btnSaveKeysPage.onclick = async () => {
+    if (btnSaveKeysPage) btnSaveKeysPage.onclick = async () => {
       localApiKey = inputArkKey.value.trim();
       localBaseUrl = inputBaseUrl.value.trim();
       localXaiKey = inputXaiKey.value.trim();
@@ -887,7 +887,7 @@
       refreshKeyStatus();
     };
 
-    btnTestConn.onclick = async () => {
+    if (btnTestConn) btnTestConn.onclick = async () => {
       btnTestConn.innerText = "Testing...";
       try {
         const res = await fetch("/api/settings/test-connection", {
@@ -994,7 +994,7 @@ print("Task submitted:", task.id)`;
         else tplBtn.classList.add("hidden");
       }
 
-      // 4. Dropzone Slots (matching screenshots)
+      // 4. Dropzone Slots — default is ref-to-video (Seedance 2.5 / 2.0)
       const dropzoneEl = document.getElementById("dynamic-dropzones");
       if (dropzoneEl) {
         if (model.ui_layout_type === "video_first_last") {
@@ -1020,15 +1020,7 @@ print("Task submitted:", task.id)`;
             </div>
           `;
           selectedVideoMode = "first_last_frame";
-        } else if (model.ui_layout_type === "image_standard" || model.ui_layout_type === "image_group") {
-          dropzoneEl.innerHTML = `
-            <div id="dropzone-image" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors">
-              <svg class="w-4 h-4 text-slate-400 mb-1" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-              <span class="text-[9px] text-slate-400 leading-none">Image</span>
-            </div>
-          `;
-          selectedVideoMode = "image_generation";
-          // Default: Ref-to-video Reference Slot
+        } else {
           dropzoneEl.innerHTML = `
             <div id="dropzone-ref" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors relative group" title="Click to import files or folder, or drag & drop">
               <span class="text-base text-slate-400 font-light group-hover:text-cyan-400 transition-colors">+</span>
@@ -1102,7 +1094,17 @@ print("Task submitted:", task.id)`;
       // Update API modal code in sync
       updateApiModal(modelId);
       if (headerBadgeModel) headerBadgeModel.innerText = model.display_name || modelId;
-      document.getElementById("player-status-caption").innerText = "Ready for " + (model.display_name || modelId);
+      const statusEl = document.getElementById("player-status-caption");
+      if (statusEl) statusEl.innerText = "Ready for " + (model.display_name || modelId);
+
+      const studioModeSel = document.getElementById("studio-active-mode-select");
+      if (studioModeSel) {
+        studioModeSel.onchange = () => {
+          const v = (studioModeSel.value || "").toLowerCase();
+          if (v.includes("first")) selectedVideoMode = "first_last_frame";
+          else selectedVideoMode = "ref_to_video";
+        };
+      }
     }
 
     async function loadModelsCatalog() {
@@ -1115,28 +1117,16 @@ print("Task submitted:", task.id)`;
         modelSelect.innerHTML = "";
         modelCatalogData = {};
 
-        const catLabels = {
-          video: "Video Generation (Seedance)",
-          image: "Image Generation (SeeDream)",
-          director_llm: "Director & Storyboard LLMs",
-          "3d": "3D Spatial Assets",
-          vision_embedding: "Vision Embedding"
-        };
-
-        for (const [cat, list] of Object.entries(catalog)) {
-          if (!list || !list.length) continue;
-          const grp = document.createElement("optgroup");
-          grp.label = catLabels[cat] || cat.toUpperCase();
-          list.forEach(m => {
-            modelCatalogData[m.id] = m;
-            const opt = document.createElement("option");
-            opt.value = m.id;
-            opt.innerText = m.display_name;
-            if (m.id === activeVideoModel) opt.selected = true;
-            grp.appendChild(opt);
-          });
-          modelSelect.appendChild(grp);
-        }
+        // Only video models can be sent to /api/cutscenes/generate.
+        const videoModels = catalog.video || [];
+        videoModels.forEach(m => {
+          modelCatalogData[m.id] = m;
+          const opt = document.createElement("option");
+          opt.value = m.id;
+          opt.innerText = m.display_name;
+          if (m.id === activeVideoModel) opt.selected = true;
+          modelSelect.appendChild(opt);
+        });
 
         if (!modelCatalogData[activeVideoModel]) {
           activeVideoModel = Object.keys(modelCatalogData)[0] || "dreamina-seedance-2-0-fast-260128";
@@ -1748,6 +1738,11 @@ print("Task submitted:", task.id)`;
     btnGenVideo.onclick = async () => {
       const prompt = document.getElementById("video-prompt-input").value;
       const model = modelSelect.value;
+      if (!model || model.includes("seedream") || model.includes("deepseek") || model.includes("glm-") || model.includes("hyper3d")) {
+        alert("Pick a Seedance or Grok video model before generating.");
+        btnGenVideo.disabled = false;
+        return;
+      }
       const duration = parseInt(document.getElementById("video-duration").value);
       const ratio = document.getElementById("video-aspect-ratio").value;
       const isGrok = model.includes("grok");
@@ -1767,7 +1762,6 @@ print("Task submitted:", task.id)`;
       btnGenVideo.disabled = true;
 
       const chapterId = Date.now() % 100000;
-      const firstRefImage = importedAssets.find(a => a.type === "image");
       const payload = {
         chapter_id: chapterId,
         prompt: prompt,
@@ -1776,8 +1770,7 @@ print("Task submitted:", task.id)`;
         provider: isGrok ? "grok" : "seedance",
         video_model: model,
         generation_mode: selectedVideoMode,
-        character_reference_image: (firstRefImage ? firstRefImage.url : null) || document.getElementById("video-ref-image").value || null,
-        reference_assets: importedAssets.length ? importedAssets : null,
+        reference_assets: importedAssets.map(a => ({ id: a.id })),
         api_key: isGrok ? localXaiKey : localApiKey
       };
 
@@ -1813,8 +1806,8 @@ print("Task submitted:", task.id)`;
 
     // --- Service 2: RPG Automated Generator (Playable + Exportable) ---
     const rpgCanvas = document.getElementById("rpg-canvas");
-    const rpgCtx = rpgCanvas.getContext("2d");
-    rpgCtx.imageSmoothingEnabled = false;
+    const rpgCtx = rpgCanvas ? rpgCanvas.getContext("2d") : null;
+    if (rpgCtx) rpgCtx.imageSmoothingEnabled = false;
 
     let isRpgPlayableMode = true; // true = WASD playable, false = auto director
     const btnRpgPlay = document.getElementById("btn-rpg-mode-play");
