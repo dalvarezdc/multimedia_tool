@@ -19,7 +19,7 @@ def test_landing_page_route(client):
 def test_studio_app_route(client):
     response = client.get("/app")
     assert response.status_code == 200
-    assert "RetroArk Console" in response.text
+    assert "RetroArk" in response.text
     assert "Video Studio" in response.text
     assert "RPG Studio" in response.text
     assert "Ref-to-video" in response.text
@@ -28,7 +28,7 @@ def test_console_routes(client):
     for route in ["/", "/video", "/rpg", "/api-keys", "/docs", "/settings", "/usage"]:
         response = client.get(route)
         assert response.status_code == 200
-        assert "RetroArk Console" in response.text
+        assert "RetroArk" in response.text
 
 def test_api_usage_endpoint(client):
     response = client.get("/api/usage")

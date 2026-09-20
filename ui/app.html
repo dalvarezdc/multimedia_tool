@@ -44,50 +44,74 @@
   </script>
 
   <style>
-    .glass-card {
-      background: rgba(17, 19, 28, 0.75);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .glass-pill {
-      background: rgba(15, 17, 26, 0.85);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.09);
+    :root { color-scheme: dark; }
+    body { letter-spacing: -0.01em; }
+    .panel {
+      background: #11131c;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px;
     }
     .sidebar-link.active {
-      background: rgba(0, 229, 255, 0.12);
-      color: #f1f5f9;
-      box-shadow: inset 0 0 0 1px rgba(0, 229, 255, 0.4);
-      font-weight: 600;
+      background: rgba(255,255,255,0.07);
+      color: #f8fafc;
     }
+    .field, select.field, textarea.field {
+      width: 100%;
+      background: #0b0d14;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #e2e8f0;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .field:focus {
+      outline: none;
+      border-color: rgba(0,229,255,0.5);
+    }
+    .label {
+      display: block;
+      font-size: 11px;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+    .btn-primary {
+      background: #00e5ff;
+      color: #090a0f;
+      font-weight: 650;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 13px;
+    }
+    .btn-primary:disabled { opacity: 0.5; }
+    .btn-quiet {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #cbd5e1;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+    .btn-quiet:hover { background: rgba(255,255,255,0.05); color: #fff; }
+    .mode-on { background: rgba(255,255,255,0.08); color: #fff; }
+    .mode-off { color: #94a3b8; }
+    .mode-off:hover { color: #e2e8f0; background: rgba(255,255,255,0.04); }
     .play-triangle {
-      width: 0;
-      height: 0;
-      border-top: 16px solid transparent;
-      border-bottom: 16px solid transparent;
-      border-left: 26px solid currentColor;
-      margin-left: 4px;
+      width: 0; height: 0;
+      border-top: 12px solid transparent;
+      border-bottom: 12px solid transparent;
+      border-left: 20px solid currentColor;
+      margin-left: 3px;
     }
     input[type="range"].volume-slider {
-      -webkit-appearance: none;
-      appearance: none;
-      height: 3px;
-      background: rgba(255,255,255,0.45);
-      border-radius: 999px;
-      outline: none;
+      -webkit-appearance: none; appearance: none;
+      height: 3px; background: rgba(255,255,255,0.35); border-radius: 999px; outline: none;
     }
     input[type="range"].volume-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 12px;
-      height: 12px;
-      border-radius: 999px;
-      background: #fff;
-      cursor: pointer;
+      -webkit-appearance: none; width: 11px; height: 11px; border-radius: 999px; background: #fff; cursor: pointer;
     }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #090a0f; }
-    ::-webkit-scrollbar-thumb { background: #232738; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #38bdf8; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-thumb { background: #232738; border-radius: 8px; }
   </style>
 </head>
 
@@ -96,86 +120,25 @@
   <!-- ============================================================================== -->
   <!-- 1. PERSISTENT LEFT SIDEBAR (Inspired by BytePlus ModelArk Console)              -->
   <!-- ============================================================================== -->
-  <aside class="w-64 bg-[#0B0D14] border-r border-white/10 flex flex-col justify-between shrink-0 h-screen select-none z-30">
-    
-    <!-- Top Branding & Monogram -->
+  <aside class="w-52 bg-[#0B0D14] border-r border-white/[0.06] flex flex-col justify-between shrink-0 h-screen select-none">
     <div>
-      <div class="h-16 flex items-center gap-3 px-5 border-b border-white/10">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-electric to-lavender flex items-center justify-center font-bold text-black text-xs shadow-glow-cyan">
-          MM
-        </div>
-        <div>
-          <div class="font-bold tracking-wider text-xs uppercase text-slate-100 flex items-center gap-1.5">
-            <span>Retro<span class="text-electric">Ark</span></span>
-            <span class="px-1.5 py-0.2 rounded text-[9px] bg-electric/10 text-electric font-mono border border-electric/20">Console</span>
-          </div>
-          <p class="text-[10px] text-slate-500 font-mono">BytePlus ModelArk Suite</p>
-        </div>
+      <div class="h-14 flex items-center gap-2.5 px-4">
+        <div class="w-7 h-7 rounded-md bg-electric text-black flex items-center justify-center text-[11px] font-bold">R</div>
+        <div class="text-sm font-semibold tracking-tight">RetroArk <span class="text-slate-500 font-normal">Console</span></div>
       </div>
-
-      <!-- Navigation Menu -->
-      <nav class="p-3 space-y-6 text-xs font-mono">
-        
-        <!-- Group 1: Core Services -->
-        <div>
-          <div class="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
-            <span>Services</span>
-            <span class="text-[9px] text-slate-500">2</span>
-          </div>
-          <div class="space-y-1">
-            <button data-view="video" class="sidebar-link active w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-all text-left">
-              <span class="text-base text-electric">📹</span>
-              <span class="font-medium">AI Video Studio</span>
-            </button>
-            <button data-view="rpg" class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all text-left">
-              <span class="text-base text-celestial">🎮</span>
-              <div class="flex-1 flex items-center justify-between">
-                <span class="font-medium">RPG Studio</span>
-                <span class="px-1.5 py-0.5 rounded text-[9px] bg-celestial/10 text-celestial border border-celestial/20">WASD</span>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        <!-- Group 2: Platform Management -->
-        <div>
-          <div class="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            <span>Management</span>
-          </div>
-          <div class="space-y-1">
-            <button data-view="api-keys" class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all text-left">
-              <span class="text-sm text-lavender">🔑</span>
-              <span>API Keys</span>
-            </button>
-            <button data-view="docs" class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all text-left">
-              <span class="text-sm text-blue-400">📖</span>
-              <span>Docs & Guides</span>
-            </button>
-            <button data-view="settings" class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all text-left">
-              <span class="text-sm text-slate-400">⚙</span>
-              <span>Settings</span>
-            </button>
-            <button data-view="usage" class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all text-left">
-              <span class="text-sm text-emerald-400">📊</span>
-              <span>Usage & Metrics</span>
-            </button>
-          </div>
-        </div>
-
+      <nav class="px-2 pt-2 space-y-0.5 text-[13px]">
+        <button data-view="video" class="sidebar-link active w-full text-left px-3 py-2 rounded-lg text-slate-200">Video Studio</button>
+        <button data-view="rpg" class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">RPG Studio</button>
+        <div class="h-px bg-white/[0.06] my-3 mx-2"></div>
+        <button data-view="settings" class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">Settings</button>
+        <button data-view="docs" class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">Guide</button>
+        <button data-view="usage" class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">Activity</button>
       </nav>
     </div>
-
-    <!-- Bottom Status Card -->
-    <div class="p-3 border-t border-white/10">
-      <div class="p-3 rounded-xl bg-surface border border-white/5 flex items-center justify-between text-xs font-mono">
-        <div class="flex items-center gap-2">
-          <span id="sidebar-key-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-          <span class="text-slate-300 text-[11px]">API key</span>
-        </div>
-        <button id="sidebar-open-keys" class="text-[10px] text-electric hover:underline">Set key ›</button>
-      </div>
-    </div>
-
+    <button id="sidebar-open-keys" class="m-3 px-3 py-2 rounded-lg bg-white/[0.03] hover:bg-white/5 text-left text-[12px] text-slate-400 flex items-center gap-2">
+      <span id="sidebar-key-dot" class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+      <span id="sidebar-key-label">Set API key</span>
+    </button>
   </aside>
 
   <!-- ============================================================================== -->
@@ -184,468 +147,218 @@
   <div class="flex-1 flex flex-col h-screen overflow-hidden">
     
     <!-- Top Console Header Bar -->
-    <header class="h-16 border-b border-white/10 bg-[#090A0F]/90 backdrop-blur-xl px-6 flex items-center justify-between shrink-0 z-20">
-      <div class="flex items-center gap-3">
-        <span id="breadcrumb-category" class="text-xs font-mono text-slate-500 uppercase">Service</span>
-        <span class="text-slate-600">/</span>
-        <h1 id="breadcrumb-title" class="text-sm font-bold text-slate-100 flex items-center gap-2">
-          <span>📹 AI Video Studio</span>
-        </h1>
-      </div>
-
-      <!-- Quick Header Status Badges & Key Indicator -->
-      <div class="flex items-center gap-3 text-xs font-mono">
-        <span id="header-badge-model" class="hidden sm:inline-flex px-2.5 py-1 rounded-full bg-surface border border-white/10 text-slate-300 text-[11px]">
-          Seedance 2.5 Flagship
-        </span>
-        <button id="header-btn-api" class="px-3 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-400/30 text-amber-300 hover:text-amber-200 transition-all text-[11px] flex items-center gap-1.5">
-          <span id="header-key-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
-          <span id="header-key-text">Key Required</span>
+    <header class="h-14 border-b border-white/[0.06] px-6 flex items-center justify-between shrink-0">
+      <h1 id="breadcrumb-title" class="text-[15px] font-medium text-slate-100">Video Studio</h1>
+      <div class="flex items-center gap-3 text-[12px] text-slate-400">
+        <span id="header-badge-model" class="hidden sm:inline">Seedance 2.5</span>
+        <button id="header-btn-api" class="flex items-center gap-1.5 hover:text-white">
+          <span id="header-key-dot" class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+          <span id="header-key-text">Key required</span>
         </button>
       </div>
     </header>
+    <span id="breadcrumb-category" class="hidden">Service</span>
 
-    <!-- Scrollable Active View Container -->
-    <main class="flex-1 overflow-y-auto p-6 relative">
+    <main class="flex-1 overflow-y-auto p-6 lg:p-8">
 
       <!-- ========================================================================== -->
       <!-- VIEW 1: AI VIDEO STUDIO (SERVICE 1 - DEDICATED GENERATOR)                  -->
       <!-- ========================================================================== -->
-      <section id="view-video" class="content-view space-y-6 max-w-6xl mx-auto">
-        
-        <!-- Banner Intro -->
-        <div class="flex items-center justify-between">
-          <div>
-            <h2 class="text-xl font-bold text-white mb-1">ByteDance Seedance Video Studio</h2>
-            <p class="text-xs font-mono text-slate-400">Prompt a Seedance or Grok clip. Watermark is requested off; the file is saved under /renders/cutscenes.</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <button id="btn-video-info-modes" class="px-3 py-1.5 rounded-xl bg-surface hover:bg-surface-light border border-white/10 text-xs font-mono text-slate-300 hover:text-white flex items-center gap-1.5 transition-all">
-              <span>ℹ Mode Guide</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
-          <!-- Left Column: Video Controls (7 cols) -->
+      <section id="view-video" class="content-view max-w-6xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div class="lg:col-span-7 space-y-5">
-            
-            <!-- Prompt Composer Card -->
-            <div class="glass-card rounded-2xl p-5 space-y-4">
+            <div class="panel p-5 space-y-4">
               <div class="flex items-center justify-between">
-                <label class="text-xs font-bold font-mono text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                  <span class="text-electric">✦</span> Prompt Composer
-                </label>
-                <span class="text-[10px] font-mono text-slate-500">PROMPT + ZERO WATERMARK</span>
+                <label class="text-sm text-slate-200" for="video-prompt-input">Prompt</label>
+                <button id="btn-video-info-modes" type="button" class="text-[12px] text-slate-500 hover:text-white">Modes</button>
               </div>
-
               <textarea 
                 id="video-prompt-input" 
-                rows="4" 
-                placeholder="Describe your cinematic shot, camera movement, and subject in detail..."
-                class="w-full bg-surface rounded-xl p-3.5 text-xs text-white placeholder-slate-500 border border-white/10 focus:border-electric focus:outline-none font-mono resize-none leading-relaxed"
+                rows="6" 
+                placeholder="Shot, camera, subject…"
+                class="field resize-none"
               >Cinematic close-up tracking shot of Hermes with winged golden helmet soaring over ancient Greek stone temples under starry night sky, dramatic volumetric starlight, 1080p photorealistic, highly detailed.</textarea>
 
-              <p class="text-[10px] font-mono text-slate-500">The server appends <code class="text-slate-300">--no watermark, text, logo, subtitles, ui, timestamps</code> to every Seedance prompt.</p>
-            </div>
-
-            <!-- ByteDance Generation Mode & Parameters Card -->
-            <div class="glass-card rounded-2xl p-5 space-y-4">
-              <div class="flex items-center justify-between">
-                <label class="text-xs font-bold font-mono text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                  <span class="text-lavender">✦</span> ByteDance Generation Mode
-                </label>
-                <button id="btn-info-modes-inline" class="text-xs font-mono text-electric hover:underline flex items-center gap-1">
-                  <span>ℹ What does each mode do?</span>
-                </button>
+              <div class="flex flex-wrap gap-1.5">
+                <button data-video-mode="ref_to_video" class="btn-mode-select mode-on px-3 py-1.5 rounded-lg text-[13px]">Ref-to-video</button>
+                <button data-video-mode="first_last_frame" class="btn-mode-select mode-off px-3 py-1.5 rounded-lg text-[13px]">First/last frame</button>
+                <button data-video-mode="ip_effects" class="btn-mode-select mode-off px-3 py-1.5 rounded-lg text-[13px]">IP effects</button>
+                <button id="btn-info-modes-inline" type="button" class="px-2 py-1.5 text-[12px] text-slate-500 hover:text-white">?</button>
               </div>
 
-              <!-- Mode Selection Buttons -->
-              <div class="grid grid-cols-3 gap-2 text-xs font-mono">
-                <button data-video-mode="ref_to_video" class="btn-mode-select px-3 py-3 rounded-xl border border-electric bg-electric/10 text-white font-bold flex flex-col items-center gap-1 text-center">
-                  <span>📹 Ref-to-video</span>
-                  <span class="text-[10px] font-normal text-slate-400">Multi-Asset Ref</span>
-                </button>
-                <button data-video-mode="first_last_frame" class="btn-mode-select px-3 py-3 rounded-xl border border-white/10 bg-surface text-slate-400 hover:text-white flex flex-col items-center gap-1 text-center">
-                  <span>🎞️ First/last frame</span>
-                  <span class="text-[10px] font-normal text-slate-500">Keyframe Lock</span>
-                </button>
-                <button data-video-mode="ip_effects" class="btn-mode-select px-3 py-3 rounded-xl border border-white/10 bg-surface text-slate-400 hover:text-white flex flex-col items-center gap-1 text-center">
-                  <span>👤⁺ IP effects</span>
-                  <span class="text-[10px] font-normal text-slate-500">Stylized VFX</span>
-                </button>
-              </div>
-
-              <!-- Dynamic Mode Parameter Inputs -->
-              <div id="video-dynamic-inputs" class="space-y-3 font-mono text-xs">
-                <!-- Mode 1: Ref-to-video -->
-                <div id="subctrl-ref-to-video" class="space-y-2">
-                  <label class="text-[11px] text-slate-400 block">CHARACTER / SCENE REFERENCE ASSET:</label>
-                  <input 
-                    id="video-ref-image" 
-                    type="text" 
-                    value="assets/characters/hermes_reference.png" 
-                    placeholder="URL or local path to reference image" 
-                    class="w-full bg-surface rounded-xl px-3.5 py-2 text-xs text-slate-200 border border-white/10 focus:border-electric focus:outline-none"
-                  />
-                  <p class="text-[10px] text-slate-500">Conditions video generation on character likeness and style without freezing start/end poses.</p>
+              <div id="video-dynamic-inputs" class="space-y-3">
+                <div id="subctrl-ref-to-video">
+                  <label class="label" for="video-ref-image">Reference image</label>
+                  <input id="video-ref-image" type="text" value="assets/characters/hermes_reference.png" placeholder="URL or local path" class="field" />
                 </div>
-
-                <!-- Mode 2: First/last frame -->
-                <div id="subctrl-first-last-frame" class="hidden space-y-2">
+                <div id="subctrl-first-last-frame" class="hidden space-y-3">
                   <div>
-                    <label class="text-[11px] text-slate-400 block mb-1">FIRST FRAME (START POSE):</label>
-                    <input id="video-first-frame" type="text" placeholder="Start keyframe URL or file path" class="w-full bg-surface rounded-xl px-3.5 py-2 text-xs text-white border border-white/10 focus:border-electric focus:outline-none" />
+                    <label class="label" for="video-first-frame">First frame</label>
+                    <input id="video-first-frame" type="text" placeholder="Start frame path or URL" class="field" />
                   </div>
                   <div>
-                    <label class="text-[11px] text-slate-400 block mb-1">LAST FRAME (END POSE / OPTIONAL):</label>
-                    <input id="video-last-frame" type="text" placeholder="End keyframe URL or file path" class="w-full bg-surface rounded-xl px-3.5 py-2 text-xs text-white border border-white/10 focus:border-electric focus:outline-none" />
+                    <label class="label" for="video-last-frame">Last frame (optional)</label>
+                    <input id="video-last-frame" type="text" placeholder="End frame path or URL" class="field" />
                   </div>
                 </div>
-
-                <!-- Mode 3: IP effects -->
-                <div id="subctrl-ip-effects" class="hidden space-y-2">
-                  <label class="text-[11px] text-slate-400 block">CHARACTER IP EFFECT PRESET:</label>
-                  <select id="video-select-ip-preset" class="w-full bg-surface text-celestial rounded-xl px-3.5 py-2 text-xs border border-white/10 focus:border-celestial focus:outline-none font-mono">
-                    <option value="anime_hero_aura">✦ Anime Cel-Shaded Aura</option>
-                    <option value="cyber_hologram">✦ Cyberpunk Neon Hologram</option>
-                    <option value="cinematic_clay">✦ 3D Cinematic Claymation</option>
-                    <option value="pixel_glitch">✦ Retro Pixel Glitch Blast</option>
+                <div id="subctrl-ip-effects" class="hidden">
+                  <label class="label" for="video-select-ip-preset">Prompt tag</label>
+                  <select id="video-select-ip-preset" class="field">
+                    <option value="anime_hero_aura">Anime cel-shaded aura</option>
+                    <option value="cyber_hologram">Cyberpunk hologram</option>
+                    <option value="cinematic_clay">Cinematic clay</option>
+                    <option value="pixel_glitch">Pixel glitch</option>
                   </select>
                 </div>
               </div>
 
-              <!-- Model Selector & Format Specs -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-white/5 text-xs font-mono">
-                <div>
-                  <label class="text-[10px] text-slate-400 block mb-1">MODEL SELECTION:</label>
-                  <select id="video-select-model" class="w-full bg-surface text-white rounded-xl px-3 py-2 border border-white/10 focus:border-electric focus:outline-none">
-                    <option value="dreamina-seedance-2-5-260628" selected>🌟 Seedance 2.5 Flagship</option>
-                    <option value="dreamina-seedance-2-0-fast-260128">⚡ Seedance 2.0 Fast</option>
-                    <option value="dreamina-seedance-2-0-260128">📹 Seedance 2.0 Standard</option>
-                    <option value="dreamina-seedance-2-0-mini-260615">🔹 Seedance 2.0 Mini</option>
-                    <option value="grok-imagine-video-1.5">🚀 xAI Grok Imagine Video</option>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="col-span-3 sm:col-span-1">
+                  <label class="label" for="video-select-model">Model</label>
+                  <select id="video-select-model" class="field">
+                    <option value="dreamina-seedance-2-5-260628" selected>Seedance 2.5</option>
+                    <option value="dreamina-seedance-2-0-fast-260128">Seedance 2.0 Fast</option>
+                    <option value="dreamina-seedance-2-0-260128">Seedance 2.0</option>
+                    <option value="dreamina-seedance-2-0-mini-260615">Seedance Mini</option>
+                    <option value="grok-imagine-video-1.5">Grok Imagine</option>
                   </select>
                 </div>
                 <div>
-                  <label class="text-[10px] text-slate-400 block mb-1">ASPECT RATIO & DURATION:</label>
-                  <div class="flex items-center gap-2">
-                    <select id="video-aspect-ratio" class="flex-1 bg-surface text-white rounded-xl px-3 py-2 border border-white/10 text-xs">
-                      <option value="16:9" selected>16:9 Landscape</option>
-                      <option value="9:16">9:16 Vertical</option>
-                      <option value="1:1">1:1 Square</option>
-                    </select>
-                    <select id="video-duration" class="w-20 bg-surface text-white rounded-xl px-2.5 py-2 border border-white/10 text-xs">
-                      <option value="5" selected>5s</option>
-                      <option value="10">10s</option>
-                    </select>
-                  </div>
+                  <label class="label" for="video-aspect-ratio">Ratio</label>
+                  <select id="video-aspect-ratio" class="field">
+                    <option value="16:9" selected>16:9</option>
+                    <option value="9:16">9:16</option>
+                    <option value="1:1">1:1</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="label" for="video-duration">Length</label>
+                  <select id="video-duration" class="field">
+                    <option value="5" selected>5s</option>
+                    <option value="10">10s</option>
+                  </select>
                 </div>
               </div>
 
-              <!-- Primary Generate Button -->
-              <button 
-                id="btn-generate-video-action" 
-                class="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-500 via-cyan-400 to-cyan-300 text-black font-extrabold text-xs uppercase font-mono tracking-wider transition-all shadow-glow-cyan hover:opacity-95 active:scale-[0.99] flex items-center justify-center gap-2"
-              >
-                <span>✦ Generate Watermark-Free Video</span>
-              </button>
-
+              <button id="btn-generate-video-action" class="btn-primary w-full">Generate</button>
             </div>
-
           </div>
 
-          <!-- Right Column: Video Output & History Gallery (5 cols) -->
-          <div class="lg:col-span-5 space-y-5">
-            
-            <!-- Video Player Display Frame -->
-            <div class="glass-card rounded-2xl p-4 space-y-3">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold font-mono text-slate-200 uppercase">Video Output Preview</span>
-                <span id="preview-spec-badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-white/5 text-slate-300 border border-white/10">
-                  16:9 · 5s
-                </span>
-              </div>
-
-              <!-- Player Screen -->
-              <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-white/10 shadow-inner flex items-center justify-center">
-                <video 
-                  id="main-video-player" 
-                  class="w-full h-full object-cover" 
-                  loop 
-                  playsinline
-                  preload="metadata"
-                ></video>
-                <div id="preview-empty-hint" class="absolute inset-0 flex items-center justify-center text-[11px] font-mono text-slate-500 pointer-events-none">
-                  No clip yet — generate one
-                </div>
-                <div class="absolute top-2.5 right-2.5 z-10 flex items-center gap-2 bg-black/65 rounded-full px-3 py-1.5">
+          <div class="lg:col-span-5 space-y-4">
+            <div class="panel overflow-hidden">
+              <div class="relative aspect-video bg-black">
+                <video id="main-video-player" class="w-full h-full object-cover" loop playsinline preload="metadata"></video>
+                <div id="preview-empty-hint" class="absolute inset-0 flex items-center justify-center text-[13px] text-slate-500 pointer-events-none">No clip yet</div>
+                <div class="absolute top-3 right-3 z-10 flex items-center gap-2 bg-black/50 rounded-full px-3 py-1">
                   <input id="video-volume" type="range" min="0" max="1" step="0.05" value="0.7" class="volume-slider w-16" />
-                  <span class="text-white/80 text-[11px]">🔊</span>
                 </div>
-                <button id="btn-video-play" type="button" class="absolute inset-0 z-10 flex items-center justify-center text-white/90 hover:text-white bg-black/20">
+                <button id="btn-video-play" type="button" class="absolute inset-0 z-10 flex items-center justify-center text-white/80 hover:text-white">
                   <span class="play-triangle"></span>
                 </button>
               </div>
-
-              <!-- Player Actions -->
-              <div class="flex items-center justify-between text-xs font-mono">
-                <span id="player-status-caption" class="text-slate-400 text-[11px]">Active: Seedance 2.5 Output</span>
-                <button id="btn-download-video" class="px-3 py-1.5 rounded-lg bg-white text-black font-bold hover:bg-electric transition-all text-[11px]">
-                  Download MP4 ↓
-                </button>
+              <div class="px-4 py-3 flex items-center justify-between text-[12px] text-slate-400">
+                <span id="player-status-caption">Ready</span>
+                <span id="preview-spec-badge">16:9 · 5s</span>
+                <button id="btn-download-video" class="text-white hover:text-electric">Download</button>
               </div>
             </div>
-
-            <!-- Recent Generations Log -->
-            <div class="glass-card rounded-2xl p-4 space-y-3">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold font-mono text-slate-300 uppercase">Recent Video Generations</span>
-                <span class="text-[10px] font-mono text-slate-500">Auto Saved</span>
-              </div>
-              <div id="recent-generations-list" class="space-y-2 text-xs font-mono">
-                <div id="recent-empty" class="p-2.5 rounded-xl bg-surface/70 border border-white/5 text-slate-500">
-                  No jobs yet. Generated clips show up here.
-                </div>
+            <div>
+              <p class="label mb-2">Recent</p>
+              <div id="recent-generations-list" class="space-y-1.5 text-[13px]">
+                <div id="recent-empty" class="text-slate-500">Nothing generated this session.</div>
               </div>
             </div>
-
           </div>
-
         </div>
-
       </section>
 
       <!-- ========================================================================== -->
       <!-- VIEW 2: RPG STUDIO (SERVICE 2 - PLAYABLE & EXPORTABLE RPG ENGINE)           -->
       <!-- ========================================================================== -->
-      <section id="view-rpg" class="content-view space-y-6 max-w-6xl mx-auto hidden">
-        
-        <!-- Top RPG Control & Mode Header -->
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 class="text-xl font-bold text-white mb-1">RPG Studio</h2>
-            <p class="text-xs font-mono text-slate-400">The Director LLM turns a topic into walkable shrines. WASD to play. Improve rewrites the world. Export records the canvas walk.</p>
-          </div>
-
-          <!-- RPG Mode Switcher: Playable Game vs Auto-Director Record -->
-          <div class="flex items-center gap-2 bg-surface p-1 rounded-xl border border-white/10 text-xs font-mono">
-            <button id="btn-rpg-mode-play" class="px-3.5 py-1.5 rounded-lg bg-celestial text-black font-bold transition-all shadow-glow-gold flex items-center gap-1.5">
-              <span>🎮 Playable Mode (WASD)</span>
-            </button>
-            <button id="btn-rpg-mode-director" class="px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
-              <span>🎬 Auto-walk</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Topic & Questline Generation Bar -->
-        <div class="glass-card rounded-2xl p-3 flex flex-wrap items-center gap-3">
-          <div class="flex items-center gap-2 px-3 py-1 bg-surface rounded-xl border border-white/5 text-xs font-mono text-slate-400">
-            <span class="text-celestial">✦</span>
-            <span>TOPIC / STORY:</span>
-          </div>
+      <section id="view-rpg" class="content-view space-y-4 max-w-6xl mx-auto hidden">
+        <div class="flex flex-wrap items-center gap-2">
           <input 
             id="rpg-topic-input" 
             type="text" 
             value="How Local LLMs Work on Apple Silicon" 
-            placeholder="Enter any technical topic or story to generate an RPG world..."
-            class="flex-1 bg-transparent px-2 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none font-mono"
+            placeholder="Topic for the Director LLM…"
+            class="field flex-1 min-w-[220px]"
           />
-          <button 
-            id="btn-rpg-generate-world" 
-            class="px-4 py-2 rounded-xl bg-gradient-to-r from-celestial to-amber-500 text-black font-bold text-xs uppercase font-mono tracking-wider hover:opacity-90 transition-all shadow-glow-gold active:scale-95"
-          >
-            Generate world
-          </button>
-          <button 
-            id="btn-rpg-improve-world" 
-            class="px-4 py-2 rounded-xl bg-lavender/20 border border-lavender/40 text-lavender font-bold text-xs uppercase font-mono tracking-wider hover:bg-lavender hover:text-black transition-all active:scale-95"
-          >
-            Improve with LLM
-          </button>
-          <button 
-            id="btn-rpg-export-mp4" 
-            class="px-4 py-2 rounded-xl bg-white text-black font-bold text-xs uppercase font-mono tracking-wider hover:bg-electric transition-all shadow-md active:scale-95 flex items-center gap-1"
-          >
-            <span>Record walk</span>
-            <span>↓</span>
-          </button>
-        </div>
-
-        <!-- Central 60 FPS HTML5 Canvas RPG Viewport -->
-        <div class="relative w-full aspect-video rounded-3xl overflow-hidden bg-black border border-white/15 shadow-device-frame">
-          <canvas id="rpg-canvas" width="1920" height="1080" class="w-full h-full object-cover block cursor-crosshair"></canvas>
-
-          <!-- Top-Left Quest Log HUD Overlay -->
-          <div class="absolute top-4 left-4 pointer-events-none space-y-2">
-            <div class="glass-pill px-3.5 py-2 rounded-xl border border-white/10">
-              <div class="text-[10px] font-pixel text-celestial mb-1">⚔ QUEST PROGRESSION</div>
-              <div id="rpg-hud-quest" class="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                Generate a world to place shrines
-              </div>
-            </div>
-            <div class="glass-pill px-3 py-1.5 rounded-lg border border-white/10 text-[10px] font-mono text-slate-400">
-              <span class="text-electric">Controls:</span> <strong class="text-white">WASD / Arrow Keys</strong> to walk | <strong class="text-white">SPACE</strong> to interact
-            </div>
-          </div>
-
-          <!-- Top-Right Hero Status HUD -->
-          <div class="absolute top-4 right-4 pointer-events-none">
-            <div class="glass-pill px-3.5 py-2 rounded-xl border border-white/10 text-right">
-              <div id="rpg-hero-name" class="text-[10px] font-mono text-celestial font-bold">HERMES</div>
-              <div id="rpg-world-topic" class="text-[10px] font-mono text-slate-400 mt-0.5">No world generated</div>
-            </div>
-          </div>
-
-          <!-- Proximity Interaction Prompt (Appears when near a shrine) -->
-          <div id="rpg-proximity-prompt" class="absolute bottom-28 inset-x-0 flex justify-center pointer-events-none hidden animate-bounce">
-            <div class="glass-pill px-4 py-2 rounded-xl border border-celestial/40 text-celestial text-xs font-pixel shadow-glow-gold">
-              ▼ PRESS SPACE TO COMMUNE WITH SHRINE ▼
-            </div>
-          </div>
-
-          <!-- Classic Retro RPG Dialogue Box Overlay -->
-          <div id="rpg-dialogue-box" class="absolute bottom-4 inset-x-6 glass-card rounded-2xl p-4 sm:p-5 border-2 border-celestial shadow-2xl flex items-start gap-4 transition-all hidden">
-            <!-- Character Bust Portrait -->
-            <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gradient-to-tr from-amber-500/20 to-celestial/20 border border-celestial/40 flex items-center justify-center text-3xl shrink-0 shadow-glow-gold">
-              🪽
-            </div>
-            <!-- Dialogue Script Area -->
-            <div class="flex-1">
-              <div class="flex items-center justify-between mb-1.5">
-                <span id="rpg-speaker-name" class="text-xs font-pixel text-celestial tracking-wider uppercase">HERMES [MESSENGER]</span>
-                <span class="text-[10px] font-mono text-slate-400">PRESS SPACE TO ADVANCE ►</span>
-              </div>
-              <p id="rpg-dialogue-text" class="text-xs sm:text-sm font-mono text-slate-100 leading-relaxed min-h-[44px]">
-                Generate a world from a topic. Shrines and this dialogue come from the Director LLM.
-              </p>
-              <button id="btn-rpg-shrine-cutscene" type="button" class="mt-3 px-3 py-1.5 rounded-lg bg-electric text-black text-[10px] font-mono font-bold uppercase">
-                Generate shrine cutscene
-              </button>
-            </div>
-          </div>
-
-          <!-- Auto-Director Playback Scrubber (Visible in Director Mode) -->
-          <div id="rpg-director-controls" class="absolute bottom-4 inset-x-6 glass-pill px-4 py-2.5 rounded-xl border border-white/10 hidden items-center justify-between">
-            <div class="flex items-center gap-3">
-              <button id="btn-rpg-toggle-play" class="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center text-xs font-bold hover:bg-electric transition-all">▶</button>
-              <span id="rpg-director-time" class="font-mono text-xs text-slate-300">00:00 / 00:24</span>
-            </div>
-            <input id="rpg-scrubber" type="range" min="0" max="1440" value="0" class="flex-1 mx-4 accent-electric cursor-pointer h-1.5 bg-slate-700 rounded-lg appearance-none" />
-            <button id="btn-rpg-next-shrine" class="px-3 py-1 rounded-lg bg-electric/10 text-electric font-mono text-xs font-bold border border-electric/30">Next Shrine →</button>
-          </div>
-
-        </div>
-
-        <!-- Milestone Shrines Teleport Bar -->
-        <div class="flex flex-wrap items-center justify-between gap-3 px-1 text-xs font-mono">
-          <div class="flex items-center gap-2">
-            <span class="text-slate-400">SHRINES:</span>
-            <div id="rpg-shrine-buttons" class="flex items-center gap-1.5">
-              <!-- Populated dynamically via JS -->
-            </div>
-          </div>
-          <div id="rpg-engine-status" class="text-slate-400 flex items-center gap-1.5">
-            <span class="text-slate-500">●</span> Canvas playfield · Director LLM for content
+          <button id="btn-rpg-generate-world" class="btn-primary">Generate world</button>
+          <button id="btn-rpg-improve-world" class="btn-quiet">Improve</button>
+          <button id="btn-rpg-export-mp4" class="btn-quiet">Record</button>
+          <div class="flex ml-auto rounded-lg bg-white/[0.04] p-0.5 text-[12px]">
+            <button id="btn-rpg-mode-play" class="px-3 py-1.5 rounded-md bg-white text-black">Walk</button>
+            <button id="btn-rpg-mode-director" class="px-3 py-1.5 rounded-md text-slate-400 hover:text-white">Auto</button>
           </div>
         </div>
 
+        <div class="relative w-full aspect-video rounded-2xl overflow-hidden bg-black border border-white/[0.08]">
+          <canvas id="rpg-canvas" width="1920" height="1080" class="w-full h-full object-cover block"></canvas>
+          <div class="absolute top-3 left-3 right-3 flex justify-between pointer-events-none text-[12px]">
+            <div class="bg-black/50 rounded-md px-2.5 py-1.5 text-slate-200">
+              <span id="rpg-hud-quest">No world yet</span>
+              <span class="text-slate-500"> · WASD, Space</span>
+            </div>
+            <div class="bg-black/50 rounded-md px-2.5 py-1.5 text-slate-400 text-right">
+              <span id="rpg-hero-name">Hermes</span>
+              <span id="rpg-world-topic" class="block text-[11px] text-slate-500">—</span>
+            </div>
+          </div>
+          <div id="rpg-proximity-prompt" class="absolute bottom-24 inset-x-0 flex justify-center pointer-events-none hidden">
+            <div class="bg-black/60 rounded-md px-3 py-1.5 text-[12px] text-white">Space to talk</div>
+          </div>
+          <div id="rpg-dialogue-box" class="absolute bottom-3 inset-x-3 panel p-4 hidden">
+            <div class="flex items-center justify-between mb-1">
+              <span id="rpg-speaker-name" class="text-[13px] font-medium">Hermes</span>
+              <span class="text-[11px] text-slate-500">Space to close</span>
+            </div>
+            <p id="rpg-dialogue-text" class="text-[13px] text-slate-200 leading-relaxed"></p>
+            <button id="btn-rpg-shrine-cutscene" type="button" class="mt-3 btn-primary text-[12px]">Generate shrine cutscene</button>
+          </div>
+          <div id="rpg-director-controls" class="absolute bottom-3 inset-x-3 bg-black/60 rounded-xl px-3 py-2 hidden items-center gap-3">
+            <button id="btn-rpg-toggle-play" class="w-8 h-8 rounded-full bg-white text-black">▶</button>
+            <span id="rpg-director-time" class="text-[12px] text-slate-300 tabular-nums">00:00 / 00:00</span>
+            <input id="rpg-scrubber" type="range" min="0" max="1440" value="0" class="flex-1 accent-electric" />
+            <button id="btn-rpg-next-shrine" class="btn-quiet text-[12px] py-1">Next</button>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 text-[12px] text-slate-400">
+          <div id="rpg-shrine-buttons" class="flex flex-wrap items-center gap-1.5"></div>
+          <span id="rpg-engine-status" class="ml-auto text-slate-600"></span>
+        </div>
       </section>
 
       <!-- ========================================================================== -->
       <!-- VIEW 3: API KEYS MANAGEMENT                                                -->
       <!-- ========================================================================== -->
-      <section id="view-api-keys" class="content-view space-y-6 max-w-3xl mx-auto hidden">
-        <div>
-          <h2 class="text-xl font-bold text-white mb-1">API Keys & Credentials</h2>
-          <p class="text-xs font-mono text-slate-400">Manage BytePlus ModelArk and xAI API keys with secure local persistence.</p>
-        </div>
-
-        <div class="glass-card rounded-2xl p-6 sm:p-8 space-y-6">
-          <!-- BytePlus Key -->
-          <div class="space-y-2">
-            <div class="flex items-center justify-between text-xs font-mono">
-              <label class="text-slate-300 font-bold flex items-center gap-2">
-                <span>BytePlus ARK_API_KEY:</span>
-                <span id="keys-page-ark-badge" class="px-2 py-0.5 rounded text-[10px] bg-amber-400/10 text-amber-400 border border-amber-400/20">Not Set</span>
-              </label>
-              <a href="https://ai.byteplus.com/ark" target="_blank" class="text-electric hover:underline text-[11px]">Get BytePlus Key ↗</a>
-            </div>
-            <input 
-              id="keys-page-input-ark" 
-              type="password" 
-              placeholder="Paste your BytePlus ARK_API_KEY here"
-              class="w-full bg-surface rounded-xl px-4 py-2.5 text-xs text-white border border-white/10 focus:border-electric focus:outline-none font-mono"
-            />
-          </div>
-
-          <!-- Base URL -->
-          <div class="space-y-2 text-xs font-mono">
-            <label class="text-slate-400 block">BytePlus Base URL (Default: ap-southeast-1):</label>
-            <input 
-              id="keys-page-input-base" 
-              type="text" 
-              value="https://ark.ap-southeast.bytepluses.com/api/v3"
-              class="w-full bg-surface rounded-xl px-4 py-2.5 text-xs text-slate-300 border border-white/10 focus:border-electric focus:outline-none font-mono"
-            />
-          </div>
-
-          <!-- xAI Grok Key -->
-          <div class="space-y-2 text-xs font-mono">
-            <div class="flex items-center justify-between">
-              <label class="text-slate-300 font-bold flex items-center gap-2">
-                <span>xAI XAI_API_KEY (Grok Imagine Video):</span>
-                <span id="keys-page-xai-badge" class="px-2 py-0.5 rounded text-[10px] bg-slate-500/10 text-slate-400 border border-slate-500/20">Optional</span>
-              </label>
-              <a href="https://console.x.ai" target="_blank" class="text-electric hover:underline text-[11px]">console.x.ai ↗</a>
-            </div>
-            <input 
-              id="keys-page-input-xai" 
-              type="password" 
-              placeholder="Paste xAI API key for Grok video generation"
-              class="w-full bg-surface rounded-xl px-4 py-2.5 text-xs text-white border border-white/10 focus:border-electric focus:outline-none font-mono"
-            />
-          </div>
-
-          <!-- Actions -->
-          <div class="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-4">
-            <button id="btn-test-connection" class="px-4 py-2 rounded-xl bg-surface hover:bg-surface-light border border-white/15 text-xs font-mono text-slate-300 hover:text-white transition-all">
-              ⚡ Test API Connection
-            </button>
-            <button id="btn-save-keys-page" class="px-6 py-2.5 rounded-xl bg-electric text-black font-bold text-xs font-mono uppercase tracking-wider hover:opacity-90 transition-all shadow-glow-cyan">
-              Save Credentials
-            </button>
-          </div>
-          <div id="keys-feedback-msg" class="text-xs font-mono hidden pt-1"></div>
-        </div>
-      </section>
+      <section id="view-api-keys" class="content-view hidden"></section>
 
       <!-- ========================================================================== -->
       <!-- VIEW 4: INTERACTIVE DOCUMENTATION                                          -->
       <!-- ========================================================================== -->
-      <section id="view-docs" class="content-view space-y-6 max-w-4xl mx-auto hidden">
+      <section id="view-docs" class="content-view space-y-5 max-w-2xl mx-auto hidden">
         <div>
-          <h2 class="text-xl font-bold text-white mb-1">How to use this app</h2>
-          <p class="text-xs font-mono text-slate-400">What each screen actually does.</p>
+          <h2 class="text-lg font-medium text-white">How to use this app</h2>
+          <p class="text-[13px] text-slate-500 mt-1">What each screen actually does.</p>
         </div>
 
-        <div class="space-y-4 text-sm text-slate-300">
-          <div class="glass-card rounded-2xl p-5 space-y-2">
-            <h3 class="text-sm font-bold text-white">1. API Keys</h3>
+        <div class="space-y-4 text-[13px] text-slate-300 leading-relaxed">
+          <div class="panel p-5 space-y-2">
+            <h3 class="text-sm font-medium text-white">1. Keys</h3>
             <p class="leading-relaxed text-xs">Paste a BytePlus <code class="font-mono text-electric">ARK_API_KEY</code> for Seedance video and the Director LLM. Paste an xAI key only if you pick Grok. Save writes the key to this browser and the running server process, not to disk. Restarting without <code class="font-mono">.env</code> clears the server copy.</p>
           </div>
-          <div class="glass-card rounded-2xl p-5 space-y-2">
-            <h3 class="text-sm font-bold text-white">2. AI Video Studio</h3>
+          <div class="panel p-5 space-y-2">
+            <h3 class="text-sm font-medium text-white">2. Video Studio</h3>
             <ol class="list-decimal ml-4 space-y-1 text-xs leading-relaxed">
               <li>Write a prompt. Pick a Seedance or Grok model, aspect ratio, and duration.</li>
               <li>Ref-to-video attaches the reference image. First/last frame sends start/end stills. IP effects prepend a tag onto the prompt.</li>
               <li>Generate calls <code class="font-mono">/api/cutscenes/generate</code>, polls status, then loads the file from <code class="font-mono">/renders/cutscenes</code>.</li>
             </ol>
           </div>
-          <div class="glass-card rounded-2xl p-5 space-y-2">
-            <h3 class="text-sm font-bold text-white">3. RPG Studio</h3>
+          <div class="panel p-5 space-y-2">
+            <h3 class="text-sm font-medium text-white">3. RPG Studio</h3>
             <ol class="list-decimal ml-4 space-y-1 text-xs leading-relaxed">
               <li>Enter a topic. Generate world calls the Director LLM (<code class="font-mono">/api/plan</code>) and places shrines from the returned chapters.</li>
               <li>WASD walks. Space opens shrine dialogue (the model's narration_text).</li>
@@ -654,12 +367,12 @@
               <li>Record walk captures the canvas auto-walk as a WebM in the browser. It does not run Remotion.</li>
             </ol>
           </div>
-          <div class="glass-card rounded-2xl p-5 space-y-2">
-            <h3 class="text-sm font-bold text-white">4. Settings</h3>
-            <p class="leading-relaxed text-xs">Default video model, director model, provider, shrine count, and canvas resolution. Save posts to <code class="font-mono">/api/settings</code> and localStorage. Video and RPG reads those on the next generate or plan call.</p>
+          <div class="panel p-5 space-y-2">
+            <h3 class="text-sm font-medium text-white">4. Settings</h3>
+            <p>Keys and defaults live on one page. Save posts to <code class="font-mono text-slate-400">/api/settings</code> and localStorage.</p>
           </div>
-          <div class="glass-card rounded-2xl p-5 space-y-2">
-            <h3 class="text-sm font-bold text-white">5. Usage</h3>
+          <div class="panel p-5 space-y-2">
+            <h3 class="text-sm font-medium text-white">5. Activity</h3>
             <p class="leading-relaxed text-xs">In-memory log for this server process: finished video jobs and RPG worlds that were planned or improved. It resets when the server restarts.</p>
           </div>
         </div>
@@ -668,95 +381,105 @@
       <!-- ========================================================================== -->
       <!-- VIEW 5: SETTINGS & PREFERENCES                                             -->
       <!-- ========================================================================== -->
-      <section id="view-settings" class="content-view space-y-6 max-w-3xl mx-auto hidden">
-        <div>
-          <h2 class="text-xl font-bold text-white mb-1">Settings</h2>
-          <p class="text-xs font-mono text-slate-400">These values are used by Video Studio generate and RPG plan/improve.</p>
+      <section id="view-settings" class="content-view space-y-8 max-w-xl mx-auto hidden">
+        <div class="panel p-6 space-y-4">
+          <h2 class="text-sm font-medium text-slate-200">Keys</h2>
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="label mb-0" for="keys-page-input-ark">BytePlus ARK key</label>
+              <span id="keys-page-ark-badge" class="text-[11px] text-slate-500">Not set</span>
+            </div>
+            <input id="keys-page-input-ark" type="password" placeholder="ARK_API_KEY" class="field font-mono" />
+          </div>
+          <div>
+            <label class="label" for="keys-page-input-base">BytePlus base URL</label>
+            <input id="keys-page-input-base" type="text" value="https://ark.ap-southeast.bytepluses.com/api/v3" class="field font-mono" />
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="label mb-0" for="keys-page-input-xai">xAI key (Grok, optional)</label>
+              <span id="keys-page-xai-badge" class="text-[11px] text-slate-500">Optional</span>
+            </div>
+            <input id="keys-page-input-xai" type="password" placeholder="XAI_API_KEY" class="field font-mono" />
+          </div>
+          <div class="flex items-center gap-2 pt-1">
+            <button id="btn-test-connection" type="button" class="btn-quiet">Test connection</button>
+            <button id="btn-save-keys-page" type="button" class="btn-primary">Save keys</button>
+          </div>
+          <div id="keys-feedback-msg" class="text-[12px] hidden"></div>
         </div>
 
-        <div class="glass-card rounded-2xl p-6 sm:p-8 space-y-5 text-xs font-mono">
+        <div class="panel p-6 space-y-4">
+          <h2 class="text-sm font-medium text-slate-200">Defaults</h2>
           <div>
-            <label class="text-slate-300 font-bold block mb-1">Default video model</label>
-            <select id="pref-video-model" class="w-full bg-surface text-white rounded-xl px-3.5 py-2.5 border border-white/10">
-              <option value="dreamina-seedance-2-5-260628">dreamina-seedance-2-5-260628</option>
-              <option value="dreamina-seedance-2-0-fast-260128">dreamina-seedance-2-0-fast-260128</option>
-              <option value="dreamina-seedance-2-0-260128">dreamina-seedance-2-0-260128</option>
-              <option value="dreamina-seedance-2-0-mini-260615">dreamina-seedance-2-0-mini-260615</option>
-              <option value="grok-imagine-video-1.5">grok-imagine-video-1.5</option>
+            <label class="label" for="pref-video-model">Video model</label>
+            <select id="pref-video-model" class="field">
+              <option value="dreamina-seedance-2-5-260628">Seedance 2.5</option>
+              <option value="dreamina-seedance-2-0-fast-260128">Seedance 2.0 Fast</option>
+              <option value="dreamina-seedance-2-0-260128">Seedance 2.0</option>
+              <option value="dreamina-seedance-2-0-mini-260615">Seedance Mini</option>
+              <option value="grok-imagine-video-1.5">Grok Imagine</option>
             </select>
           </div>
-
           <div>
-            <label class="text-slate-300 font-bold block mb-1">Director LLM (RPG world + improve)</label>
-            <select id="pref-director-model" class="w-full bg-surface text-white rounded-xl px-3.5 py-2.5 border border-white/10">
+            <label class="label" for="pref-director-model">Director LLM</label>
+            <select id="pref-director-model" class="field">
               <option value="seed-2-0-lite-260228">seed-2-0-lite-260228</option>
               <option value="seed-2-0-lite-260428">seed-2-0-lite-260428</option>
               <option value="seed-2-0-pro-260328">seed-2-0-pro-260328</option>
             </select>
           </div>
-
-          <div>
-            <label class="text-slate-300 font-bold block mb-1">Default video provider</label>
-            <select id="pref-provider" class="w-full bg-surface text-white rounded-xl px-3.5 py-2.5 border border-white/10">
-              <option value="seedance">seedance (BytePlus)</option>
-              <option value="grok">grok (xAI)</option>
-            </select>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="label" for="pref-provider">Provider</label>
+              <select id="pref-provider" class="field">
+                <option value="seedance">Seedance</option>
+                <option value="grok">Grok</option>
+              </select>
+            </div>
+            <div>
+              <label class="label" for="pref-chapter-count">Shrines</label>
+              <select id="pref-chapter-count" class="field">
+                <option value="3">3</option>
+                <option value="4" selected>4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+              </select>
+            </div>
           </div>
-
           <div>
-            <label class="text-slate-300 font-bold block mb-1">RPG shrine count</label>
-            <select id="pref-chapter-count" class="w-full bg-surface text-white rounded-xl px-3.5 py-2.5 border border-white/10">
-              <option value="3">3</option>
-              <option value="4" selected>4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="text-slate-300 font-bold block mb-1">RPG canvas resolution</label>
-            <select id="pref-resolution" class="w-full bg-surface text-white rounded-xl px-3.5 py-2.5 border border-white/10">
+            <label class="label" for="pref-resolution">RPG canvas</label>
+            <select id="pref-resolution" class="field">
               <option value="1080p">1920×1080</option>
               <option value="720p">1280×720</option>
             </select>
           </div>
-
-          <div id="pref-feedback" class="text-xs font-mono hidden"></div>
-          <div class="pt-4 border-t border-white/10 flex justify-end">
-            <button id="btn-save-pref" class="px-6 py-2.5 rounded-xl bg-electric text-black font-bold uppercase tracking-wider shadow-glow-cyan">
-              Save settings
-            </button>
-          </div>
+          <div id="pref-feedback" class="text-[12px] hidden"></div>
+          <button id="btn-save-pref" class="btn-primary">Save defaults</button>
         </div>
       </section>
 
       <!-- ========================================================================== -->
       <!-- VIEW 6: USAGE RECORDS & METRICS                                            -->
       <!-- ========================================================================== -->
-      <section id="view-usage" class="content-view space-y-6 max-w-5xl mx-auto hidden">
-        <div>
-          <h2 class="text-xl font-bold text-white mb-1">Usage</h2>
-          <p class="text-xs font-mono text-slate-400">Jobs recorded in this server process. Empty until you generate or plan something.</p>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs font-mono">
-          <div class="glass-card rounded-2xl p-4">
-            <span class="text-slate-400 text-[10px] uppercase block mb-1">Total</span>
-            <span id="metric-total-gen" class="text-2xl font-bold text-white">0</span>
+      <section id="view-usage" class="content-view space-y-6 max-w-4xl mx-auto hidden">
+        <div class="grid grid-cols-3 gap-3">
+          <div class="panel p-4">
+            <span class="label">Total</span>
+            <span id="metric-total-gen" class="text-2xl font-semibold text-white">0</span>
           </div>
-          <div class="glass-card rounded-2xl p-4">
-            <span class="text-slate-400 text-[10px] uppercase block mb-1">Video jobs</span>
-            <span id="metric-video-jobs" class="text-2xl font-bold text-electric">0</span>
+          <div class="panel p-4">
+            <span class="label">Video</span>
+            <span id="metric-video-jobs" class="text-2xl font-semibold text-white">0</span>
           </div>
-          <div class="glass-card rounded-2xl p-4">
-            <span class="text-slate-400 text-[10px] uppercase block mb-1">RPG plans</span>
-            <span id="metric-rpg-jobs" class="text-2xl font-bold text-celestial">0</span>
+          <div class="panel p-4">
+            <span class="label">RPG</span>
+            <span id="metric-rpg-jobs" class="text-2xl font-semibold text-white">0</span>
           </div>
         </div>
 
-        <!-- History Records Table -->
-        <div class="glass-card rounded-2xl p-5">
-          <h3 class="text-sm font-bold font-mono text-slate-200 mb-3">Generation Activity Log</h3>
+        <div class="panel p-5">
+          <h3 class="text-sm font-medium text-slate-200 mb-3">Log</h3>
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs font-mono">
               <thead class="text-slate-500 border-b border-white/10 pb-2">
@@ -785,7 +508,7 @@
 
   <!-- Modal 1: ByteDance Generation Modes Info (i) -->
   <div id="modal-mode-info" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 transition-all">
-    <div class="glass-card max-w-2xl w-full rounded-3xl p-6 sm:p-8 border border-white/15 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+    <div class="panel max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between pb-4 border-b border-white/10 mb-6">
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-full bg-electric/10 border border-electric/30 text-electric flex items-center justify-center font-mono font-bold text-sm">ℹ</div>
@@ -845,15 +568,16 @@
     const breadcrumbCategory = document.getElementById("breadcrumb-category");
 
     const viewMeta = {
-      video: { title: "📹 AI Video Studio", cat: "Service" },
-      rpg: { title: "🎮 RPG Studio", cat: "Service" },
-      "api-keys": { title: "🔑 API Keys & Credentials", cat: "Management" },
-      docs: { title: "📖 Docs & Guides", cat: "Management" },
-      settings: { title: "⚙ System Settings", cat: "Management" },
-      usage: { title: "📊 Usage Records & Metrics", cat: "Management" }
+      video: { title: "Video Studio", cat: "Service" },
+      rpg: { title: "RPG Studio", cat: "Service" },
+      "api-keys": { title: "Settings", cat: "Settings" },
+      docs: { title: "Guide", cat: "Guide" },
+      settings: { title: "Settings", cat: "Settings" },
+      usage: { title: "Activity", cat: "Activity" }
     };
 
     function switchView(viewName) {
+      if (viewName === "api-keys") viewName = "settings";
       if (!viewMeta[viewName]) viewName = "video";
       activeView = viewName;
 
@@ -913,29 +637,31 @@
           const hasXai = data.has_xai_key || Boolean(localXaiKey);
 
           const headerBtn = document.getElementById("header-btn-api");
+          const sidebarLabel = document.getElementById("sidebar-key-label");
+          headerBtn.className = "flex items-center gap-1.5 hover:text-white";
           if (hasArk) {
-            sidebarKeyDot.className = "w-2 h-2 rounded-full bg-emerald-400";
-            headerKeyDot.className = "w-2 h-2 rounded-full bg-emerald-400";
-            headerKeyText.innerText = "Key Configured";
-            headerBtn.className = "px-3 py-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 hover:text-emerald-200 transition-all text-[11px] flex items-center gap-1.5";
+            sidebarKeyDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400";
+            headerKeyDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400";
+            headerKeyText.innerText = "Key ready";
+            if (sidebarLabel) sidebarLabel.innerText = "Key ready";
             if (keysArkBadge) {
-              keysArkBadge.className = "px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-              keysArkBadge.innerText = data.ark_key_masked || "✓ Ready";
+              keysArkBadge.className = "text-[11px] text-emerald-400";
+              keysArkBadge.innerText = data.ark_key_masked || "Ready";
             }
           } else {
-            sidebarKeyDot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
-            headerKeyDot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
-            headerKeyText.innerText = "Key Required";
-            headerBtn.className = "px-3 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-400/30 text-amber-300 hover:text-amber-200 transition-all text-[11px] flex items-center gap-1.5";
+            sidebarKeyDot.className = "w-1.5 h-1.5 rounded-full bg-amber-400";
+            headerKeyDot.className = "w-1.5 h-1.5 rounded-full bg-amber-400";
+            headerKeyText.innerText = "Key required";
+            if (sidebarLabel) sidebarLabel.innerText = "Set API key";
             if (keysArkBadge) {
-              keysArkBadge.className = "px-2 py-0.5 rounded text-[10px] bg-amber-400/10 text-amber-400 border border-amber-400/20";
-              keysArkBadge.innerText = "Not Set";
+              keysArkBadge.className = "text-[11px] text-slate-500";
+              keysArkBadge.innerText = "Not set";
             }
           }
 
           if (hasXai && keysXaiBadge) {
-            keysXaiBadge.className = "px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-            keysXaiBadge.innerText = data.xai_key_masked || "✓ Ready";
+            keysXaiBadge.className = "text-[11px] text-emerald-400";
+            keysXaiBadge.innerText = data.xai_key_masked || "Ready";
           }
         }
       } catch (e) {
@@ -944,8 +670,8 @@
     }
     refreshKeyStatus();
 
-    document.getElementById("header-btn-api").onclick = () => switchView("api-keys");
-    document.getElementById("sidebar-open-keys").onclick = () => switchView("api-keys");
+    document.getElementById("header-btn-api").onclick = () => switchView("settings");
+    document.getElementById("sidebar-open-keys").onclick = () => switchView("settings");
 
     // --- API Keys Management Page Logic ---
     const inputArkKey = document.getElementById("keys-page-input-ark");
@@ -1019,9 +745,9 @@
       b.onclick = () => {
         selectedVideoMode = b.getAttribute("data-video-mode");
         modeBtns.forEach(btn => {
-          btn.className = "btn-mode-select px-3 py-3 rounded-xl border border-white/10 bg-surface text-slate-400 hover:text-white flex flex-col items-center gap-1 text-center";
+          btn.className = "btn-mode-select mode-off px-3 py-1.5 rounded-lg text-[13px]";
         });
-        b.className = "btn-mode-select px-3 py-3 rounded-xl border border-electric bg-electric/10 text-white font-bold flex flex-col items-center gap-1 text-center";
+        b.className = "btn-mode-select mode-on px-3 py-1.5 rounded-lg text-[13px]";
 
         if (selectedVideoMode === "ref_to_video") {
           subctrlRef.classList.remove("hidden");
@@ -1096,7 +822,7 @@
     };
 
     const btnGenVideo = document.getElementById("btn-generate-video-action");
-    const genBtnLabel = "✦ Generate Watermark-Free Video";
+    const genBtnLabel = "Generate";
 
     function prependRecentGeneration(title, meta) {
       const list = document.getElementById("recent-generations-list");
@@ -1159,17 +885,17 @@
       const isGrok = model.includes("grok");
 
       if (isGrok && !localXaiKey) {
-        switchView("api-keys");
+        switchView("settings");
         alert("xAI XAI_API_KEY is required for Grok video generation.");
         return;
       }
       if (!isGrok && !localApiKey) {
-        switchView("api-keys");
-        alert("BytePlus ARK_API_KEY is required. Please paste it in API Keys!");
+        switchView("settings");
+        alert("BytePlus ARK_API_KEY is required. Add it in Settings.");
         return;
       }
 
-      btnGenVideo.innerText = "✦ Submitting Generation Task...";
+      btnGenVideo.innerText = "Submitting…";
       btnGenVideo.disabled = true;
 
       const chapterId = Date.now() % 100000;
@@ -1200,7 +926,7 @@
         });
         if (res.ok) {
           document.getElementById("player-status-caption").innerText = `Generating with ${modelLabel(model)}...`;
-          btnGenVideo.innerText = "✦ Generating...";
+          btnGenVideo.innerText = "Generating…";
           await pollCutscene(chapterId, model);
         } else {
           const err = await res.json();
@@ -1279,8 +1005,8 @@
       rpgShrineButtons.innerHTML = "";
       rpgShrines.forEach((s, idx) => {
         const b = document.createElement("button");
-        b.className = "px-2.5 py-1 rounded-lg bg-surface hover:bg-white/10 text-slate-300 border border-white/5 text-[10px]";
-        b.innerText = `0${s.id} ${s.title.split(' ')[0]}`;
+        b.className = "px-2.5 py-1 rounded-md bg-white/5 hover:bg-white/10 text-slate-300 text-[12px]";
+        b.innerText = s.title;
         b.onclick = () => {
           player.x = s.x;
           player.y = s.y - 40;
@@ -1331,15 +1057,15 @@
 
     btnRpgPlay.onclick = () => {
       isRpgPlayableMode = true;
-      btnRpgPlay.className = "px-3.5 py-1.5 rounded-lg bg-celestial text-black font-bold shadow-glow-gold flex items-center gap-1.5";
-      btnRpgDirector.className = "px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white flex items-center gap-1.5";
+      btnRpgPlay.className = "px-3 py-1.5 rounded-md bg-white text-black";
+      btnRpgDirector.className = "px-3 py-1.5 rounded-md text-slate-400 hover:text-white";
       rpgDirectorControls.classList.add("hidden");
     };
 
     btnRpgDirector.onclick = () => {
       isRpgPlayableMode = false;
-      btnRpgDirector.className = "px-3.5 py-1.5 rounded-lg bg-electric text-black font-bold shadow-glow-cyan flex items-center gap-1.5";
-      btnRpgPlay.className = "px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white flex items-center gap-1.5";
+      btnRpgDirector.className = "px-3 py-1.5 rounded-md bg-white text-black";
+      btnRpgPlay.className = "px-3 py-1.5 rounded-md text-slate-400 hover:text-white";
       rpgDirectorControls.classList.remove("hidden");
       rpgDirectorControls.classList.add("flex");
     };
@@ -1542,7 +1268,7 @@
 
     async function planRpgWorld(improve) {
       if (!localApiKey) {
-        switchView("api-keys");
+        switchView("settings");
         alert("BytePlus ARK_API_KEY is required for the Director LLM.");
         return;
       }
