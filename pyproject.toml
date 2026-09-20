@@ -25,3 +25,8 @@ dev = [
 
 [project.scripts]
 multimedia = "src.cli:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+

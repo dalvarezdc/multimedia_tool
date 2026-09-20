@@ -36,6 +36,7 @@ class CutsceneGenerateRequest(BaseModel):
     prompt: str
     duration_seconds: int = 5
     character_reference_image: Optional[str] = None
+    provider: str = Field(default="seedance", description="'seedance' (BytePlus) or 'grok' (xAI)")
 
 class MasterRenderRequest(BaseModel):
     storyboard: Dict[str, Any]
@@ -104,8 +105,9 @@ def create_app():
 
         def _worker():
             try:
-                client = SeedanceClient()
-                client.generate_video(
+                from src.generators import get_video_generator
+                generator = get_video_generator(provider=req.provider)
+                generator.generate_video(
                     prompt=req.prompt,
                     output_path=clip_path,
                     character_reference_image=req.character_reference_image,

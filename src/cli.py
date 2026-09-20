@@ -20,8 +20,9 @@ def main():
     parser.add_argument("--character-image", type=str, default=None, help="Path or URL to character reference image")
     parser.add_argument("--character-prompt", type=str, default=None, help="Visual description tokens of the character")
     parser.add_argument("--chapters", type=int, default=4, help="Number of roadmap chapters (default: 4)")
+    parser.add_argument("--provider", type=str, default="seedance", choices=["seedance", "grok"], help="Video generator provider: 'seedance' (BytePlus) or 'grok' (xAI)")
     parser.add_argument("--output-dir", type=str, default="./renders", help="Output directory for generated files")
-    parser.add_argument("--skip-video-gen", action="store_true", help="Only generate storyboard JSON without calling Seedance")
+    parser.add_argument("--skip-video-gen", action="store_true", help="Only generate storyboard JSON without calling video API")
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -67,9 +68,10 @@ def main():
         logger.info("Skipping Seedance video generation as requested (--skip-video-gen).")
         return
 
-    # 4. Seedance Video Generation (Watermark-Free with Multimodal Reference)
-    logger.info("--- 2. Generating Watermark-Free Cutscenes via Seedance with Character Consistency ---")
-    seedance = SeedanceClient()
+    # 4. Video Generation (Seedance or Grok)
+    logger.info(f"--- 2. Generating Cutscenes via {args.provider.upper()} with Character Consistency ---")
+    from src.generators import get_video_generator
+    generator = get_video_generator(provider=args.provider)
     qa = VideoQAAgent()
 
     ref_image = char_profile["reference_image_url"] if (char_profile["reference_image_url"] and os.path.exists(char_profile["reference_image_url"])) else None
@@ -79,8 +81,8 @@ def main():
         prompt = ch["seedance_prompt"]
         clip_path = os.path.join(cutscenes_dir, f"chapter_{ch_id}.mp4")
         
-        logger.info(f"Generating Cutscene for Chapter {ch_id}: '{ch['title']}'...")
-        seedance.generate_video(
+        logger.info(f"Generating Cutscene for Chapter {ch_id}: '{ch['title']}' via {args.provider.upper()}...")
+        generator.generate_video(
             prompt=prompt,
             output_path=clip_path,
             character_reference_image=ref_image,

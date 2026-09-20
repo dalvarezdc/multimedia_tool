@@ -350,17 +350,20 @@
           </div>
           
           <div class="space-y-2 mb-3">
+            <div class="flex items-center justify-between text-xs p-2 rounded-lg bg-surface/80 border border-white/5">
+              <span class="font-mono text-slate-300">Generator Engine:</span>
+              <select id="select-video-provider" class="bg-obsidian text-electric font-mono text-xs px-2 py-1 rounded border border-white/10 focus:outline-none">
+                <option value="seedance">BytePlus Seedance 2.5</option>
+                <option value="grok">xAI Grok Imagine 1.5</option>
+              </select>
+            </div>
             <div class="flex items-center justify-between text-xs p-2.5 rounded-lg bg-surface/80 border border-white/5">
               <span class="font-mono text-slate-300">Watermark Status:</span>
-              <span class="font-mono font-bold text-emerald-400">DISABLED (watermark=False)</span>
+              <span class="font-mono font-bold text-emerald-400">100% ZERO-WATERMARK</span>
             </div>
             <div class="flex items-center justify-between text-xs p-2.5 rounded-lg bg-surface/80 border border-white/5">
               <span class="font-mono text-slate-300">Negative Filter:</span>
               <span class="font-mono text-slate-400">--no watermark, logo, text</span>
-            </div>
-            <div class="flex items-center justify-between text-xs p-2.5 rounded-lg bg-surface/80 border border-white/5">
-              <span class="font-mono text-slate-300">Model Engine:</span>
-              <span class="font-mono text-electric">dreamina-seedance-2.5</span>
             </div>
           </div>
         </div>

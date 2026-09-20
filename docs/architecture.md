@@ -106,20 +106,19 @@ flowchart TB
     $$y(t) = y_0 + v_0 t - \frac{1}{2} g t^2$$
   * **Camera Tracking**: The viewport coordinates smoothly follow the player using linear interpolation (`lerp` with easing) to create cinematic framing.
 
-### 3.3. Watermark-Free Seedance Video Pipeline
-* **Role**: High-fidelity AI video generation illustrating each technical milestone.
-* **Integration**: BytePlus ModelArk SDK (`from arkruntime import Ark`).
-* **Watermark Suppression Protocol**:
-  1. **API Flag**: `watermark=False` explicitly passed to `client.content_generation.tasks.create`.
-  2. **Negative Constraint Injection**: Every prompt automatically appends:
-     ```text
-     --no watermark, logo, text overlay, timestamps, subtitles, UI elements, border
-     ```
-  3. **Verification Hook**: An automated frame analysis check verifies the bottom-right quadrant of the generated clip for luminance variance / logo stamps before admitting the file into the rendering cache.
-* **Lifecycle**:
-  * Tasks are submitted asynchronously to the BytePlus API.
-  * A non-blocking background poller queries `client.content_generation.tasks.get(task_id=...)` with exponential backoff until `status == "succeeded"`.
-  * Outputs are downloaded to `cutscenes/chapter_{id}.mp4`.
+### 3.3. Multi-Provider AI Video Generation Subsystem (Seedance & Grok)
+* **Role**: High-fidelity AI video generation illustrating each technical milestone with zero watermarking.
+* **Supported Video Providers**:
+  1. **BytePlus ModelArk (Seedance 2.0 / 2.5)**:
+     * High multimodal fidelity, up to 30s clips, precise camera control.
+     * Enforced watermark-free execution via `watermark=False` API parameter and negative constraints.
+  2. **xAI Grok Imagine (Video 1.5 via api.x.ai)**:
+     * Fast, cinematic video generation, native audio synthesis, 1–15 second durations.
+     * Native clean API output without overlays or watermarks.
+     * Multimodal character consistency through image input references.
+* **Unified Factory (`src.generators.get_video_generator`)**:
+  * Seamless runtime switching via `--provider {seedance,grok}` or environment variable `DEFAULT_VIDEO_PROVIDER`.
+* **Verification Hook**: Automated computer vision frame analysis audits corner quadrants for luminance variance, ensuring zero watermarks before admitting clips into the render cache.
 
 ### 3.4. Audio & Soundscape Synthesis
 * **Voiceover**: Generates natural speech synchronized to each chapter segment using ElevenLabs or native TTS.
