@@ -26,3 +26,11 @@ def test_grok_missing_api_key(monkeypatch):
     monkeypatch.delenv("XAI_API_KEY", raising=False)
     with pytest.raises(ValueError, match="XAI_API_KEY must be provided"):
         GrokVideoClient()
+
+def test_seedance_modes_configuration():
+    os.environ["ARK_API_KEY"] = "mock_ark_key"
+    client = SeedanceClient()
+    assert client.model_id is not None
+    # Verify helper parses local or remote refs correctly
+    assert client._prepare_image_reference("https://example.com/ref.png") == "https://example.com/ref.png"
+
