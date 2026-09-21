@@ -6,7 +6,7 @@ Exposes REST endpoints for:
 3. Director Storyboard Planning (/api/plan)
 4. Seedance / Grok Cutscene Generation (/api/cutscenes/generate)
 5. Task Status Polling (/api/cutscenes/status/{id})
-6. Web App & Landing Page Serving (/ and /app)
+6. Web App & Landing Page Serving (/ and /app) when SERVE_UI=1
 """
 
 import os
@@ -29,6 +29,11 @@ from src.models_registry import (
     get_all_models_grouped,
 )
 from src.inventory import inventory_manager
+
+
+def _env_enabled(name: str, default: str = "1") -> bool:
+    return os.getenv(name, default).strip().lower() in {"1", "true", "yes", "on"}
+
 
 try:
     from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
@@ -112,7 +117,9 @@ def create_app():
         title="Multimedia Tool Studio API",
         description="Backend API for Retro Pixel Animation & Multimodal Video Generation with ByteDance Seedance & SeeDream",
         version="0.3.0",
-        docs_url="/api/docs"
+        docs_url="/api/docs",
+        openapi_url="/api/openapi.json",
+        redoc_url="/api/redoc",
     )
 
     app.add_middleware(
@@ -869,35 +876,42 @@ def create_app():
             task["elapsed_seconds"] = int(time.time() - task["started_at"])
         return task
 
+    @app.get("/api/health")
+    def health():
+        """Liveness probe for Docker / CI. Does not check upstream provider keys."""
+        return {"status": "ok", "service": "api"}
+
     # =========================================================================
     # 5. PAGES ROUTING: UNIFIED CONSOLE & SERVICES
+    # In Docker, nginx serves ui/ and proxies /api, /uploads, /renders here.
     # =========================================================================
-    @app.get("/")
-    @app.get("/app")
-    @app.get("/video")
-    @app.get("/multimedia")
-    @app.get("/rpg")
-    @app.get("/api-keys")
-    @app.get("/docs")
-    @app.get("/settings")
-    @app.get("/usage")
+    serve_ui = _env_enabled("SERVE_UI", "1")
+    if serve_ui:
+        @app.get("/")
+        @app.get("/app")
+        @app.get("/video")
+        @app.get("/multimedia")
+        @app.get("/rpg")
+        @app.get("/api-keys")
+        @app.get("/docs")
+        @app.get("/settings")
+        @app.get("/usage")
+        def serve_console():
+            app_file = os.path.join(ui_dir, "app.html")
+            if os.path.exists(app_file):
+                return FileResponse(app_file)
+            return FileResponse(os.path.join(ui_dir, "index.html"))
 
-    def serve_console():
-        app_file = os.path.join(ui_dir, "app.html")
-        if os.path.exists(app_file):
-            return FileResponse(app_file)
-        return FileResponse(os.path.join(ui_dir, "index.html"))
+        @app.get("/portal")
+        @app.get("/landing")
+        def serve_landing_portal():
+            landing_file = os.path.join(ui_dir, "index.html")
+            if os.path.exists(landing_file):
+                return FileResponse(landing_file)
+            return FileResponse(os.path.join(ui_dir, "app.html"))
 
-    @app.get("/portal")
-    @app.get("/landing")
-    def serve_landing_portal():
-        landing_file = os.path.join(ui_dir, "index.html")
-        if os.path.exists(landing_file):
-            return FileResponse(landing_file)
-        return FileResponse(os.path.join(ui_dir, "app.html"))
-
-    if os.path.exists(ui_dir):
-        app.mount("/static", StaticFiles(directory=ui_dir), name="static")
+        if os.path.exists(ui_dir):
+            app.mount("/static", StaticFiles(directory=ui_dir), name="static")
 
     renders_dir = os.path.join(os.path.dirname(ui_dir), "renders")
     os.makedirs(renders_dir, exist_ok=True)

@@ -5,7 +5,7 @@
 SHELL := /bin/bash
 PYTHON := uv run python
 
-.PHONY: help install setup dev serve remotion cli cli-grok test coverage clean check
+.PHONY: help install setup dev serve remotion cli cli-grok test coverage docker-up docker-down docker-build clean check
 
 # Default Target
 help:
@@ -20,6 +20,8 @@ help:
 	@echo "  make cli-grok   Run demo pipeline with xAI Grok Imagine Video"
 	@echo "  make test       Run test suite with pytest via uv"
 	@echo "  make coverage   Run tests with line coverage report (src/)"
+	@echo "  make docker-up  Build and run API + UI containers (http://localhost:8080)"
+	@echo "  make docker-down Stop compose stack"
 	@echo "  make clean      Remove build artifacts, caches, and temp render files"
 	@echo "====================================================================="
 
@@ -75,6 +77,17 @@ coverage:
 	@echo "--> Running pytest with coverage..."
 	uv run pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=html:htmlcov
 	@echo "--> HTML report: htmlcov/index.html"
+
+# Docker: API (FastAPI) + UI (nginx reverse proxy)
+docker-build:
+	docker compose build
+
+docker-up:
+	@echo "--> Studio at http://localhost:8080 (nginx) proxying API"
+	docker compose up --build
+
+docker-down:
+	docker compose down
 
 # Clean Temporary Render Artifacts and Caches
 clean:

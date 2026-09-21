@@ -1,0 +1,54 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    image: multimedia-tool-api:local
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      SERVE_UI: "0"
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DEFAULT_VIDEO_PROVIDER: ${DEFAULT_VIDEO_PROVIDER:-seedance}
+      ARK_API_KEY: ${ARK_API_KEY:-}
+      ARK_BASE_URL: ${ARK_BASE_URL:-https://ark.ap-southeast.bytepluses.com/api/v3}
+      ARK_LLM_MODEL: ${ARK_LLM_MODEL:-seed-2-0-lite-260228}
+      ARK_SEEDANCE_MODEL: ${ARK_SEEDANCE_MODEL:-dreamina-seedance-2-5-260628}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      XAI_BASE_URL: ${XAI_BASE_URL:-https://api.x.ai/v1}
+      XAI_VIDEO_MODEL: ${XAI_VIDEO_MODEL:-grok-imagine-video-1.5}
+    volumes:
+      - data:/app/data
+      - uploads:/app/uploads
+      - renders:/app/renders
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/app/.venv/bin/python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    expose:
+      - "8000"
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    image: multimedia-tool-web:local
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  data:
+  uploads:
+  renders:

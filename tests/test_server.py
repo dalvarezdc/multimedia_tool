@@ -16,6 +16,32 @@ def client(tmp_path, monkeypatch):
     app = create_app()
     return TestClient(app)
 
+def test_health_endpoint(client):
+    response = client.get("/api/health")
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
+    assert response.json()["service"] == "api"
+
+
+def test_api_only_mode_does_not_serve_html(tmp_path, monkeypatch):
+    test_uploads = tmp_path / "uploads"
+    test_data = tmp_path / "data"
+    test_uploads.mkdir(parents=True, exist_ok=True)
+    test_data.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("MULTIMEDIA_UPLOADS_DIR", str(test_uploads))
+    monkeypatch.setenv("MULTIMEDIA_DATA_DIR", str(test_data))
+    monkeypatch.setenv("SERVE_UI", "0")
+    app = create_app()
+    client = TestClient(app)
+    assert client.get("/").status_code == 404
+    assert client.get("/app").status_code == 404
+    assert client.get("/portal").status_code == 404
+    health = client.get("/api/health")
+    assert health.status_code == 200
+    assert client.get("/api/usage").status_code == 200
+    assert client.get("/api/openapi.json").status_code == 200
+
+
 def test_landing_page_route(client):
     response = client.get("/portal")
     assert response.status_code == 200

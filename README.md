@@ -93,6 +93,15 @@ cd remotion && npm install && cd ..
 uv run python -m src.server
 ```
 
+Local `make dev` still serves API and UI from one process. For Docker they are split: nginx serves `ui/` on port 8080 and reverse-proxies `/api`, `/uploads`, and `/renders` to FastAPI (`SERVE_UI=0`).
+
+```bash
+cp .env.example .env   # if you have not already
+make docker-up         # http://localhost:8080
+```
+
+GitHub Actions (`.github/workflows/ci.yml`) runs pytest with a 90% coverage floor and builds both images on every push and pull request.
+
 ### 4. Or Run Headless via CLI
 ```bash
 # Run the pipeline with a custom topic and context file
