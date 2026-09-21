@@ -121,6 +121,28 @@ def infer_model_capabilities(model_id: str, provider: str = "seedance", display_
     mid = model_id.lower()
     name = display_name or model_id
 
+    # 0. Grok Imagine stills — must run before the "imagine" video keyword
+    if "grok" in mid and "image" in mid and "video" not in mid:
+        return ModelInfo(
+            id=model_id,
+            display_name=name,
+            category="image",
+            description="xAI Grok Imagine image generation and editing model.",
+            recommended_for="Text-to-image and reference-image edits on an xAI key.",
+            ui_layout_type="image_standard",
+            headline="Generate images with Grok Imagine",
+            icon_type="image",
+            placeholder="Describe the image. Attach references with @Pictures N.",
+            input_slots=[{"id": "image", "label": "Image", "icon": "image"}],
+            mode_selector={"enabled": True, "default": "Image generation", "options": ["Image generation", "Image edit"]},
+            sample_cost="USD 0.0200",
+            sample_examples=SAMPLE_INSPIRATIONS,
+            provider=provider if provider in ("grok", "xai") else "grok",
+            ratios=["16:9", "9:16", "1:1", "3:2", "2:3"],
+            resolutions=["1K", "2K"],
+            clip_counts=[1],
+        )
+
     # 1. Video Models
     if any(k in mid for k in ["seedance", "video", "imagine", "animate", "motion"]):
         if any(k in mid for k in ["2.5", "2-5"]):

@@ -669,6 +669,7 @@
                   <th>Service</th>
                   <th>Model / Mode</th>
                   <th>Topic / Prompt Snippet</th>
+                  <th>Est. Cost</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -1066,6 +1067,29 @@ payload = {
 
 res = requests.post(url, headers=headers, json=payload)
 print("Response:", res.json())`;
+      } else if (model.provider === "grok" && model.category === "image") {
+        const grokImgPayload = {
+          model: modelId,
+          prompt: prompt,
+          n: 1,
+          aspect_ratio: ratio
+        };
+        curlCode = `curl -X POST "https://api.x.ai/v1/images/generations" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer $XAI_API_KEY" \\
+  -d '${JSON.stringify(grokImgPayload, null, 2)}'`;
+        pythonCode = `import os, requests
+
+url = "https://api.x.ai/v1/images/generations"
+headers = {"Authorization": f"Bearer {os.environ['XAI_API_KEY']}", "Content-Type": "application/json"}
+payload = {
+    "model": "${modelId}",
+    "prompt": ${JSON.stringify(prompt)},
+    "n": 1,
+    "aspect_ratio": "${ratio}"
+}
+res = requests.post(url, headers=headers, json=payload)
+print("Response:", res.json())`;
       } else if (model.category === "image" || (modelId && modelId.toLowerCase().includes("seedream"))) {
         const imageArgList = [];
         if (importedAssets && importedAssets.length > 0) {
@@ -1174,6 +1198,107 @@ print("Task submitted:", task.id)`;
       const pyEl = document.getElementById("api-python-code");
       if (curlEl) curlEl.innerText = curlCode;
       if (pyEl) pyEl.innerText = pythonCode;
+    }
+
+    function calculateModelCost(modelId, opts = {}) {
+      const mid = (modelId || "").toLowerCase();
+      const res = (opts.resolution || "720p").toLowerCase();
+      const dur = Math.max(1, parseInt(opts.duration || 5, 10));
+      const clips = Math.max(1, parseInt(opts.clipCount || 1, 10));
+      const draft = !!opts.draft;
+      const refCount = Math.max(0, parseInt(opts.refAssetCount || 0, 10));
+
+      // 1. Image Models (SeeDream family)
+      if (mid.includes("seedream") || mid.includes("image") || mid.includes("dola")) {
+        if (mid.includes("5-0") || mid.includes("5.0")) {
+          // Dola-Seedream-5.0-pro: 2K is 0.045-0.090 USD per piece, 4K is 0.060-0.120 USD per piece
+          const is4k = res.includes("4k");
+          const minRate = is4k ? 0.060 : 0.045;
+          const maxRate = is4k ? 0.120 : 0.090;
+          return `${(minRate * clips).toFixed(3)}-${(maxRate * clips).toFixed(3)} USD`;
+        } else if (mid.includes("4-5") || mid.includes("4.5")) {
+          // ByteDance-Seedream-4.5: 2K is 0.030 USD, 4K is 0.040 USD per piece
+          const is4k = res.includes("4k");
+          const rate = is4k ? 0.040 : 0.030;
+          return `estimated cost ${(rate * clips).toFixed(3)} USD`;
+        } else {
+          const is4k = res.includes("4k");
+          const rate = is4k ? 0.035 : 0.025;
+          return `USD ${(rate * clips).toFixed(4)}`;
+        }
+      }
+
+      // 2. xAI Grok Family (Video)
+      if (mid.includes("grok")) {
+        if (mid.includes("1.5") || mid.includes("1-5")) {
+          // grok-imagine-video-1.5: 480p: $0.08/s, 720p: $0.14/s, 1080p: $0.25/s, +$0.01 per image
+          let ratePerSec = 0.1400;
+          if (res.includes("1080")) ratePerSec = 0.2500;
+          else if (res.includes("480")) ratePerSec = 0.0800;
+          const imageCharge = 0.0100 * refCount;
+          const cost = ((ratePerSec * dur) + imageCharge) * clips;
+          return `USD ${cost.toFixed(4)}`;
+        } else {
+          const ratePerSec = res.includes("480") ? 0.0500 : 0.0700;
+          const cost = ratePerSec * dur * clips;
+          return `USD ${cost.toFixed(4)}`;
+        }
+      }
+
+      // 3. BytePlus Seedance Family (Video)
+      let ratePerSec = 0.12096;
+      if (mid.includes("2-5") || mid.includes("2.5") || mid.includes("2-0-fast") || mid.includes("2.0-fast")) {
+        if (res.includes("1080")) ratePerSec = 0.24192;
+        else if (res.includes("480")) ratePerSec = 0.08000;
+        else ratePerSec = 0.12096;
+      } else if (mid.includes("2-0-mini") || mid.includes("2.0-mini")) {
+        ratePerSec = res.includes("480") ? 0.01000 : 0.01600;
+      } else if (mid.includes("1-5") || mid.includes("1.5")) {
+        if (res.includes("1080")) ratePerSec = 0.10300;
+        else if (res.includes("480")) ratePerSec = 0.03500;
+        else ratePerSec = 0.05184;
+      } else if (mid.includes("1-0-pro-fast") || mid.includes("1.0-pro-fast")) {
+        ratePerSec = res.includes("480") ? 0.01500 : 0.02060;
+      } else if (mid.includes("1-0") || mid.includes("1.0")) {
+        ratePerSec = res.includes("480") ? 0.02500 : 0.04000;
+      } else {
+        if (res.includes("1080")) ratePerSec = 0.18000;
+        else if (res.includes("480")) ratePerSec = 0.05000;
+        else ratePerSec = 0.09000;
+      }
+
+      const multiplier = draft ? 0.5 : 1.0;
+      const cost = ratePerSec * dur * multiplier * clips;
+      return `USD ${cost.toFixed(4)}`;
+    }
+
+    function updateDynamicCost() {
+      const costLabel = document.getElementById("dynamic-cost-label");
+      if (!costLabel) return;
+      const modelId = (modelSelect && modelSelect.value) || "";
+      const durEl = document.getElementById("video-duration");
+      const resEl = document.getElementById("video-resolution");
+      const clipEl = document.getElementById("video-clip-count");
+      const audioEl = document.getElementById("video-audio");
+      const draftEl = document.getElementById("video-draft");
+
+      const duration = durEl ? parseInt(durEl.value || "5", 10) : 5;
+      const resolution = resEl ? resEl.value : "720p";
+      const clipCount = clipEl ? parseInt(clipEl.value || "1", 10) : 1;
+      const audio = audioEl ? audioEl.value !== "off" : true;
+      const draft = draftEl ? draftEl.value === "on" : false;
+      const refAssetCount = (typeof importedAssets !== "undefined" && importedAssets) ? importedAssets.length : 0;
+
+      const formatted = calculateModelCost(modelId, {
+        duration,
+        resolution,
+        clipCount,
+        audio,
+        draft,
+        refAssetCount
+      });
+      costLabel.innerText = formatted;
+      costLabel.title = `Estimated API generation cost for ${modelId} (${resolution}, ${duration}s, ${clipCount} clip${clipCount === 1 ? '' : 's'})`;
     }
 
     function updateStudioForModel(modelId) {
@@ -1308,15 +1433,38 @@ print("Task submitted:", task.id)`;
         const ratioEl = document.getElementById("video-aspect-ratio");
         const durEl = document.getElementById("video-duration");
         const resEl = document.getElementById("video-resolution");
+        const clipEl = document.getElementById("video-clip-count");
+        const audioEl = document.getElementById("video-audio");
+        const draftEl = document.getElementById("video-draft");
+
         if (ratioEl) ratioEl.onchange = updatePreviewSpec;
-        if (durEl) durEl.onchange = updatePreviewSpec;
-        if (resEl) resEl.onchange = updatePreviewSpec;
+        if (durEl) {
+          durEl.onchange = () => {
+            updatePreviewSpec();
+            updateDynamicCost();
+            if (modelSelect && modelSelect.value) updateApiModal(modelSelect.value);
+          };
+        }
+        if (resEl) {
+          resEl.onchange = () => {
+            updatePreviewSpec();
+            updateDynamicCost();
+            if (modelSelect && modelSelect.value) updateApiModal(modelSelect.value);
+          };
+        }
+        if (clipEl) clipEl.onchange = updateDynamicCost;
+        if (audioEl) {
+          audioEl.onchange = () => {
+            updateDynamicCost();
+            if (modelSelect && modelSelect.value) updateApiModal(modelSelect.value);
+          };
+        }
+        if (draftEl) draftEl.onchange = updateDynamicCost;
         updatePreviewSpec();
       }
 
       // 7. Cost Label
-      const costLabel = document.getElementById("dynamic-cost-label");
-      if (costLabel) costLabel.innerText = model.sample_cost || "USD 0.6048";
+      updateDynamicCost();
 
       // 8. Examples Drawer
       const examplesDrawer = document.getElementById("examples-drawer");
@@ -1791,6 +1939,7 @@ print("Task submitted:", task.id)`;
         list.innerHTML = "";
         if (count) count.innerText = "0";
         updateDropzoneRefBadge();
+        updateDynamicCost();
         if (modelSelect && modelSelect.value) updateApiModal(modelSelect.value);
         return;
       }
@@ -1798,6 +1947,7 @@ print("Task submitted:", task.id)`;
       tray.classList.remove("hidden");
       if (count) count.innerText = importedAssets.length;
       updateDropzoneRefBadge();
+      updateDynamicCost();
 
       list.innerHTML = importedAssets.map((asset) => `
         <div class="flex items-center gap-2 px-2.5 py-1.5 bg-[#141724] border border-white/10 rounded-xl hover:border-cyan-500/40 transition-all group shrink-0">
@@ -2399,9 +2549,10 @@ print("Task submitted:", task.id)`;
       const prompt = document.getElementById("video-prompt-input").value;
       const model = modelSelect.value;
       const currentModelObj = (typeof availableModels !== "undefined" && availableModels.find(m => m.id === model)) || (typeof modelCatalogData !== "undefined" && modelCatalogData[model]) || {};
-      const isImageModel = currentModelObj.category === "image" || (model && model.toLowerCase().includes("seedream"));
+      const isGrokImage = currentModelObj.category === "image" && (currentModelObj.provider === "grok" || (model && model.toLowerCase().includes("grok-imagine-image")));
+      const isImageModel = currentModelObj.category === "image" || (model && (model.toLowerCase().includes("seedream") || model.toLowerCase().includes("grok-imagine-image")));
       const isGrok = model && model.toLowerCase().includes("grok");
-      const isVideoModel = currentModelObj.category === "video" || (model && model.toLowerCase().includes("seedance")) || isGrok;
+      const isVideoModel = currentModelObj.category === "video" || (model && model.toLowerCase().includes("seedance")) || (isGrok && !isImageModel);
 
       if (!model || (!isImageModel && !isVideoModel)) {
         alert("Pick a supported Seedance, Seedream, or Grok model before generating.");
@@ -2437,7 +2588,7 @@ print("Task submitted:", task.id)`;
         image_model: model,
         ratio: ratio,
         resolution: resolutionEl ? resolutionEl.value : "2k",
-        provider: "seedream",
+        provider: isGrokImage ? "grok" : "seedream",
         reference_assets: importedAssets.map(a => ({
           id: a.id,
           filename: a.filename,
@@ -2446,7 +2597,7 @@ print("Task submitted:", task.id)`;
           url: a.url,
           local_path: a.local_path
         })),
-        api_key: localApiKey,
+        api_key: isGrokImage ? localXaiKey : localApiKey,
         watermark: false
       } : {
         chapter_id: chapterId,
@@ -2985,7 +3136,7 @@ print("Task submitted:", task.id)`;
           tbody.innerHTML = "";
           if (!data.records.length) {
             const tr = document.createElement("tr");
-            tr.innerHTML = `<td class="py-3 text-slate-500" colspan="5">No jobs in this server process yet.</td>`;
+            tr.innerHTML = `<td class="py-3 text-slate-500" colspan="6">No jobs in this server process yet.</td>`;
             tbody.appendChild(tr);
           }
           data.records.forEach(r => {
@@ -2996,6 +3147,7 @@ print("Task submitted:", task.id)`;
               <td><span class="px-2 py-0.5 rounded text-[10px] ${r.service.includes('Video') ? 'bg-electric/10 text-electric' : 'bg-celestial/10 text-celestial'}">${r.service}</span></td>
               <td class="text-slate-300">${r.model} • ${r.mode}</td>
               <td class="text-slate-200">${(r.prompt || "").slice(0, 40)}</td>
+              <td class="text-slate-300 font-mono text-[11px]">${r.cost || "—"}</td>
               <td class="text-slate-300">${r.status}</td>
             `;
             tbody.appendChild(tr);

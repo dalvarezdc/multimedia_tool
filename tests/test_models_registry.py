@@ -13,7 +13,7 @@ from src.models_registry import (
 )
 
 def test_model_catalog_completeness():
-    assert len(MODEL_CATALOG) == 28
+    assert len(MODEL_CATALOG) == 32
     
     expected_ids = [
         "skylark-embedding-vision-251215",
@@ -44,15 +44,19 @@ def test_model_catalog_completeness():
         "bytedance-seedance-1-5-pro-251215",
         "bytedance-seedream-4-5-251128",
         "grok-imagine-video-1.5",
+        "grok-imagine-video",
+        "grok-imagine-image-2.0",
+        "grok-imagine-image",
+        "grok-imagine-image-quality",
     ]
     for mid in expected_ids:
         assert mid in MODEL_CATALOG, f"Missing model {mid} in catalog"
 
 def test_categories_grouping():
     grouped = get_all_models_grouped()
-    assert len(grouped["video"]) == 7
+    assert len(grouped["video"]) == 8
     assert len(grouped["director_llm"]) == 14
-    assert len(grouped["image"]) == 4
+    assert len(grouped["image"]) == 7
     assert len(grouped["3d"]) == 2
     assert len(grouped["vision_embedding"]) == 1
 
@@ -64,6 +68,17 @@ def test_grok_video_capabilities():
     assert 15 in grok.durations
     assert "16:9" in grok.ratios
     assert grok.resolutions == []
+
+
+def test_grok_image_models():
+    img = get_model_info("grok-imagine-image-2.0")
+    assert img is not None
+    assert img.category == "image"
+    assert img.provider == "grok"
+    assert img.ui_layout_type == "image_standard"
+    assert "2K" in img.resolutions
+    assert get_model_info("grok-imagine-image").sample_cost == "USD 0.0200"
+    assert get_model_info("grok-imagine-video").category == "video"
 
 
 def test_seedance_25_capability_controls():
@@ -82,7 +97,7 @@ def test_defaults():
 
 def test_get_models_by_category():
     video = get_models_by_category("video")
-    assert len(video) == 7
+    assert len(video) == 8
     assert all(m["category"] == "video" for m in video)
     assert get_models_by_category("nope") == []
 
@@ -117,3 +132,62 @@ def test_ui_layout_profiles():
     assert seedream45.ui_layout_type == "image_group"
     assert "Generate group diagram" in seedream45.mode_selector["default"]
     assert "0.160 USD" in seedream45.sample_cost
+
+
+def test_calculate_model_cost_video_and_image():
+    from src.models_registry import calculate_model_cost
+
+    # Seedance 2.0 fast / 2.5
+    assert calculate_model_cost("dreamina-seedance-2-0-fast-260128", duration=5, resolution="720p") == "USD 0.6048"
+    assert calculate_model_cost("dreamina-seedance-2-0-fast-260128", duration=10, resolution="720p") == "USD 1.2096"
+    assert calculate_model_cost("dreamina-seedance-2-5-260628", duration=5, resolution="1080p") == "USD 1.2096"
+    assert calculate_model_cost("dreamina-seedance-2-5-260628", duration=5, resolution="480p") == "USD 0.4000"
+
+    # Seedance 2.0 mini
+    assert calculate_model_cost("dreamina-seedance-2-0-mini-260615", duration=5, resolution="720p") == "USD 0.0800"
+    assert calculate_model_cost("dreamina-seedance-2-0-mini-260615", duration=10, resolution="720p") == "USD 0.1600"
+    assert calculate_model_cost("dreamina-seedance-2-0-mini-260615", duration=5, resolution="480p") == "USD 0.0500"
+
+    # Seedance 1.5 Pro (with draft mode discount)
+    assert calculate_model_cost("bytedance-seedance-1-5-pro-251215", duration=5, resolution="720p") == "USD 0.2592"
+    assert calculate_model_cost("bytedance-seedance-1-5-pro-251215", duration=5, resolution="720p", draft_mode=True) == "USD 0.1296"
+    assert calculate_model_cost("bytedance-seedance-1-5-pro-251215", duration=5, resolution="1080p") == "USD 0.5150"
+
+    # Seedance 1.0 Pro Fast
+    assert calculate_model_cost("bytedance-seedance-1-0-pro-fast-251015", duration=5, resolution="720p") == "USD 0.1030"
+    assert calculate_model_cost("bytedance-seedance-1-0-pro-fast-251015", duration=10, resolution="720p") == "USD 0.2060"
+
+    # Seedance 1.0 Pro
+    assert calculate_model_cost("bytedance-seedance-1-0-pro-251015", duration=5, resolution="720p") == "USD 0.2000"
+
+    assert calculate_model_cost("grok-imagine-image", resolution="2K") == "USD 0.0200"
+    assert calculate_model_cost("grok-imagine-image-2.0", resolution="1K") == "USD 0.0400"
+    assert calculate_model_cost("grok-imagine-image-2.0", resolution="2K", reference_asset_count=2) == "USD 0.0800"
+    assert calculate_model_cost("grok-imagine-image-quality", resolution="1K") == "USD 0.0500"
+
+    # Grok Imagine
+    assert calculate_model_cost("grok-imagine-video-1.5", duration=5, resolution="720p") == "USD 0.7000"
+    assert calculate_model_cost("grok-imagine-video-1.5", duration=10, resolution="720p") == "USD 1.4000"
+    assert calculate_model_cost("grok-imagine-video-1.5", duration=5, resolution="1080p") == "USD 1.2500"
+    # Grok with 4 reference assets (+ $0.0400)
+    assert calculate_model_cost("grok-imagine-video-1.5", duration=5, resolution="720p", reference_asset_count=4) == "USD 0.7400"
+    # Grok v1 base model
+    assert calculate_model_cost("grok-imagine-video", duration=5, resolution="720p") == "USD 0.3500"
+
+    # Multiple clips
+    assert calculate_model_cost("dreamina-seedance-2-0-fast-260128", duration=5, resolution="720p", clip_count=2) == "USD 1.2096"
+
+    # SeeDream 5.0 Pro (2K vs 4K, 1 vs 4 pieces)
+    assert calculate_model_cost("dola-seedream-5-0-pro-260628", resolution="2K", clip_count=4) == "0.180-0.360 USD"
+    assert calculate_model_cost("dola-seedream-5-0-pro-260628", resolution="2K", clip_count=1) == "0.045-0.090 USD"
+    assert calculate_model_cost("dola-seedream-5-0-pro-260628", resolution="4K", clip_count=4) == "0.240-0.480 USD"
+
+    # SeeDream 4.5
+    assert calculate_model_cost("bytedance-seedream-4-5-251128", resolution="4K", clip_count=4) == "estimated cost 0.160 USD"
+    assert calculate_model_cost("bytedance-seedream-4-5-251128", resolution="4K", clip_count=1) == "estimated cost 0.040 USD"
+    assert calculate_model_cost("bytedance-seedream-4-5-251128", resolution="2K", clip_count=1) == "estimated cost 0.030 USD"
+
+    # Fallback / Generic models
+    assert "USD" in calculate_model_cost("unknown-video-model", duration=5, resolution="720p")
+    assert "USD" in calculate_model_cost("generic-image-model", clip_count=1)
+

@@ -183,3 +183,50 @@ def test_generate_video_timeout(monkeypatch, tmp_path):
     )
     with pytest.raises(TimeoutError, match="timed out"):
         client.generate_video("p", str(tmp_path / "o.mp4"), poll_interval=0, timeout_seconds=1)
+
+
+def test_grok_image_client_generate_and_edit(monkeypatch, tmp_path):
+    from src.grok.client import GrokImageClient
+    from src.generators import get_image_generator
+
+    monkeypatch.setenv("XAI_API_KEY", "mock_xai_key")
+    client = get_image_generator("grok", api_key="mock_xai_key", model_id="grok-imagine-image-2.0")
+    assert isinstance(client, GrokImageClient)
+    assert client.model_id == "grok-imagine-image-2.0"
+
+    captured = {}
+
+    def fake_post(url, json=None, headers=None, timeout=None):
+        captured["url"] = url
+        captured["json"] = json
+        return _Resp(payload={"data": [{"url": "https://cdn.example/out.png"}]})
+
+    def fake_get(url, headers=None, timeout=None, stream=False):
+        return _Resp(body=b"png-bytes")
+
+    monkeypatch.setattr("src.grok.client.requests.post", fake_post)
+    monkeypatch.setattr("src.grok.client.requests.get", fake_get)
+    out = tmp_path / "g.png"
+    path = client.generate_image("a temple", str(out), ratio="16:9", resolution="2K")
+    assert path == str(out)
+    assert out.read_bytes() == b"png-bytes"
+    assert captured["url"].endswith("/images/generations")
+    assert captured["json"]["aspect_ratio"] == "16:9"
+    assert captured["json"]["resolution"] == "2k"
+
+    img = tmp_path / "ref.png"
+    img.write_bytes(b"png")
+    client.generate_image(
+        "edit this",
+        str(tmp_path / "e.png"),
+        reference_assets=[{"local_path": str(img)}],
+    )
+    assert captured["url"].endswith("/images/edits")
+    assert captured["json"]["image"]["type"] == "image_url"
+
+
+def test_grok_image_missing_key(monkeypatch):
+    from src.grok.client import GrokImageClient
+    monkeypatch.delenv("XAI_API_KEY", raising=False)
+    with pytest.raises(ValueError, match="XAI_API_KEY"):
+        GrokImageClient()

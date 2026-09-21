@@ -49,7 +49,7 @@ def test_get_image_generator_factory(monkeypatch):
     assert client.model_id == "dola-seedream-5-0-pro-260628"
     assert isinstance(get_image_generator("byteplus", api_key="k"), SeeDreamClient)
     with pytest.raises(ValueError, match="Unknown image provider"):
-        get_image_generator("grok", api_key="k")
+        get_image_generator("unknown", api_key="k")
 
 
 def test_prepare_image_reference(monkeypatch, tmp_path):

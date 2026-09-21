@@ -27,6 +27,7 @@ from src.models_registry import (
     DEFAULT_VIDEO_MODEL,
     DEFAULT_IMAGE_MODEL,
     get_all_models_grouped,
+    calculate_model_cost,
 )
 from src.inventory import inventory_manager
 
@@ -329,6 +330,34 @@ def create_app():
             "records": records
         }
 
+    @app.get("/api/cost/estimate")
+    def estimate_cost(
+        model: str,
+        duration: int = 5,
+        resolution: str = "720p",
+        clips: int = 1,
+        audio: bool = True,
+        draft: bool = False,
+        ref_count: int = 0
+    ):
+        """Returns accurate cost estimate based on official BytePlus ModelArk and xAI pricing."""
+        cost_str = calculate_model_cost(
+            model_id=model,
+            duration=duration,
+            resolution=resolution,
+            clip_count=clips,
+            audio=audio,
+            draft_mode=draft,
+            reference_asset_count=ref_count
+        )
+        return {
+            "model": model,
+            "cost": cost_str,
+            "duration": duration,
+            "resolution": resolution,
+            "clips": clips
+        }
+
     # =========================================================================
     # 2. MODELARK CATALOG & LIVE INVENTORY API
     # =========================================================================
@@ -541,10 +570,20 @@ def create_app():
     # =========================================================================
     @app.post("/api/images/generate")
     def generate_image(req: ImageGenerateRequest, background_tasks: BackgroundTasks):
-        """Submits an asynchronous image generation task using BytePlus SeeDream."""
-        ark_key = req.api_key or os.getenv("ARK_API_KEY")
-        if not ark_key:
-            raise HTTPException(status_code=400, detail="ARK_API_KEY missing. Please configure in Settings.")
+        """Submits an asynchronous image generation task (SeeDream or Grok Imagine)."""
+        image_model_id = req.image_model or req.model or DEFAULT_IMAGE_MODEL
+        provider = (req.provider or "").lower()
+        is_grok = provider in ("grok", "xai") or "grok" in (image_model_id or "").lower()
+        if is_grok:
+            xai_key = req.api_key or os.getenv("XAI_API_KEY")
+            if not xai_key:
+                raise HTTPException(status_code=400, detail="XAI_API_KEY missing. Please configure in Settings.")
+            image_provider = "grok"
+        else:
+            ark_key = req.api_key or os.getenv("ARK_API_KEY")
+            if not ark_key:
+                raise HTTPException(status_code=400, detail="ARK_API_KEY missing. Please configure in Settings.")
+            image_provider = "seedream"
 
         img_dir = os.path.join(os.path.dirname(ui_dir), "renders", "images")
         os.makedirs(img_dir, exist_ok=True)
@@ -552,8 +591,6 @@ def create_app():
         cid = req.chapter_id if req.chapter_id is not None else (int(req.task_id) if (req.task_id and req.task_id.isdigit()) else int(time.time() * 1000) % 100000)
         task_id = str(cid)
         img_path = os.path.join(img_dir, f"img_{task_id}.png")
-
-        image_model_id = req.image_model or req.model or "dola-seedream-5-0-pro-260628"
         start_ts = time.time()
 
         task_entry = {
@@ -590,7 +627,7 @@ def create_app():
         def _worker():
             try:
                 generator = get_image_generator(
-                    provider=req.provider,
+                    provider=image_provider,
                     api_key=req.api_key,
                     model_id=image_model_id
                 )
@@ -644,7 +681,12 @@ def create_app():
                     "type": "image"
                 }
                 store["tasks"][cid] = success_entry
-                store["tasks"][task_id] = success_entry
+                est_cost = calculate_model_cost(
+                    model_id=image_model_id,
+                    resolution=req.resolution,
+                    clip_count=1,
+                    reference_asset_count=len(resolved_assets) if resolved_assets else 0
+                )
                 store["usage_records"].insert(0, {
                     "id": f"img-{task_id}",
                     "timestamp": time.strftime("%Y-%m-%d %H:%M"),
@@ -653,6 +695,7 @@ def create_app():
                     "mode": "image_generation",
                     "prompt": req.prompt,
                     "duration": "image",
+                    "cost": est_cost,
                     "status": "succeeded",
                     "watermark_free": True
                 })
@@ -686,7 +729,11 @@ def create_app():
         # Seamless routing to image generation if an image model or mode is requested
         is_image_req = (
             provider in ("seedream", "image")
-            or (req.video_model and ("seedream" in req.video_model.lower() or "dola" in req.video_model.lower()))
+            or (req.video_model and (
+                "seedream" in req.video_model.lower()
+                or "dola" in req.video_model.lower()
+                or "grok-imagine-image" in req.video_model.lower()
+            ))
             or req.generation_mode == "image_generation"
         )
         if is_image_req:
@@ -832,6 +879,15 @@ def create_app():
                     "model": video_model_id,
                     "model_used": video_model_id
                 }
+                est_cost = calculate_model_cost(
+                    model_id=video_model_id,
+                    duration=req.duration_seconds,
+                    resolution=req.resolution,
+                    clip_count=1,
+                    audio=req.generate_audio,
+                    draft_mode=req.draft_mode,
+                    reference_asset_count=len(resolved_assets) if resolved_assets else 0
+                )
                 store["usage_records"].insert(0, {
                     "id": f"gen-{req.chapter_id}",
                     "timestamp": time.strftime("%Y-%m-%d %H:%M"),
@@ -840,6 +896,7 @@ def create_app():
                     "mode": req.generation_mode,
                     "prompt": req.prompt,
                     "duration": f"{req.duration_seconds}s",
+                    "cost": est_cost,
                     "status": "succeeded" if passed else "qa_warning",
                     "watermark_free": True
                 })

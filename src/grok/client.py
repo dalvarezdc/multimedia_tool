@@ -9,7 +9,7 @@ import time
 import base64
 import logging
 import mimetypes
-from typing import Optional, Dict, Any, Callable
+from typing import Optional, Dict, Any, Callable, List
 import requests
 
 logger = logging.getLogger(__name__)
@@ -174,3 +174,113 @@ class GrokVideoClient:
                 for chunk in resp.iter_content(chunk_size=16384):
                     if chunk:
                         f.write(chunk)
+
+
+class GrokImageClient:
+    """Client for xAI Grok Imagine image generation and editing."""
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: str = "https://api.x.ai/v1",
+        model_id: Optional[str] = None,
+    ):
+        self.api_key = api_key or os.getenv("XAI_API_KEY")
+        if not self.api_key:
+            raise ValueError("XAI_API_KEY must be provided or set in environment variables.")
+        self.base_url = os.getenv("XAI_BASE_URL", base_url).rstrip("/")
+        self.model_id = model_id or os.getenv("XAI_IMAGE_MODEL") or "grok-imagine-image-2.0"
+
+    def _prepare_image_reference(self, image_source: str) -> str:
+        if not image_source:
+            return image_source
+        if image_source.startswith("http://") or image_source.startswith("https://") or image_source.startswith("data:"):
+            return image_source
+        if os.path.exists(image_source) and os.path.isfile(image_source):
+            mime_type, _ = mimetypes.guess_type(image_source)
+            mime_type = mime_type or "image/png"
+            with open(image_source, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode("utf-8")
+            return f"data:{mime_type};base64,{encoded}"
+        return image_source
+
+    def _map_resolution(self, resolution: str) -> str:
+        r = (resolution or "2K").lower()
+        if any(k in r for k in ("4k", "2k", "1080")):
+            return "2k"
+        return "1k"
+
+    def generate_image(
+        self,
+        prompt: str,
+        output_path: str,
+        reference_assets: Optional[List[Dict[str, Any]]] = None,
+        ratio: str = "16:9",
+        resolution: str = "2K",
+        watermark: bool = False,
+        status_callback: Optional[Callable[[str, Dict[str, Any]], None]] = None,
+    ) -> str:
+        os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+        if status_callback:
+            status_callback("preparing", {"message": "Preparing Grok Imagine image request...", "elapsed": 0})
+
+        images_input: List[str] = []
+        if reference_assets:
+            for asset in reference_assets:
+                asset_path = asset.get("local_path") or asset.get("url") or asset.get("filename")
+                if not asset_path:
+                    continue
+                prepared = self._prepare_image_reference(asset_path)
+                if prepared:
+                    images_input.append(prepared)
+                if len(images_input) >= 5:
+                    break
+
+        payload: Dict[str, Any] = {
+            "model": self.model_id,
+            "prompt": prompt.strip(),
+            "n": 1,
+            "aspect_ratio": ratio,
+            "resolution": self._map_resolution(resolution),
+        }
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        if images_input:
+            endpoint = f"{self.base_url}/images/edits"
+            refs = [{"url": u, "type": "image_url"} for u in images_input]
+            payload["image"] = refs[0] if len(refs) == 1 else refs
+        else:
+            endpoint = f"{self.base_url}/images/generations"
+
+        if status_callback:
+            status_callback("submitting", {"message": f"Submitting to {self.model_id}...", "elapsed": 1})
+
+        logger.info(f"Submitting Grok image request to {endpoint} (model={self.model_id}, refs={len(images_input)})")
+        resp = requests.post(endpoint, json=payload, headers=headers, timeout=120)
+        if not resp.ok:
+            raise RuntimeError(f"xAI image API error ({resp.status_code}): {resp.text}")
+        data = resp.json()
+        items = data.get("data") or []
+        if not items:
+            raise RuntimeError(f"Grok image generation returned no data: {data}")
+        item = items[0]
+        url = item.get("url")
+        b64 = item.get("b64_json")
+        if status_callback:
+            status_callback("downloading", {"message": "Saving rendered image...", "elapsed": 2})
+        if url:
+            with requests.get(url, stream=True, timeout=60) as r:
+                r.raise_for_status()
+                with open(output_path, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+        elif b64:
+            with open(output_path, "wb") as f:
+                f.write(base64.b64decode(b64))
+        else:
+            raise RuntimeError(f"Unexpected Grok image payload: {item}")
+        logger.info(f"Grok image saved to {output_path}")
+        return output_path

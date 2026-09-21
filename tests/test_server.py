@@ -291,12 +291,20 @@ def test_cutscene_generate_with_reference_assets(client, monkeypatch):
     assert data["chapter_id"] == 42
 
 def test_api_models_includes_grok_video(client):
+    from src.inventory import inventory_manager
+    inventory_manager.refresh_inventory()
     data = client.get("/api/models").json()
     video_ids = [m["id"] for m in data["catalog"]["video"]]
     assert "grok-imagine-video-1.5" in video_ids
     grok = next(m for m in data["catalog"]["video"] if m["id"] == "grok-imagine-video-1.5")
     assert grok["provider"] == "grok"
     assert 15 in grok["durations"]
+    image_ids = [m["id"] for m in data["catalog"]["image"]]
+    assert "grok-imagine-image-2.0" in image_ids
+    assert "grok-imagine-image" in image_ids
+    img = next(m for m in data["catalog"]["image"] if m["id"] == "grok-imagine-image-2.0")
+    assert img["provider"] == "grok"
+    assert img["category"] == "image"
 
 
 def test_ui_image_result_uses_png_download_chrome(client):
@@ -734,6 +742,35 @@ def test_cutscene_skips_unknown_reference(client, monkeypatch):
     assert received.get("reference_assets") in (None, [])
 
 
+def test_images_generate_grok_missing_key_and_success(client, monkeypatch):
+    monkeypatch.delenv("XAI_API_KEY", raising=False)
+    res = client.post("/api/images/generate", json={
+        "prompt": "a still of hermes",
+        "provider": "grok",
+        "image_model": "grok-imagine-image-2.0",
+    })
+    assert res.status_code == 400
+    assert "XAI_API_KEY" in res.json()["detail"]
+
+    monkeypatch.setenv("XAI_API_KEY", "xai-k")
+
+    class FakeGrokImg:
+        def generate_image(self, **kwargs):
+            return kwargs["output_path"]
+
+    monkeypatch.setattr("src.server.get_image_generator", lambda **k: FakeGrokImg())
+    res = client.post("/api/images/generate", json={
+        "prompt": "a still of hermes",
+        "provider": "grok",
+        "image_model": "grok-imagine-image-2.0",
+        "chapter_id": 44,
+        "api_key": "xai-k",
+    })
+    assert res.status_code == 200
+    assert res.json()["type"] == "image"
+    assert res.json()["model"] == "grok-imagine-image-2.0"
+
+
 def test_images_generate_missing_key_and_success(client, monkeypatch, tmp_path):
     monkeypatch.delenv("ARK_API_KEY", raising=False)
     res = client.post("/api/images/generate", json={"prompt": "temple"})
@@ -894,6 +931,39 @@ def test_cutscene_generate_delegates_to_image(client, monkeypatch):
     assert data["status"] == "started"
     assert data["type"] == "image"
     assert data["model"] == "dola-seedream-5-0-pro-260628"
+
+
+def test_estimate_cost_endpoint(client):
+    # Test video model cost estimation
+    res = client.get("/api/cost/estimate", params={
+        "model": "dreamina-seedance-2-0-fast-260128",
+        "duration": 5,
+        "resolution": "720p",
+        "clips": 1
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert data["cost"] == "USD 0.6048"
+
+    # Test 10s duration doubling
+    res10 = client.get("/api/cost/estimate", params={
+        "model": "dreamina-seedance-2-0-fast-260128",
+        "duration": 10,
+        "resolution": "720p",
+        "clips": 1
+    })
+    assert res10.status_code == 200
+    assert res10.json()["cost"] == "USD 1.2096"
+
+    # Test image model cost estimation
+    res_img = client.get("/api/cost/estimate", params={
+        "model": "dola-seedream-5-0-pro-260628",
+        "resolution": "2K",
+        "clips": 4
+    })
+    assert res_img.status_code == 200
+    assert res_img.json()["cost"] == "0.180-0.360 USD"
+
 
 
 

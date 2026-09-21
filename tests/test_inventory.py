@@ -127,6 +127,15 @@ def test_custom_model_save_and_delete(tmp_path, monkeypatch):
     assert len(mgr.get_custom_models()) == 0
 
 
+def test_infer_grok_imagine_image_is_not_video():
+    info = infer_model_capabilities("grok-imagine-image-2.0", provider="grok")
+    assert info.category == "image"
+    assert info.provider == "grok"
+    assert info.ui_layout_type == "image_standard"
+    vid = infer_model_capabilities("grok-imagine-video-1.5", provider="grok")
+    assert vid.category == "video"
+
+
 def test_infer_model_capabilities_3d():
     info = infer_model_capabilities("studio-hyper3d-mesh", provider="seedance")
     assert info.category == "3d"

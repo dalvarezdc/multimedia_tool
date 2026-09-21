@@ -218,10 +218,92 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         supports_audio=False,
         clip_counts=[1],
     ),
+    "grok-imagine-video": ModelInfo(
+        id="grok-imagine-video",
+        display_name="Grok Imagine Video",
+        category="video",
+        description="xAI Grok Imagine video (legacy SKU). Prefer grok-imagine-video-1.5 for 1080p.",
+        recommended_for="Prompt-to-video on an xAI key when 1.5 is unavailable.",
+        ui_layout_type="video_ref",
+        headline="Generate video with Grok Imagine",
+        icon_type="video",
+        placeholder="Describe the shot. Optional reference image is attached as image_url.",
+        input_slots=[{"id": "reference", "label": "Reference", "icon": "plus"}],
+        mode_selector={"enabled": True, "default": "Ref-to-video", "options": ["Ref-to-video", "Text-to-video"]},
+        sample_cost="USD 0.3500",
+        sample_examples=SAMPLE_INSPIRATIONS,
+        provider="grok",
+        ratios=["16:9", "9:16", "1:1", "4:3", "3:2", "2:3"],
+        resolutions=["480p", "720p"],
+        durations=[5, 10],
+        supports_audio=False,
+        clip_counts=[1],
+    ),
 
     # -------------------------------------------------------------------------
-    # 2. IMAGE GENERATION MODELS (SEEDREAM FAMILY)
+    # 2. IMAGE GENERATION MODELS (SEEDREAM + GROK IMAGINE)
     # -------------------------------------------------------------------------
+    "grok-imagine-image-2.0": ModelInfo(
+        id="grok-imagine-image-2.0",
+        display_name="Grok Imagine Image 2.0",
+        category="image",
+        description="xAI Grok Imagine 2.0 text-to-image and multi-image editing (up to 5 refs). Recommended Grok image model.",
+        recommended_for="High-fidelity stills, style transfer, and compositing on an xAI key.",
+        ui_layout_type="image_standard",
+        headline="Generate images with Grok Imagine 2.0",
+        icon_type="image",
+        placeholder="Describe the image. Attach up to 5 references with @Pictures N to edit or composite.",
+        input_slots=[{"id": "image", "label": "Image", "icon": "image"}],
+        mode_selector={"enabled": True, "default": "Image generation", "options": ["Image generation", "Image edit"]},
+        pills=["16:9", "2K"],
+        sample_cost="from USD 0.0400",
+        sample_examples=SAMPLE_INSPIRATIONS,
+        provider="grok",
+        ratios=["16:9", "9:16", "1:1", "4:3", "3:2", "2:3", "21:9"],
+        resolutions=["1K", "2K"],
+        clip_counts=[1],
+    ),
+    "grok-imagine-image": ModelInfo(
+        id="grok-imagine-image",
+        display_name="Grok Imagine Image",
+        category="image",
+        description="xAI Grok Imagine speed image model. Flat $0.02 per image at 1K or 2K.",
+        recommended_for="Fast drafts and cheap stills on an xAI key.",
+        ui_layout_type="image_standard",
+        headline="Generate images with Grok Imagine",
+        icon_type="image",
+        placeholder="Describe the image. Optional @Pictures N reference for edits.",
+        input_slots=[{"id": "image", "label": "Image", "icon": "image"}],
+        mode_selector={"enabled": True, "default": "Image generation", "options": ["Image generation", "Image edit"]},
+        pills=["16:9", "2K"],
+        sample_cost="USD 0.0200",
+        sample_examples=SAMPLE_INSPIRATIONS,
+        provider="grok",
+        ratios=["16:9", "9:16", "1:1", "3:2", "2:3"],
+        resolutions=["1K", "2K"],
+        clip_counts=[1],
+    ),
+    "grok-imagine-image-quality": ModelInfo(
+        id="grok-imagine-image-quality",
+        display_name="Grok Imagine Image Quality",
+        category="image",
+        description="xAI higher-fidelity Grok Imagine image SKU. Retires 2026-11-02; prefer grok-imagine-image-2.0.",
+        recommended_for="Maximum visual fidelity until the quality SKU is retired.",
+        ui_layout_type="image_standard",
+        headline="Generate images with Grok Imagine Quality",
+        icon_type="image",
+        placeholder="Describe the image. Optional @Pictures N reference for edits.",
+        input_slots=[{"id": "image", "label": "Image", "icon": "image"}],
+        mode_selector={"enabled": True, "default": "Image generation", "options": ["Image generation", "Image edit"]},
+        pills=["16:9", "2K"],
+        sample_cost="USD 0.0500",
+        sample_examples=SAMPLE_INSPIRATIONS,
+        provider="grok",
+        ratios=["16:9", "9:16", "1:1", "3:2", "2:3"],
+        resolutions=["1K", "2K"],
+        clip_counts=[1],
+    ),
+
     "dola-seedream-5-0-pro-260628": ModelInfo(
         id="dola-seedream-5-0-pro-260628",
         display_name="Dola-Seedream-5.0-pro 260628",
@@ -500,3 +582,129 @@ def get_all_models_grouped() -> Dict[str, List[Dict[str, Any]]]:
 def get_model_info(model_id: str) -> Optional[ModelInfo]:
     """Returns metadata for a specific model ID."""
     return MODEL_CATALOG.get(model_id)
+
+
+def calculate_model_cost(
+    model_id: str,
+    duration: int = 5,
+    resolution: str = "720p",
+    clip_count: int = 1,
+    audio: bool = True,
+    draft_mode: bool = False,
+    reference_asset_count: int = 0
+) -> str:
+    """Calculates accurate expected cost for video and image model generations
+
+    based on official BytePlus ModelArk and xAI API pricing schedules.
+    """
+    mid = (model_id or "").lower()
+    res = (resolution or "720p").lower()
+    clips = max(1, int(clip_count or 1))
+    dur = max(1, int(duration or 5))
+
+    # 1. xAI Grok Imagine images (must beat generic "image" and grok video)
+    if "grok" in mid and "image" in mid:
+        is_2k = "2k" in res or "4k" in res or "1080" in res
+        refs = max(0, int(reference_asset_count or 0))
+        if "2.0" in mid or "2-0" in mid:
+            rate = 0.0600 if is_2k else 0.0400
+            input_fee = 0.0100 * refs
+        elif "quality" in mid:
+            rate = 0.0700 if is_2k else 0.0500
+            input_fee = 0.0100 * refs
+        else:
+            rate = 0.0200
+            input_fee = 0.0020 * refs
+        cost = (rate + input_fee) * clips
+        return f"USD {cost:.4f}"
+
+    # 2. Image Models (SeeDream family)
+    if any(k in mid for k in ["seedream", "image", "dola"]):
+        if "5-0" in mid or "5.0" in mid:
+            # Dola-Seedream-5.0-pro: 2K is 0.045-0.090 USD per piece, 4K is 0.060-0.120 USD per piece
+            is_4k = "4k" in res
+            min_rate = 0.060 if is_4k else 0.045
+            max_rate = 0.120 if is_4k else 0.090
+            min_cost = min_rate * clips
+            max_cost = max_rate * clips
+            return f"{min_cost:.3f}-{max_cost:.3f} USD"
+        elif "4-5" in mid or "4.5" in mid:
+            # ByteDance-Seedream-4.5: 2K is 0.030 USD, 4K is 0.040 USD per piece
+            is_4k = "4k" in res
+            rate = 0.040 if is_4k else 0.030
+            cost = rate * clips
+            return f"estimated cost {cost:.3f} USD"
+        else:
+            # Generic/3.0 image model
+            is_4k = "4k" in res
+            rate = 0.035 if is_4k else 0.025
+            cost = rate * clips
+            return f"USD {cost:.4f}"
+
+    # 3. xAI Grok Family (Video)
+    if "grok" in mid:
+        if "1.5" in mid or "1-5" in mid:
+            # grok-imagine-video-1.5: 480p: $0.08/s, 720p: $0.14/s, 1080p: $0.25/s, +$0.01 per ref image
+            if "1080" in res:
+                rate_per_sec = 0.2500
+            elif "480" in res:
+                rate_per_sec = 0.0800
+            else:
+                rate_per_sec = 0.1400
+            image_charge = 0.0100 * max(0, reference_asset_count)
+            cost = ((rate_per_sec * dur) + image_charge) * clips
+            return f"USD {cost:.4f}"
+        else:
+            # grok-imagine-video: 480p: $0.05/s, 720p: $0.07/s
+            rate_per_sec = 0.0500 if "480" in res else 0.0700
+            cost = (rate_per_sec * dur) * clips
+            return f"USD {cost:.4f}"
+
+    # 3. BytePlus Seedance Family (Video)
+    if "2-5" in mid or "2.5" in mid or "2-0-fast" in mid or "2.0-fast" in mid:
+        # Seedance 2.5 and 2.0-fast: 5s 720p with sound = 0.6048 USD (rate = 0.12096/sec)
+        if "1080" in res:
+            rate_per_sec = 0.24192
+        elif "480" in res:
+            rate_per_sec = 0.08000
+        else:
+            rate_per_sec = 0.12096
+    elif "2-0-mini" in mid or "2.0-mini" in mid:
+        # Seedance 2.0-mini: 5s 720p = 0.0800 USD (rate = 0.01600/sec)
+        if "480" in res:
+            rate_per_sec = 0.01000
+        else:
+            rate_per_sec = 0.01600
+    elif "1-5" in mid or "1.5" in mid:
+        # Seedance 1.5-pro: 5s 720p with sound = 0.2592 USD (rate = 0.05184/sec)
+        if "1080" in res:
+            rate_per_sec = 0.10300
+        elif "480" in res:
+            rate_per_sec = 0.03500
+        else:
+            rate_per_sec = 0.05184
+    elif "1-0-pro-fast" in mid or "1.0-pro-fast" in mid:
+        # Seedance 1.0-pro-fast: 5s 720p = 0.1030 USD (rate = 0.02060/sec)
+        if "480" in res:
+            rate_per_sec = 0.01500
+        else:
+            rate_per_sec = 0.02060
+    elif "1-0" in mid or "1.0" in mid:
+        # Seedance 1.0-pro: 5s 720p = 0.2000 USD (rate = 0.04000/sec)
+        if "480" in res:
+            rate_per_sec = 0.02500
+        else:
+            rate_per_sec = 0.04000
+    else:
+        # Default video model
+        if "1080" in res:
+            rate_per_sec = 0.18000
+        elif "480" in res:
+            rate_per_sec = 0.05000
+        else:
+            rate_per_sec = 0.09000
+
+    multiplier = 0.5 if draft_mode else 1.0
+    cost = rate_per_sec * dur * multiplier * clips
+    return f"USD {cost:.4f}"
+
