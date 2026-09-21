@@ -5,7 +5,7 @@
 SHELL := /bin/bash
 PYTHON := uv run python
 
-.PHONY: help install setup dev serve remotion cli cli-grok test clean check
+.PHONY: help install setup dev serve remotion cli cli-grok test coverage clean check
 
 # Default Target
 help:
@@ -19,6 +19,7 @@ help:
 	@echo "  make cli        Run demo pipeline with BytePlus Seedance (watermark-free)"
 	@echo "  make cli-grok   Run demo pipeline with xAI Grok Imagine Video"
 	@echo "  make test       Run test suite with pytest via uv"
+	@echo "  make coverage   Run tests with line coverage report (src/)"
 	@echo "  make clean      Remove build artifacts, caches, and temp render files"
 	@echo "====================================================================="
 
@@ -29,7 +30,7 @@ setup:
 	@echo "--> Setting up Python environment with uv..."
 	uv venv
 	uv pip install -r requirements.txt
-	uv pip install -e .
+	uv pip install -e ".[dev]"
 	@echo "--> Installing Remotion dependencies with npm..."
 	cd remotion && npm install
 	@echo "--> Setup complete! Ready to launch services."
@@ -69,9 +70,15 @@ test:
 	@echo "--> Running test suite with pytest..."
 	uv run pytest tests/ -v
 
+# Line coverage for src/ (terminal + htmlcov/)
+coverage:
+	@echo "--> Running pytest with coverage..."
+	uv run pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=html:htmlcov
+	@echo "--> HTML report: htmlcov/index.html"
+
 # Clean Temporary Render Artifacts and Caches
 clean:
 	@echo "--> Cleaning render artifacts and python bytecode..."
-	rm -rf renders/cutscenes/* temp/* .pytest_cache .ruff_cache
+	rm -rf renders/cutscenes/* temp/* .pytest_cache .ruff_cache htmlcov .coverage coverage.json coverage.xml
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@echo "--> Clean complete."

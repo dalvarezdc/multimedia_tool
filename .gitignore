@@ -37,6 +37,11 @@ ENV/
 .ruff_cache/
 .pytest_cache/
 .mypy_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.json
+coverage.xml
 
 # Node.js / Remotion
 node_modules/
