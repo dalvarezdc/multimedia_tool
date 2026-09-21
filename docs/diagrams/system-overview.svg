@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 700" width="100%" height="100%" role="img" aria-labelledby="sysTitle sysDesc">
+  <title id="sysTitle">RetroArk system overview</title>
+  <desc id="sysDesc">Prompt, references, keys, and accounts converge on the studio, which emits watermark-free media.</desc>
+  <defs>
+    <linearGradient id="sysCard" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E9EEF5"/>
+    </linearGradient>
+    <marker id="sysTipGold" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#D3A05B"/>
+    </marker>
+    <marker id="sysTipBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#9CC8F2"/>
+    </marker>
+  </defs>
+  <rect width="920" height="700" fill="#F7F7F7"/>
+  <rect x="16" y="20" width="16" height="1" fill="#D3A05B"/>
+  <text x="40" y="26" fill="#D3A05B" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="600" letter-spacing="0.22em">RETROARK</text>
+  <text x="40" y="64" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="28" font-weight="600" letter-spacing="-0.025em">Studio inputs fold into</text>
+  <text x="40" y="98" fill="#D3A05B" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="28" font-weight="600" letter-spacing="-0.025em">one generation hub</text>
+
+  <rect x="40" y="140" width="380" height="82" rx="20" fill="url(#sysCard)" stroke="rgba(19,35,60,0.22)" stroke-width="1"/>
+  <g transform="translate(64 167)" fill="none" stroke="#13233C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/>
+  </g>
+  <text x="108" y="176" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="600">Prompt and topic</text>
+  <text x="108" y="198" fill="#5E7695" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="14">Story, ratio, duration, model</text>
+
+  <rect x="40" y="238" width="380" height="82" rx="20" fill="url(#sysCard)" stroke="rgba(19,35,60,0.22)" stroke-width="1"/>
+  <g transform="translate(64 265)" fill="none" stroke="#13233C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M3 17l5-5 4 4 3-3 6 6"/>
+  </g>
+  <text x="108" y="274" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="600">References</text>
+  <text x="108" y="296" fill="#5E7695" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="14">@Pictures and @Video tokens</text>
+
+  <rect x="40" y="336" width="380" height="82" rx="20" fill="url(#sysCard)" stroke="rgba(19,35,60,0.22)" stroke-width="1"/>
+  <g transform="translate(64 363)" fill="none" stroke="#13233C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3l7 4v6c0 4-3 7-7 8-4-1-7-4-7-8V7z"/>
+  </g>
+  <text x="108" y="372" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="600">Account and keys</text>
+  <text x="108" y="394" fill="#5E7695" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="14">Session history, BytePlus, xAI</text>
+
+  <rect x="40" y="434" width="380" height="82" rx="20" fill="url(#sysCard)" stroke="rgba(19,35,60,0.22)" stroke-width="1"/>
+  <g transform="translate(64 461)" fill="none" stroke="#13233C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="10" cy="11" r="1"/><circle cx="14" cy="11" r="1"/><path d="M12 3v2M9 16h6"/>
+  </g>
+  <text x="108" y="470" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="600">Director and catalog</text>
+  <text x="108" y="492" fill="#5E7695" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="14">SeeDream, Seedance, Grok Imagine</text>
+
+  <circle cx="620" cy="340" r="120" fill="#4C8FD8" fill-opacity="0.10"/>
+  <circle cx="620" cy="340" r="66" fill="#FFFFFF" stroke="rgba(19,35,60,0.22)" stroke-width="1"/>
+  <text x="620" y="334" text-anchor="middle" fill="#D3A05B" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="600" letter-spacing="0.22em">STUDIO</text>
+  <text x="620" y="356" text-anchor="middle" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="600">FastAPI hub</text>
+
+  <path d="M420 181 C500 181, 520 300, 554 320" fill="none" stroke="#D3A05B" stroke-width="2" stroke-opacity="0.85" marker-end="url(#sysTipGold)"/>
+  <path d="M420 279 C500 279, 520 318, 554 332" fill="none" stroke="#D3A05B" stroke-width="2" stroke-opacity="0.85" marker-end="url(#sysTipGold)"/>
+  <path d="M420 377 C500 377, 520 352, 554 348" fill="none" stroke="#D3A05B" stroke-width="2" stroke-opacity="0.85" marker-end="url(#sysTipGold)"/>
+  <path d="M420 475 C500 475, 530 400, 554 360" fill="none" stroke="#D3A05B" stroke-width="2" stroke-opacity="0.85" marker-end="url(#sysTipGold)"/>
+
+  <path d="M686 340 C760 340, 780 548, 500 560" fill="none" stroke="#9CC8F2" stroke-width="2" marker-end="url(#sysTipBlue)"/>
+
+  <rect x="40" y="548" width="760" height="82" rx="20" fill="url(#sysCard)" stroke="rgba(19,35,60,0.22)" stroke-width="1"/>
+  <g transform="translate(64 575)" fill="none" stroke="#13233C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 6V4h8v2M10 12l2 2 2-2"/>
+  </g>
+  <text x="108" y="584" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="20" font-weight="600">Watermark-free media</text>
+  <text x="108" y="606" fill="#5E7695" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="14">Stills, cutscenes, and Remotion master MP4</text>
+
+  <text x="40" y="672" fill="#D3A05B" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="600" letter-spacing="0.22em">SELKET.AI</text>
+</svg>

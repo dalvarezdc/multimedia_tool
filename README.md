@@ -2,6 +2,8 @@
 
 An autonomous, multi-agent video production engine that generates explainer videos by marrying **16-bit retro pixel-art platformer roadmaps** with **watermark-free AI video cutscenes** powered by ByteDance's **Seedance API** via **BytePlus ModelArk**.
 
+![Studio inputs fold into one generation hub](docs/diagrams/system-overview.svg)
+
 ---
 
 ## Key Features
@@ -21,8 +23,13 @@ An autonomous, multi-agent video production engine that generates explainer vide
 
 ## Architecture & Workflow Documentation
 
+![Browser, API, and providers](docs/diagrams/runtime-pipeline.svg)
+
+![From prompt to master file](docs/diagrams/generation-steps.svg)
+
 * **[Architecture Document](docs/architecture.md)**: Deep dive into the 5 core subsystems, data schemas, parallax rendering, and physics models.
 * **[Agentic Workflow Document](docs/agentic_workflow.md)**: Detailed specification of agent roles, the state machine lifecycle, QA audit gates, and self-healing strategies.
+* **[Remotion engine](remotion/README.md)**: Pixel roadmap composition that stitches cutscenes into a 60 FPS master.
 
 ---
 
@@ -104,6 +111,8 @@ GitHub Actions (`.github/workflows/ci.yml`) runs pytest with a 90% coverage floo
 
 ### Accounts and session history
 Sign in from the header to keep Recent Creations across restarts. Email + password always works. Optional TOTP 2FA lives under Settings → Account. Google, GitHub, and Proton OAuth buttons appear when you set the matching `*_CLIENT_ID` / `*_CLIENT_SECRET` in `.env`. Proton's public "Sign in with Proton" is partner-only; without those credentials you can still register with a Proton Mail address.
+
+![Sign in, then keep history](docs/diagrams/auth-history.svg)
 
 ### 4. Or Run Headless via CLI
 ```bash

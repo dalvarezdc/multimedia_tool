@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" width="100%" height="100%" role="img" aria-labelledby="stTitle stDesc">
+  <title id="stTitle">Generation pipeline</title>
+  <desc id="stDesc">Five numbered steps from prompt through export.</desc>
+  <rect width="960" height="360" fill="#F7F7F7"/>
+  <rect x="32" y="24" width="16" height="1" fill="#D3A05B"/>
+  <text x="56" y="30" fill="#D3A05B" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="600" letter-spacing="0.22em">PIPELINE</text>
+  <text x="32" y="68" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="24" font-weight="600" letter-spacing="-0.025em">From prompt to</text>
+  <text x="230" y="68" fill="#D3A05B" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="24" font-weight="600" letter-spacing="-0.025em">master file</text>
+
+  <line x1="80" y1="132" x2="880" y2="132" stroke="#D3A05B" stroke-width="1" stroke-opacity="0.85"/>
+
+  <rect x="63" y="115" width="34" height="34" rx="4" fill="#FFFFFF" stroke="#DCDCDC" stroke-width="1"/>
+  <text x="80" y="137" text-anchor="middle" fill="#D3A05B" font-family="'IBM Plex Mono', ui-monospace, monospace" font-size="12">01</text>
+  <text x="80" y="180" text-anchor="middle" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="600">Prompt</text>
+  <text x="80" y="202" text-anchor="middle" fill="#5E7695" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="13">Topic, refs, model</text>
+
+  <rect x="243" y="115" width="34" height="34" rx="4" fill="#FFFFFF" stroke="#DCDCDC" stroke-width="1"/>
+  <text x="260" y="137" text-anchor="middle" fill="#D3A05B" font-family="'IBM Plex Mono', ui-monospace, monospace" font-size="12">02</text>
+  <text x="260" y="180" text-anchor="middle" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="600">Plan</text>
+  <text x="260" y="202" text-anchor="middle" fill="#5E7695" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="13">Director storyboard</text>
+
+  <rect x="423" y="115" width="34" height="34" rx="4" fill="#FFFFFF" stroke="#DCDCDC" stroke-width="1"/>
+  <text x="440" y="137" text-anchor="middle" fill="#D3A05B" font-family="'IBM Plex Mono', ui-monospace, monospace" font-size="12">03</text>
+  <text x="440" y="180" text-anchor="middle" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="600">Generate</text>
+  <text x="440" y="202" text-anchor="middle" fill="#5E7695" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="13">Image or video API</text>
+
+  <rect x="603" y="115" width="34" height="34" rx="4" fill="#FFFFFF" stroke="#DCDCDC" stroke-width="1"/>
+  <text x="620" y="137" text-anchor="middle" fill="#D3A05B" font-family="'IBM Plex Mono', ui-monospace, monospace" font-size="12">04</text>
+  <text x="620" y="180" text-anchor="middle" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="600">Audit</text>
+  <text x="620" y="202" text-anchor="middle" fill="#5E7695" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="13">Integrity, no watermark</text>
+
+  <rect x="783" y="115" width="34" height="34" rx="4" fill="#FFFFFF" stroke="#DCDCDC" stroke-width="1"/>
+  <text x="800" y="137" text-anchor="middle" fill="#D3A05B" font-family="'IBM Plex Mono', ui-monospace, monospace" font-size="12">05</text>
+  <text x="800" y="180" text-anchor="middle" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="600">Compose</text>
+  <text x="800" y="202" text-anchor="middle" fill="#5E7695" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="13">Remotion master MP4</text>
+
+  <text x="32" y="268" fill="#5E7695" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="14">CLI (`make cli`) runs 01–04 headless. The studio also keeps elapsed time on each Recent Creations row.</text>
+  <text x="32" y="332" fill="#D3A05B" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="600" letter-spacing="0.22em">SELKET.AI</text>
+</svg>

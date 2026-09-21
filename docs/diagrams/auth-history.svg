@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" width="100%" height="100%" role="img" aria-labelledby="ahTitle ahDesc">
+  <title id="ahTitle">Accounts and session history</title>
+  <desc id="ahDesc">Email, Google, GitHub, and Proton sign-in write a session, then generation history.</desc>
+  <defs>
+    <marker id="ahTipGold" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#D3A05B"/>
+    </marker>
+  </defs>
+  <rect width="960" height="420" fill="#F7F7F7"/>
+  <rect x="32" y="24" width="16" height="1" fill="#D3A05B"/>
+  <text x="56" y="30" fill="#D3A05B" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="600" letter-spacing="0.22em">IDENTITY</text>
+  <text x="32" y="68" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="24" font-weight="600" letter-spacing="-0.025em">Sign in, then keep</text>
+  <text x="248" y="68" fill="#D3A05B" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="24" font-weight="600" letter-spacing="-0.025em">history</text>
+
+  <rect x="32" y="108" width="180" height="72" rx="16" fill="#FFFFFF" stroke="#DCDCDC" stroke-width="1"/>
+  <text x="48" y="140" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="14" font-weight="600">Email password</text>
+  <text x="48" y="160" fill="#5E7695" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="12">Optional TOTP</text>
+
+  <rect x="32" y="196" width="180" height="72" rx="16" fill="#FFFFFF" stroke="#DCDCDC" stroke-width="1"/>
+  <text x="48" y="228" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="14" font-weight="600">Google</text>
+  <text x="48" y="248" fill="#5E7695" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="12">OAuth 2.0</text>
+
+  <rect x="32" y="284" width="180" height="72" rx="16" fill="#FFFFFF" stroke="#DCDCDC" stroke-width="1"/>
+  <text x="48" y="316" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="14" font-weight="600">GitHub</text>
+  <text x="48" y="336" fill="#5E7695" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="12">OAuth 2.0</text>
+
+  <rect x="232" y="196" width="180" height="72" rx="16" fill="#FFFFFF" stroke="#DCDCDC" stroke-width="1"/>
+  <text x="248" y="228" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="14" font-weight="600">Proton</text>
+  <text x="248" y="248" fill="#5E7695" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="12">Partner OAuth or email</text>
+
+  <path d="M212 144 H300" fill="none" stroke="#D3A05B" stroke-width="1.5" stroke-opacity="0.8"/>
+  <path d="M212 232 H300" fill="none" stroke="#D3A05B" stroke-width="1.5" stroke-opacity="0.8"/>
+  <path d="M212 320 H300" fill="none" stroke="#D3A05B" stroke-width="1.5" stroke-opacity="0.8"/>
+  <path d="M412 232 H460" fill="none" stroke="#D3A05B" stroke-width="1.5" stroke-opacity="0.8"/>
+  <path d="M300 144 V320" fill="none" stroke="#D3A05B" stroke-width="1.5" stroke-opacity="0.8"/>
+  <path d="M300 232 H460" fill="none" stroke="#D3A05B" stroke-width="1.5" stroke-opacity="0.8" marker-end="url(#ahTipGold)"/>
+
+  <rect x="460" y="188" width="200" height="88" rx="16" fill="#FFFFFF" stroke="#DCDCDC" stroke-width="1"/>
+  <g transform="translate(476 212)" fill="none" stroke="#13233C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3l7 4v6c0 4-3 7-7 8-4-1-7-4-7-8V7z"/><circle cx="12" cy="11" r="3"/>
+  </g>
+  <text x="516" y="228" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="14" font-weight="600">Session cookie</text>
+  <text x="516" y="248" fill="#5E7695" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="12">HttpOnly, 30 days</text>
+
+  <path d="M660 232 H708" fill="none" stroke="#D3A05B" stroke-width="1.5" stroke-opacity="0.8" marker-end="url(#ahTipGold)"/>
+
+  <rect x="708" y="188" width="220" height="88" rx="16" fill="#FFFFFF" stroke="#DCDCDC" stroke-width="1"/>
+  <g transform="translate(724 212)" fill="none" stroke="#13233C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="12" cy="6" rx="10" ry="4"/><path d="M2 6 V18 C2 20 6 22 12 22 C18 22 22 20 22 18 V6"/>
+  </g>
+  <text x="764" y="228" fill="#13233C" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="14" font-weight="600">Generation history</text>
+  <text x="764" y="248" fill="#5E7695" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="12">SQLite, elapsed tag</text>
+
+  <text x="32" y="392" fill="#D3A05B" font-family="'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="600" letter-spacing="0.22em">SELKET.AI</text>
+</svg>
