@@ -528,6 +528,340 @@ def test_seedance_client_embeds_multimodal_content_payload(tmp_path, monkeypatch
     assert "Soldiers confront each other" in content[1]["text"]
 
 
+class _FakePlanner:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def plan_storyboard(self, **kwargs):
+        return {"theme": "greek_night_sky", "chapters": [{"id": 1, "title": "Start"}]}
+
+    def improve_storyboard(self, storyboard, instruction=None):
+        updated = dict(storyboard)
+        updated["improved"] = True
+        updated["instruction"] = instruction
+        return updated
+
+
+def test_plan_storyboard_success_and_improve(client, monkeypatch):
+    monkeypatch.setenv("ARK_API_KEY", "mock_key")
+    monkeypatch.setattr("src.server.DirectorPlanner", _FakePlanner)
+
+    missing = client.get("/api/storyboard")
+    assert missing.status_code == 404
+
+    res = client.post("/api/plan", json={"topic": "Local LLMs", "chapter_count": 3, "purpose": "rpg"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["status"] == "success"
+    assert body["storyboard"]["theme"] == "greek_night_sky"
+
+    got = client.get("/api/storyboard")
+    assert got.status_code == 200
+    assert got.json()["theme"] == "greek_night_sky"
+
+    improved = client.post("/api/plan", json={
+        "topic": "",
+        "storyboard": {"theme": "old", "chapters": [{"id": 1}]},
+        "instruction": "Tighten titles",
+    })
+    assert improved.status_code == 200
+    assert improved.json()["storyboard"]["improved"] is True
+
+    upd = client.post("/api/storyboard/update", json={"theme": "patched", "chapters": []})
+    assert upd.status_code == 200
+    assert client.get("/api/storyboard").json()["theme"] == "patched"
+
+
+def test_plan_storyboard_planner_failure(client, monkeypatch):
+    monkeypatch.setenv("ARK_API_KEY", "mock_key")
+
+    class Boom:
+        def __init__(self, *a, **k):
+            pass
+
+        def plan_storyboard(self, **k):
+            raise RuntimeError("llm down")
+
+    monkeypatch.setattr("src.server.DirectorPlanner", Boom)
+    res = client.post("/api/plan", json={"topic": "x"})
+    assert res.status_code == 500
+    assert "llm down" in res.json()["detail"]
+
+
+def test_test_connection_grok_401_and_network_error(client, monkeypatch):
+    monkeypatch.setenv("XAI_API_KEY", "xai-key")
+
+    class Unauthorized:
+        status_code = 401
+
+    monkeypatch.setattr("src.server.requests.get", lambda *a, **k: Unauthorized())
+    res = client.post("/api/settings/test-connection", json={"provider": "grok"})
+    assert res.status_code == 200
+    assert res.json()["status"] == "error"
+    assert "401" in res.json()["message"]
+
+    def boom(*a, **k):
+        raise __import__("requests").RequestException("dns")
+
+    monkeypatch.setattr("src.server.requests.get", boom)
+    res = client.post("/api/settings/test-connection", json={"provider": "grok"})
+    assert res.json()["status"] == "error"
+    assert "Could not reach" in res.json()["message"]
+
+    monkeypatch.delenv("XAI_API_KEY", raising=False)
+    res = client.post("/api/settings/test-connection", json={"provider": "grok"})
+    assert res.json()["status"] == "error"
+
+
+def test_cutscene_grok_missing_key(client, monkeypatch):
+    monkeypatch.delenv("XAI_API_KEY", raising=False)
+    res = client.post("/api/cutscenes/generate", json={
+        "chapter_id": 1,
+        "prompt": "Hermes",
+        "provider": "grok",
+    })
+    assert res.status_code == 400
+    assert "XAI_API_KEY" in res.json()["detail"]
+
+
+def test_cutscene_seedance_missing_key(client, monkeypatch):
+    monkeypatch.delenv("ARK_API_KEY", raising=False)
+    res = client.post("/api/cutscenes/generate", json={
+        "chapter_id": 1,
+        "prompt": "Hermes",
+        "provider": "seedance",
+    })
+    assert res.status_code == 400
+    assert "ARK_API_KEY" in res.json()["detail"]
+
+
+def test_custom_model_empty_id_and_delete_missing(client):
+    res = client.post("/api/models/custom", json={"id": "   ", "display_name": "blank"})
+    assert res.status_code == 400
+    missing = client.delete("/api/models/custom/does-not-exist")
+    assert missing.status_code == 404
+
+
+def test_images_generate_worker_failure_and_refs(client, monkeypatch, tmp_path):
+    monkeypatch.setenv("ARK_API_KEY", "k")
+
+    class Boom:
+        def generate_image(self, **kwargs):
+            raise RuntimeError("render failed")
+
+    monkeypatch.setattr("src.server.get_image_generator", lambda **k: Boom())
+    res = client.post("/api/images/generate", json={"prompt": "fail me", "chapter_id": 21})
+    assert res.status_code == 200
+    st = client.get("/api/generation/status/21").json()
+    assert st["status"] == "failed"
+
+    img_bytes = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4"
+    uploaded = client.post("/api/upload", files=[("files", ("hero.png", img_bytes, "image/png"))]).json()
+    asset_id = uploaded["uploaded"][0]["id"]
+    local_copy = tmp_path / "extra.png"
+    local_copy.write_bytes(img_bytes)
+
+    class Ok:
+        def generate_image(self, **kwargs):
+            assert kwargs["reference_assets"]
+            return kwargs["output_path"]
+
+    monkeypatch.setattr("src.server.get_image_generator", lambda **k: Ok())
+    res = client.post("/api/images/generate", json={
+        "prompt": "with refs",
+        "chapter_id": 22,
+        "reference_assets": [
+            {"id": asset_id},
+            {"id": "ghost", "local_path": str(local_copy), "filename": "extra.png", "type": "image"},
+        ],
+    })
+    assert res.status_code == 200
+    assert client.get("/api/generation/status/22").json()["status"] == "succeeded"
+
+
+def test_cutscene_skips_unknown_reference(client, monkeypatch):
+    monkeypatch.setenv("ARK_API_KEY", "k")
+    received = {}
+
+    def mock_generate(self, **kwargs):
+        received.update(kwargs)
+        return "./renders/cutscenes/chapter_33.mp4"
+
+    from src.seedance.client import SeedanceClient
+    monkeypatch.setattr(SeedanceClient, "generate_video", mock_generate)
+    res = client.post("/api/cutscenes/generate", json={
+        "chapter_id": 33,
+        "prompt": "skip junk refs",
+        "provider": "seedance",
+        "reference_assets": [{"id": "missing"}],
+    })
+    assert res.status_code == 200
+    assert received.get("reference_assets") in (None, [])
+
+
+def test_images_generate_missing_key_and_success(client, monkeypatch, tmp_path):
+    monkeypatch.delenv("ARK_API_KEY", raising=False)
+    res = client.post("/api/images/generate", json={"prompt": "temple"})
+    assert res.status_code == 400
+
+    monkeypatch.setenv("ARK_API_KEY", "k")
+
+    class FakeImg:
+        def generate_image(self, **kwargs):
+            cb = kwargs.get("status_callback")
+            if cb:
+                cb("downloading", {"message": "Saving"})
+            return kwargs["output_path"]
+
+    monkeypatch.setattr("src.server.get_image_generator", lambda **k: FakeImg())
+    res = client.post("/api/images/generate", json={"prompt": "a temple at dusk", "chapter_id": 7})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "started"
+    assert data["type"] == "image"
+    st = client.get("/api/generation/status/7").json()
+    assert st["status"] in ("succeeded", "processing", "generating")
+
+
+def test_cutscene_routes_seedream_model_to_image(client, monkeypatch):
+    monkeypatch.setenv("ARK_API_KEY", "k")
+
+    class FakeImg:
+        def generate_image(self, **kwargs):
+            return kwargs["output_path"]
+
+    monkeypatch.setattr("src.server.get_image_generator", lambda **k: FakeImg())
+    res = client.post("/api/cutscenes/generate", json={
+        "chapter_id": 8,
+        "prompt": "portrait",
+        "provider": "seedream",
+        "video_model": "dola-seedream-5-0-pro-260628",
+    })
+    assert res.status_code == 200
+    assert res.json()["type"] == "image"
+
+
+def test_cutscene_status_not_started(client):
+    res = client.get("/api/cutscenes/status/40404")
+    assert res.status_code == 200
+    assert res.json()["status"] == "not_started"
+
+
+def test_reference_assets_corrupt_json(tmp_path, monkeypatch):
+    test_uploads = tmp_path / "uploads"
+    test_data = tmp_path / "data"
+    test_uploads.mkdir()
+    test_data.mkdir()
+    monkeypatch.setenv("MULTIMEDIA_UPLOADS_DIR", str(test_uploads))
+    monkeypatch.setenv("MULTIMEDIA_DATA_DIR", str(test_data))
+    (test_data / "reference_assets.json").write_text("{bad")
+    app = create_app()
+    client = TestClient(app)
+    assert client.get("/api/upload/assets").json()["assets"] == []
+
+
+def test_reference_assets_fallback_path_and_unprefixed_file(tmp_path, monkeypatch):
+    test_uploads = tmp_path / "uploads"
+    test_data = tmp_path / "data"
+    test_uploads.mkdir()
+    test_data.mkdir()
+    monkeypatch.setenv("MULTIMEDIA_UPLOADS_DIR", str(test_uploads))
+    monkeypatch.setenv("MULTIMEDIA_DATA_DIR", str(test_data))
+    (test_uploads / "notes.txt").write_text("skip me")
+    (test_uploads / "hero.png").write_bytes(b"\x89PNG")
+    (test_uploads / "missing_path_record.jpg").write_bytes(b"\xff\xd8")
+    (test_data / "reference_assets.json").write_text(
+        '[{"id": "deadbeef", "filename": "missing_path_record.jpg", "url": "/uploads/reference_assets/missing_path_record.jpg", "local_path": "/no/such/file.jpg", "type": "image", "token": "@Pictures 1"}]'
+    )
+    app = create_app()
+    client = TestClient(app)
+    assets = client.get("/api/upload/assets").json()["assets"]
+    names = {a["filename"] for a in assets}
+    assert "hero.png" in names
+    assert "missing_path_record.jpg" in names
+    assert "notes.txt" not in names
+
+
+def test_image_generate_endpoint(client, monkeypatch, tmp_path):
+    monkeypatch.setenv("ARK_API_KEY", "mock_ark_key")
+
+    class MockSeeDreamClient:
+        def __init__(self, **kwargs):
+            pass
+
+        def generate_image(self, prompt, output_path, **kwargs):
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            with open(output_path, "wb") as f:
+                f.write(b"\x89PNG\r\n\x1a\nfake_generated_image")
+            if "status_callback" in kwargs and kwargs["status_callback"]:
+                kwargs["status_callback"]("rendering", {"message": "Rendering 2k image..."})
+
+    import src.server as server_mod
+    monkeypatch.setattr(server_mod, "get_image_generator", lambda **kwargs: MockSeeDreamClient())
+
+    payload = {
+        "chapter_id": 88,
+        "task_id": "88",
+        "prompt": "Cyberpunk cityscape under neon rain",
+        "image_model": "dola-seedream-5-0-pro-260628",
+        "ratio": "16:9",
+        "resolution": "2k",
+        "provider": "seedream"
+    }
+
+    res = client.post("/api/images/generate", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "started"
+    assert data["type"] == "image"
+    assert data["chapter_id"] == 88
+
+    # Check status endpoint
+    res_status = client.get("/api/cutscenes/status/88")
+    assert res_status.status_code == 200
+    status_data = res_status.json()
+    assert status_data["status"] == "succeeded"
+    assert status_data["type"] == "image"
+    assert status_data["path"] == "/renders/images/img_88.png"
+
+    # Also test /api/generation/status alias
+    res_alias = client.get("/api/generation/status/88")
+    assert res_alias.status_code == 200
+    assert res_alias.json()["status"] == "succeeded"
+
+
+def test_cutscene_generate_delegates_to_image(client, monkeypatch):
+    monkeypatch.setenv("ARK_API_KEY", "mock_ark_key")
+
+    class MockSeeDreamClient:
+        def __init__(self, **kwargs):
+            pass
+
+        def generate_image(self, prompt, output_path, **kwargs):
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            with open(output_path, "wb") as f:
+                f.write(b"\x89PNG\r\n\x1a\nfake_delegated_image")
+
+    import src.server as server_mod
+    monkeypatch.setattr(server_mod, "get_image_generator", lambda **kwargs: MockSeeDreamClient())
+
+    payload = {
+        "chapter_id": 99,
+        "prompt": "An oil painting of mountains",
+        "generation_mode": "image_generation",
+        "video_model": "dola-seedream-5-0-pro-260628",
+        "provider": "seedance"
+    }
+
+    res = client.post("/api/cutscenes/generate", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "started"
+    assert data["type"] == "image"
+    assert data["model"] == "dola-seedream-5-0-pro-260628"
+
+
+
 
 
 

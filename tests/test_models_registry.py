@@ -79,6 +79,13 @@ def test_defaults():
     assert DEFAULT_DIRECTOR_MODEL == "seed-2-0-lite-260228"
     assert DEFAULT_IMAGE_MODEL == "dola-seedream-5-0-pro-260628"
 
+
+def test_get_models_by_category():
+    video = get_models_by_category("video")
+    assert len(video) == 7
+    assert all(m["category"] == "video" for m in video)
+    assert get_models_by_category("nope") == []
+
 def test_ui_layout_profiles():
     # 1. Ref-to-video layout
     seedance20 = get_model_info("dreamina-seedance-2-0-fast-260128")

@@ -161,4 +161,195 @@ def test_seedance_status_callback_stages(monkeypatch, tmp_path):
     assert "auditing" in stage_names
 
 
+def test_seedance_missing_api_key(monkeypatch):
+    monkeypatch.delenv("ARK_API_KEY", raising=False)
+    with pytest.raises(ValueError, match="ARK_API_KEY"):
+        SeedanceClient()
+
+
+def test_seedance_prepare_image_fallbacks(monkeypatch, tmp_path):
+    monkeypatch.setenv("ARK_API_KEY", "mock_ark_key")
+    client = SeedanceClient()
+    assert client._prepare_image_reference("") == ""
+    assert client._prepare_image_reference("data:image/png;base64,xx") == "data:image/png;base64,xx"
+    assert client._prepare_image_reference("missing.png") == "missing.png"
+
+    img = tmp_path / "uploads" / "hero.png"
+    img.parent.mkdir()
+    img.write_bytes(b"png")
+    monkeypatch.chdir(tmp_path)
+    uri = client._prepare_image_reference("/uploads/hero.png")
+    assert uri.startswith("data:")
+
+
+def _mock_tasks(client, create_return, get_return):
+    class MockTasks:
+        def create(self, **kwargs):
+            MockTasks.kwargs = kwargs
+            return create_return
+
+        def get(self, task_id=None, **kwargs):
+            if callable(get_return):
+                return get_return()
+            return get_return
+
+    client.client.content_generation.tasks = MockTasks()
+    return MockTasks
+
+
+def test_seedance_ip_effects_and_character_fallback(monkeypatch, tmp_path):
+    monkeypatch.setenv("ARK_API_KEY", "mock_ark_key")
+    client = SeedanceClient()
+    img = tmp_path / "c.png"
+    img.write_bytes(b"png")
+    monkeypatch.setattr(client, "_download_file", lambda url, dest: None)
+    tasks = _mock_tasks(
+        client,
+        {"id": "t1"},
+        {"status": "succeeded", "content": {"video_url": "https://x/v.mp4"}},
+    )
+    client.generate_video(
+        prompt="fx",
+        output_path=str(tmp_path / "out.mp4"),
+        generation_mode="ip_effects",
+        ip_effect_name="glow",
+        character_reference_image=str(img),
+        poll_interval=0,
+        draft_mode=True,
+        resolution="1080p",
+        generate_audio=True,
+    )
+    assert tasks.kwargs["draft"] is True
+    assert tasks.kwargs["resolution"] == "1080p"
+    roles = [c.get("role") for c in tasks.kwargs["content"]]
+    assert "reference_image" in roles
+
+    client.generate_video(
+        prompt="frames",
+        output_path=str(tmp_path / "out2.mp4"),
+        generation_mode="first_last_frame",
+        character_reference_image=str(img),
+        poll_interval=0,
+    )
+    roles = [c.get("role") for c in tasks.kwargs["content"]]
+    assert "first_frame" in roles
+
+    client.generate_video(
+        prompt="char only",
+        output_path=str(tmp_path / "out3.mp4"),
+        character_reference_image=str(img),
+        poll_interval=0,
+    )
+    roles = [c.get("role") for c in tasks.kwargs["content"]]
+    assert "reference_image" in roles
+
+    client.generate_video(
+        prompt="empty asset skipped",
+        output_path=str(tmp_path / "out4.mp4"),
+        reference_assets=[{"type": "image"}],
+        poll_interval=0,
+    )
+    types = [c.get("type") for c in tasks.kwargs["content"]]
+    assert types == ["text"]
+
+    skipped = tmp_path / "uploads" / "reference_assets"
+    skipped.mkdir(parents=True)
+    (skipped / "cov_hero.png").write_bytes(b"png")
+    monkeypatch.chdir(tmp_path)
+    uri = client._prepare_image_reference("missing-dir/cov_hero.png")
+    assert uri.startswith("data:")
+
+
+def test_seedance_task_errors(monkeypatch, tmp_path):
+    monkeypatch.setenv("ARK_API_KEY", "mock_ark_key")
+    client = SeedanceClient()
+    monkeypatch.setattr(client, "_download_file", lambda url, dest: None)
+    monkeypatch.setattr("src.seedance.client.time.sleep", lambda s: None)
+
+    _mock_tasks(client, {}, {"status": "succeeded"})
+    with pytest.raises(RuntimeError, match="task_id"):
+        client.generate_video("p", str(tmp_path / "a.mp4"), poll_interval=0)
+
+    _mock_tasks(client, {"id": "t"}, {"status": "succeeded", "content": {}})
+    with pytest.raises(RuntimeError, match="video_url"):
+        client.generate_video("p", str(tmp_path / "b.mp4"), poll_interval=0)
+
+    _mock_tasks(client, {"id": "t"}, {"status": "failed", "error": "boom"})
+    with pytest.raises(RuntimeError, match="boom"):
+        client.generate_video("p", str(tmp_path / "c.mp4"), poll_interval=0)
+
+    clock = {"n": 0}
+
+    def fake_time():
+        clock["n"] += 1
+        return 0.0 if clock["n"] < 6 else 10_000.0
+
+    monkeypatch.setattr("src.seedance.client.time.time", fake_time)
+    _mock_tasks(client, {"id": "t"}, {"status": "queued"})
+    with pytest.raises(TimeoutError, match="timed out"):
+        client.generate_video("p", str(tmp_path / "d.mp4"), poll_interval=0, timeout_seconds=1)
+
+
+def test_factory_seedream(monkeypatch):
+    from src.generators import get_image_generator
+    from src.seedream.client import SeeDreamClient
+
+    monkeypatch.setenv("ARK_API_KEY", "mock_ark_key")
+    client = get_image_generator("seedream", model_id="dola-seedream-5-0-pro-260628")
+    assert isinstance(client, SeeDreamClient)
+    assert client.model_id == "dola-seedream-5-0-pro-260628"
+
+
+def test_seedream_generate_image(monkeypatch, tmp_path):
+    from src.seedream.client import SeeDreamClient
+
+    monkeypatch.setenv("ARK_API_KEY", "mock_ark_key")
+    client = SeeDreamClient()
+
+    captured_args = {}
+
+    class MockImages:
+        def generate(self, **kwargs):
+            nonlocal captured_args
+            captured_args = kwargs
+            class MockItem:
+                url = "https://example.com/test_generated_image.png"
+                b64_json = None
+            class MockResp:
+                data = [MockItem()]
+            return MockResp()
+
+    client.client.images = MockImages()
+
+    # Mock download
+    def mock_download(url, dest):
+        with open(dest, "wb") as f:
+            f.write(b"\x89PNG\r\n\x1a\nfake_png_data")
+
+    monkeypatch.setattr(client, "_download_file", mock_download)
+
+    test_ref = tmp_path / "ref_char.png"
+    test_ref.write_bytes(b"fake_image_bytes")
+
+    out_file = tmp_path / "generated.png"
+    client.generate_image(
+        prompt="A hero standing atop a neon tower",
+        output_path=str(out_file),
+        reference_assets=[
+            {
+                "id": "ref1",
+                "type": "image",
+                "local_path": str(test_ref)
+            }
+        ],
+        ratio="16:9"
+    )
+
+    assert out_file.exists()
+    assert "A hero standing atop a neon tower" in captured_args.get("prompt")
+    assert "image" in captured_args
+    assert captured_args["image"].startswith("data:image/png;base64,")
+
+
+
 

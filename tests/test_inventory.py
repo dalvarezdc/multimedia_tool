@@ -125,3 +125,95 @@ def test_custom_model_save_and_delete(tmp_path, monkeypatch):
     deleted = mgr.delete_custom_model("ep-dedicated-endpoint-001")
     assert deleted is True
     assert len(mgr.get_custom_models()) == 0
+
+
+def test_infer_model_capabilities_3d():
+    info = infer_model_capabilities("studio-hyper3d-mesh", provider="seedance")
+    assert info.category == "3d"
+
+
+def test_fetch_byteplus_endpoints_and_errors():
+    def fake_get(url, headers=None, timeout=None):
+        resp = MagicMock()
+        if url.endswith("/endpoints"):
+            resp.status_code = 200
+            resp.json.return_value = {
+                "data": [
+                    {"id": "ep-unique-1", "name": "Dedicated", "model_id": "seedance"},
+                    {"id": "dreamina-seedance-2-5-260628", "name": "dup"},
+                ]
+            }
+            return resp
+        resp.status_code = 200
+        resp.json.return_value = {"data": [{"id": "dreamina-seedance-2-5-260628", "name": "Live"}]}
+        return resp
+
+    with patch("requests.get", side_effect=fake_get):
+        models = fetch_byteplus_models(api_key="k", base_url="https://ark.test/api/v3/")
+        ids = [m["id"] for m in models]
+        assert "ep-unique-1" in ids
+        assert ids.count("dreamina-seedance-2-5-260628") == 1
+
+
+def test_fetch_byteplus_endpoints_exception_and_non_200():
+    def fake_get(url, headers=None, timeout=None):
+        if url.endswith("/endpoints"):
+            raise RuntimeError("no endpoints")
+        resp = MagicMock()
+        resp.status_code = 500
+        return resp
+
+    with patch("requests.get", side_effect=fake_get):
+        assert fetch_byteplus_models(api_key="k", base_url="https://ark.test/api/v3") == []
+
+
+def test_fetch_xai_non_200_and_exception():
+    resp = MagicMock()
+    resp.status_code = 403
+    with patch("requests.get", return_value=resp):
+        assert fetch_xai_models(api_key="k") == []
+    with patch("requests.get", side_effect=RuntimeError("net")):
+        assert fetch_xai_models(api_key="k") == []
+
+
+def test_custom_and_cache_error_paths(tmp_path, monkeypatch):
+    custom_file = tmp_path / "custom.json"
+    cache_file = tmp_path / "cache.json"
+    monkeypatch.setattr("src.inventory.CUSTOM_MODELS_FILE", str(custom_file))
+    monkeypatch.setattr("src.inventory.CACHE_FILE", str(cache_file))
+    mgr = ModelInventoryManager()
+
+    custom_file.write_text("{not-json")
+    assert mgr.get_custom_models() == []
+    custom_file.write_text('{"id": "not-a-list"}')
+    assert mgr.get_custom_models() == []
+
+    with pytest.raises(ValueError, match="Model ID"):
+        mgr.save_custom_model({"display_name": "no id"})
+
+    assert mgr.delete_custom_model("missing") is False
+    assert mgr.load_cached_snapshot() is None
+    cache_file.write_text("nope")
+    assert mgr.load_cached_snapshot() is None
+
+    cache_dir = tmp_path / "blocked.json"
+    cache_dir.mkdir()
+    monkeypatch.setattr("src.inventory.CACHE_FILE", str(cache_dir))
+    mgr.save_cached_snapshot({"ok": True})
+
+    monkeypatch.setattr("src.inventory.CACHE_FILE", str(tmp_path / "absent.json"))
+    monkeypatch.setattr(mgr, "refresh_inventory", lambda **k: {"total_models": 3})
+    assert mgr.get_inventory()["total_models"] == 3
+
+
+def test_refresh_unknown_category(tmp_path, monkeypatch):
+    custom_file = str(tmp_path / "custom.json")
+    cache_file = str(tmp_path / "cache.json")
+    monkeypatch.setattr("src.inventory.CUSTOM_MODELS_FILE", custom_file)
+    monkeypatch.setattr("src.inventory.CACHE_FILE", cache_file)
+    monkeypatch.setattr("src.inventory.fetch_byteplus_models", lambda *a, **k: [])
+    monkeypatch.setattr("src.inventory.fetch_xai_models", lambda *a, **k: [])
+    mgr = ModelInventoryManager()
+    mgr.save_custom_model({"id": "ep-audio-1", "display_name": "Audio", "category": "audio"})
+    snap = mgr.refresh_inventory()
+    assert any(m["id"] == "ep-audio-1" for m in snap["catalog"]["audio"])

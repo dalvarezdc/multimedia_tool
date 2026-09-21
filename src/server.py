@@ -19,7 +19,7 @@ from typing import Optional, Dict, Any, List
 import requests
 from pydantic import BaseModel, Field
 from src.director.planner import DirectorPlanner
-from src.generators import get_video_generator
+from src.generators import get_video_generator, get_image_generator
 from src.qa.audit import VideoQAAgent
 from src.models_registry import (
     MODEL_CATALOG,
@@ -86,6 +86,19 @@ class CutsceneGenerateRequest(BaseModel):
     generate_audio: bool = True
     draft_mode: bool = False
     reference_assets: Optional[List[Dict[str, Any]]] = None
+
+class ImageGenerateRequest(BaseModel):
+    task_id: Optional[str] = None
+    chapter_id: Optional[int] = None
+    prompt: str
+    image_model: Optional[str] = None
+    model: Optional[str] = None
+    ratio: str = "16:9"
+    resolution: str = "2K"
+    provider: str = "seedream"
+    reference_assets: Optional[List[Dict[str, Any]]] = None
+    api_key: Optional[str] = None
+    watermark: bool = False
 
 class MasterRenderRequest(BaseModel):
     storyboard: Dict[str, Any]
@@ -517,12 +530,173 @@ def create_app():
 
 
     # =========================================================================
-    # 4. CUTSCENE GENERATION API (SEEDANCE / GROK)
+    # 4. MULTIMEDIA GENERATION API (SEEDANCE / SEEDREAM / GROK)
     # =========================================================================
+    @app.post("/api/images/generate")
+    def generate_image(req: ImageGenerateRequest, background_tasks: BackgroundTasks):
+        """Submits an asynchronous image generation task using BytePlus SeeDream."""
+        ark_key = req.api_key or os.getenv("ARK_API_KEY")
+        if not ark_key:
+            raise HTTPException(status_code=400, detail="ARK_API_KEY missing. Please configure in Settings.")
+
+        img_dir = os.path.join(os.path.dirname(ui_dir), "renders", "images")
+        os.makedirs(img_dir, exist_ok=True)
+
+        cid = req.chapter_id if req.chapter_id is not None else (int(req.task_id) if (req.task_id and req.task_id.isdigit()) else int(time.time() * 1000) % 100000)
+        task_id = str(cid)
+        img_path = os.path.join(img_dir, f"img_{task_id}.png")
+
+        image_model_id = req.image_model or req.model or "dola-seedream-5-0-pro-260628"
+        start_ts = time.time()
+
+        task_entry = {
+            "status": "generating",
+            "stage": "submitting",
+            "stage_label": "Submitting…",
+            "elapsed_seconds": 0,
+            "path": None,
+            "started_at": start_ts,
+            "generation_mode": "image_generation",
+            "model": image_model_id,
+            "model_used": image_model_id,
+            "watermark_free": True,
+            "type": "image"
+        }
+        store["tasks"][cid] = task_entry
+        store["tasks"][task_id] = task_entry
+
+        def _on_status(stage: str, meta: Dict[str, Any]):
+            elapsed = int(time.time() - start_ts)
+            msg = meta.get("message") or f"{stage.capitalize()}..."
+            t = store["tasks"].get(cid, {})
+            t.update({
+                "status": "processing",
+                "stage": stage,
+                "stage_label": msg,
+                "elapsed_seconds": elapsed,
+                "model": image_model_id,
+                "type": "image"
+            })
+            store["tasks"][cid] = t
+            store["tasks"][task_id] = t
+
+        def _worker():
+            try:
+                generator = get_image_generator(
+                    provider=req.provider,
+                    api_key=req.api_key,
+                    model_id=image_model_id
+                )
+
+                resolved_assets = []
+                for ref in (req.reference_assets or []):
+                    if not isinstance(ref, dict):
+                        continue
+                    asset_id = ref.get("id")
+                    stored = next((a for a in store["reference_assets"] if a["id"] == asset_id), None)
+                    if stored:
+                        resolved_assets.append(stored)
+                    else:
+                        local_path = ref.get("local_path")
+                        if not local_path or not os.path.exists(local_path):
+                            cand_name = os.path.basename(ref.get("url") or ref.get("filename") or "")
+                            cand_path = os.path.join(uploads_dir, cand_name)
+                            if cand_name and os.path.exists(cand_path):
+                                local_path = cand_path
+                        if local_path and os.path.exists(local_path):
+                            resolved_assets.append({
+                                "id": asset_id or str(uuid.uuid4())[:8],
+                                "filename": ref.get("filename") or os.path.basename(local_path),
+                                "type": ref.get("type", "image"),
+                                "token": ref.get("token", ""),
+                                "local_path": local_path,
+                                "url": ref.get("url", f"/uploads/reference_assets/{os.path.basename(local_path)}")
+                            })
+
+                generator.generate_image(
+                    prompt=req.prompt,
+                    output_path=img_path,
+                    reference_assets=resolved_assets or None,
+                    ratio=req.ratio,
+                    resolution=req.resolution,
+                    watermark=req.watermark,
+                    status_callback=_on_status
+                )
+
+                public_path = f"/renders/images/img_{task_id}.png"
+                total_elapsed = int(time.time() - start_ts)
+                success_entry = {
+                    "status": "succeeded",
+                    "stage": "complete",
+                    "stage_label": "Ready",
+                    "elapsed_seconds": total_elapsed,
+                    "path": public_path,
+                    "generation_mode": "image_generation",
+                    "model": image_model_id,
+                    "model_used": image_model_id,
+                    "type": "image"
+                }
+                store["tasks"][cid] = success_entry
+                store["tasks"][task_id] = success_entry
+                store["usage_records"].insert(0, {
+                    "id": f"img-{task_id}",
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M"),
+                    "service": "Multimedia Studio",
+                    "model": image_model_id,
+                    "mode": "image_generation",
+                    "prompt": req.prompt,
+                    "duration": "image",
+                    "status": "succeeded",
+                    "watermark_free": True
+                })
+            except Exception as e:
+                logger.error(f"Image generation failed for task {task_id}: {e}", exc_info=True)
+                err_entry = {
+                    "status": "failed",
+                    "stage": "failed",
+                    "stage_label": "Failed",
+                    "error": str(e),
+                    "model": image_model_id,
+                    "type": "image"
+                }
+                store["tasks"][cid] = err_entry
+                store["tasks"][task_id] = err_entry
+
+        background_tasks.add_task(_worker)
+        return {
+            "status": "started",
+            "task_id": task_id,
+            "chapter_id": cid,
+            "model": image_model_id,
+            "type": "image"
+        }
+
     @app.post("/api/cutscenes/generate")
     def generate_cutscene(req: CutsceneGenerateRequest, background_tasks: BackgroundTasks):
-        """Submits an asynchronous cutscene generation task with zero watermark guarantee."""
+        """Submits an asynchronous cutscene or image generation task with zero watermark guarantee."""
         provider = req.provider.lower()
+
+        # Seamless routing to image generation if an image model or mode is requested
+        is_image_req = (
+            provider in ("seedream", "image")
+            or (req.video_model and ("seedream" in req.video_model.lower() or "dola" in req.video_model.lower()))
+            or req.generation_mode == "image_generation"
+        )
+        if is_image_req:
+            img_req = ImageGenerateRequest(
+                task_id=str(req.chapter_id),
+                chapter_id=req.chapter_id,
+                prompt=req.prompt,
+                image_model=req.video_model or "dola-seedream-5-0-pro-260628",
+                model=req.video_model,
+                ratio=req.ratio,
+                resolution=req.resolution,
+                provider="seedream",
+                reference_assets=req.reference_assets,
+                api_key=req.api_key,
+                watermark=False
+            )
+            return generate_image(img_req, background_tasks)
 
         # Validate API keys before backgrounding
         if provider in ("seedance", "byteplus", "bytedance"):
@@ -684,11 +858,13 @@ def create_app():
         return {"status": "started", "chapter_id": req.chapter_id, "provider": provider, "model": video_model_id}
 
     @app.get("/api/cutscenes/status/{chapter_id}")
-    def get_cutscene_status(chapter_id: int):
-        """Returns status of a specific chapter cutscene task."""
-        if chapter_id not in store["tasks"]:
+    @app.get("/api/generation/status/{chapter_id}")
+    def get_cutscene_status(chapter_id: str):
+        """Returns status of a specific generation task (cutscene or image)."""
+        cid = int(chapter_id) if chapter_id.isdigit() else chapter_id
+        task = store["tasks"].get(cid) or store["tasks"].get(str(chapter_id))
+        if not task:
             return {"status": "not_started"}
-        task = store["tasks"][chapter_id]
         if task.get("status") == "processing" and "started_at" in task:
             task["elapsed_seconds"] = int(time.time() - task["started_at"])
         return task
