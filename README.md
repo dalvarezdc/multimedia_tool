@@ -102,6 +102,9 @@ make docker-up         # http://localhost:8080
 
 GitHub Actions (`.github/workflows/ci.yml`) runs pytest with a 90% coverage floor and builds both images on every push and pull request.
 
+### Accounts and session history
+Sign in from the header to keep Recent Creations across restarts. Email + password always works. Optional TOTP 2FA lives under Settings → Account. Google, GitHub, and Proton OAuth buttons appear when you set the matching `*_CLIENT_ID` / `*_CLIENT_SECRET` in `.env`. Proton's public "Sign in with Proton" is partner-only; without those credentials you can still register with a Proton Mail address.
+
 ### 4. Or Run Headless via CLI
 ```bash
 # Run the pipeline with a custom topic and context file

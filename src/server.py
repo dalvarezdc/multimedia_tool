@@ -30,6 +30,7 @@ from src.models_registry import (
     calculate_model_cost,
 )
 from src.inventory import inventory_manager
+from src.auth import AuthStore, build_auth_router, current_user, load_or_create_secret, persist_generation
 
 
 def _env_enabled(name: str, default: str = "1") -> bool:
@@ -37,7 +38,7 @@ def _env_enabled(name: str, default: str = "1") -> bool:
 
 
 try:
-    from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
+    from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Request
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.staticfiles import StaticFiles
     from fastapi.responses import FileResponse
@@ -144,6 +145,8 @@ def create_app():
     os.makedirs(data_dir, exist_ok=True)
     os.makedirs(uploads_dir, exist_ok=True)
     assets_db_path = os.path.join(data_dir, "reference_assets.json")
+    auth_store = AuthStore(data_dir)
+    app.include_router(build_auth_router(auth_store, load_or_create_secret(data_dir)))
 
     def _save_reference_assets():
         try:
@@ -316,9 +319,28 @@ def create_app():
             return {"status": "error", "message": f"Could not reach {label}: {exc}"}
 
     @app.get("/api/usage")
-    def get_usage():
+    def get_usage(request: Request):
         """Returns usage records and system metrics."""
-        records = store["usage_records"]
+        user = current_user(request, auth_store)
+        if user:
+            hist = auth_store.list_history(user["id"])
+            records = [
+                {
+                    "id": h["id"],
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M", time.localtime(h["created_at"])),
+                    "service": "Multimedia Studio",
+                    "model": h.get("model"),
+                    "mode": h.get("mode"),
+                    "prompt": h.get("prompt"),
+                    "duration": f"{h.get('elapsed_seconds') or 0}s",
+                    "status": "succeeded",
+                    "path": h.get("path"),
+                    "watermark_free": True,
+                }
+                for h in hist
+            ]
+        else:
+            records = store["usage_records"]
         total = len(records)
         wm = sum(1 for r in records if r.get("watermark_free"))
         return {
@@ -568,9 +590,17 @@ def create_app():
     # =========================================================================
     # 4. MULTIMEDIA GENERATION API (SEEDANCE / SEEDREAM / GROK)
     # =========================================================================
+    @app.get("/api/history")
+    def list_generation_history(request: Request):
+        user = current_user(request, auth_store)
+        if not user:
+            return {"authenticated": False, "records": []}
+        return {"authenticated": True, "records": auth_store.list_history(user["id"])}
+
     @app.post("/api/images/generate")
-    def generate_image(req: ImageGenerateRequest, background_tasks: BackgroundTasks):
+    def generate_image(req: ImageGenerateRequest, background_tasks: BackgroundTasks, request: Request):
         """Submits an asynchronous image generation task (SeeDream or Grok Imagine)."""
+        history_user_id = (current_user(request, auth_store) or {}).get("id")
         image_model_id = req.image_model or req.model or DEFAULT_IMAGE_MODEL
         provider = (req.provider or "").lower()
         is_grok = provider in ("grok", "xai") or "grok" in (image_model_id or "").lower()
@@ -699,6 +729,16 @@ def create_app():
                     "status": "succeeded",
                     "watermark_free": True
                 })
+                persist_generation(auth_store, history_user_id, {
+                    "id": f"img-{task_id}",
+                    "title": (req.prompt or "Generated image")[:80],
+                    "prompt": req.prompt,
+                    "model": image_model_id,
+                    "mode": "image_generation",
+                    "media_type": "image",
+                    "path": public_path,
+                    "elapsed_seconds": total_elapsed,
+                })
             except Exception as e:
                 logger.error(f"Image generation failed for task {task_id}: {e}", exc_info=True)
                 err_entry = {
@@ -722,8 +762,9 @@ def create_app():
         }
 
     @app.post("/api/cutscenes/generate")
-    def generate_cutscene(req: CutsceneGenerateRequest, background_tasks: BackgroundTasks):
+    def generate_cutscene(req: CutsceneGenerateRequest, background_tasks: BackgroundTasks, request: Request):
         """Submits an asynchronous cutscene or image generation task with zero watermark guarantee."""
+        history_user_id = (current_user(request, auth_store) or {}).get("id")
         provider = req.provider.lower()
 
         # Seamless routing to image generation if an image model or mode is requested
@@ -750,7 +791,7 @@ def create_app():
                 api_key=req.api_key,
                 watermark=False
             )
-            return generate_image(img_req, background_tasks)
+            return generate_image(img_req, background_tasks, request)
 
         # Validate API keys before backgrounding
         if provider in ("seedance", "byteplus", "bytedance"):
@@ -899,6 +940,16 @@ def create_app():
                     "cost": est_cost,
                     "status": "succeeded" if passed else "qa_warning",
                     "watermark_free": True
+                })
+                persist_generation(auth_store, history_user_id, {
+                    "id": f"gen-{req.chapter_id}",
+                    "title": (req.prompt or "Generated clip")[:80],
+                    "prompt": req.prompt,
+                    "model": video_model_id,
+                    "mode": req.generation_mode,
+                    "media_type": "video",
+                    "path": public_path,
+                    "elapsed_seconds": total_elapsed,
                 })
             except Exception as exc:
                 logger.error(f"Error generating video cutscene for chapter {req.chapter_id}: {exc}", exc_info=True)

@@ -18,6 +18,14 @@ services:
       XAI_API_KEY: ${XAI_API_KEY:-}
       XAI_BASE_URL: ${XAI_BASE_URL:-https://api.x.ai/v1}
       XAI_VIDEO_MODEL: ${XAI_VIDEO_MODEL:-grok-imagine-video-1.5}
+      AUTH_PUBLIC_URL: ${AUTH_PUBLIC_URL:-http://localhost:8080}
+      AUTH_SECRET: ${AUTH_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      PROTON_CLIENT_ID: ${PROTON_CLIENT_ID:-}
+      PROTON_CLIENT_SECRET: ${PROTON_CLIENT_SECRET:-}
     volumes:
       - data:/app/data
       - uploads:/app/uploads
