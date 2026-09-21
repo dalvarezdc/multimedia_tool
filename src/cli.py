@@ -21,6 +21,9 @@ def main():
     parser.add_argument("--character-prompt", type=str, default=None, help="Visual description tokens of the character")
     parser.add_argument("--chapters", type=int, default=4, help="Number of roadmap chapters (default: 4)")
     parser.add_argument("--provider", type=str, default="seedance", choices=["seedance", "grok"], help="Video generator provider: 'seedance' (BytePlus) or 'grok' (xAI)")
+    parser.add_argument("--generation-mode", type=str, default="ref_to_video", choices=["ref_to_video", "first_last_frame"], help="Video generation mode: 'ref_to_video' or 'first_last_frame'")
+    parser.add_argument("--first-frame", type=str, default=None, help="Start keyframe image path (for first_last_frame mode)")
+    parser.add_argument("--last-frame", type=str, default=None, help="End keyframe image path (for first_last_frame mode)")
     parser.add_argument("--output-dir", type=str, default="./renders", help="Output directory for generated files")
     parser.add_argument("--skip-video-gen", action="store_true", help="Only generate storyboard JSON without calling video API")
     args = parser.parse_args()
@@ -81,14 +84,20 @@ def main():
         prompt = ch["seedance_prompt"]
         clip_path = os.path.join(cutscenes_dir, f"chapter_{ch_id}.mp4")
         
-        logger.info(f"Generating Cutscene for Chapter {ch_id}: '{ch['title']}' via {args.provider.upper()}...")
-        generator.generate_video(
-            prompt=prompt,
-            output_path=clip_path,
-            character_reference_image=ref_image,
-            watermark=False,  # Enforce no watermark
-            duration=int(ch.get("duration_seconds", 5))
-        )
+        gen_kwargs = {
+            "prompt": prompt,
+            "output_path": clip_path,
+            "character_reference_image": ref_image,
+            "watermark": False,  # Enforce no watermark
+            "duration": int(ch.get("duration_seconds", 5))
+        }
+        if args.provider == "seedance":
+            gen_kwargs.update({
+                "generation_mode": args.generation_mode,
+                "first_frame_image": args.first_frame,
+                "last_frame_image": args.last_frame,
+            })
+        generator.generate_video(**gen_kwargs)
 
         # 5. QA Audit
         passed, reason = qa.audit_clip(clip_path)

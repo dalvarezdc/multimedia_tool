@@ -26,6 +26,8 @@ class ModelInfo:
     headline: str = "Experience video generation and let creativity shake"
     icon_type: str = "video"  # 'video', 'image', 'llm', '3d', 'vision'
     placeholder: str = "Use @to quickly reference uploaded files, such as referring to actions in @Video 1 to generate videos of characters fighting in @Pictures 2 and @Pictures 3."
+    ref_placeholder: str = "Use @to quickly reference uploaded files, such as referring to actions in @Video 1 to generate videos of characters fighting in @Pictures 2 and @Pictures 3."
+    first_last_placeholder: str = "Enter the content screen you want to generate, or enter a creative description in combination with the image (optional)."
     input_slots: List[Dict[str, str]] = field(default_factory=lambda: [{"id": "reference", "label": "Reference", "icon": "plus"}])
     mode_selector: Optional[Dict[str, Any]] = None
     pills: List[str] = field(default_factory=list)
@@ -79,7 +81,7 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         icon_type="video",
         placeholder="Use @to quickly reference uploaded files, such as referring to actions in @Video 1 to generate videos of characters fighting in @Pictures 2 and @Pictures 3.",
         input_slots=[{"id": "reference", "label": "Reference", "icon": "plus"}],
-        mode_selector={"enabled": True, "default": "Ref-to-video", "options": ["Ref-to-video", "Text-to-video"]},
+        mode_selector={"enabled": True, "default": "Ref-to-video", "options": ["Ref-to-video", "First/last frame"]},
         sample_cost="USD 0.6048",
         sample_examples=SAMPLE_INSPIRATIONS,
         provider="seedance",
@@ -100,7 +102,7 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         icon_type="video",
         placeholder="Use @to quickly reference uploaded files, such as referring to actions in @Video 1 to generate videos of characters fighting in @Pictures 2 and @Pictures 3.",
         input_slots=[{"id": "reference", "label": "Reference", "icon": "plus"}],
-        mode_selector={"enabled": True, "default": "Ref-to-video", "options": ["Ref-to-video", "Text-to-video"]},
+        mode_selector={"enabled": True, "default": "Ref-to-video", "options": ["Ref-to-video", "First/last frame"]},
         sample_cost="USD 0.6048",
         sample_examples=SAMPLE_INSPIRATIONS,
         provider="seedance",
@@ -124,6 +126,7 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
             {"id": "first_frame", "label": "first frame", "icon": "plus"},
             {"id": "last_frame", "label": "last frame", "icon": "plus"}
         ],
+        mode_selector={"enabled": True, "default": "First/last frame", "options": ["Ref-to-video", "First/last frame"]},
         sample_cost="USD 0.2592",
         has_template_library=True,
         sample_examples=SAMPLE_INSPIRATIONS,
@@ -166,7 +169,7 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         icon_type="video",
         placeholder="Use @to quickly reference uploaded files, such as referring to actions in @Video 1 to generate videos of characters fighting in @Pictures 2 and @Pictures 3.",
         input_slots=[{"id": "reference", "label": "Reference", "icon": "plus"}],
-        mode_selector={"enabled": True, "default": "Ref-to-video", "options": ["Ref-to-video", "First/last frame", "IP effects"]},
+        mode_selector={"enabled": True, "default": "Ref-to-video", "options": ["Ref-to-video", "First/last frame"]},
         sample_cost="USD 0.4500",
         sample_examples=SAMPLE_INSPIRATIONS,
         provider="seedance",

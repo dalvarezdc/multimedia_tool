@@ -118,3 +118,35 @@ def test_cli_grok_provider_qa_pass(tmp_path, monkeypatch, caplog):
     assert len(gen.calls) == 2
     assert "passed QA" in caplog.text
     assert "Pipeline Completed Successfully" in caplog.text
+
+
+def test_cli_first_last_frame_mode(tmp_path, monkeypatch):
+    out = tmp_path / "renders"
+    f1 = tmp_path / "f1.png"
+    f1.write_bytes(b"png")
+    f2 = tmp_path / "f2.png"
+    f2.write_bytes(b"png")
+    gen = _FakeGenerator()
+
+    class PassQA:
+        def audit_clip(self, path):
+            return True, "Passed QA audit."
+
+    monkeypatch.setattr(sys, "argv", [
+        "multimedia",
+        "--topic", "Frame Morphing",
+        "--provider", "seedance",
+        "--generation-mode", "first_last_frame",
+        "--first-frame", str(f1),
+        "--last-frame", str(f2),
+        "--output-dir", str(out),
+    ])
+    monkeypatch.setenv("ARK_API_KEY", "k")
+    monkeypatch.setattr("src.cli.DirectorPlanner", _FakePlanner)
+    monkeypatch.setattr("src.generators.get_video_generator", lambda **k: gen)
+    monkeypatch.setattr("src.cli.VideoQAAgent", PassQA)
+    main()
+    assert len(gen.calls) == 2
+    assert gen.calls[0]["generation_mode"] == "first_last_frame"
+    assert gen.calls[0]["first_frame_image"] == str(f1)
+    assert gen.calls[0]["last_frame_image"] == str(f2)

@@ -302,9 +302,11 @@
           </div>
         </div>
 
-        <!-- Hidden file inputs for reference upload -->
+        <!-- Hidden file inputs for reference & keyframe uploads -->
         <input type="file" id="ref-file-input" multiple accept="image/*,video/*" class="hidden" />
         <input type="file" id="ref-folder-input" webkitdirectory directory class="hidden" />
+        <input type="file" id="first-frame-file-input" accept="image/*" class="hidden" />
+        <input type="file" id="last-frame-file-input" accept="image/*" class="hidden" />
 
         <!-- Hidden input elements for state/backward compatibility -->
         <div class="hidden">
@@ -884,6 +886,8 @@
     let rpgChapterCount = parseInt(localStorage.getItem("RPG_CHAPTER_COUNT") || "4", 10);
     let rpgResolution = localStorage.getItem("RPG_CANVAS_RESOLUTION") || "1080p";
     let selectedVideoMode = "ref_to_video";
+    let firstFrameData = null;
+    let lastFrameData = null;
     let currentUser = null;
     let accountMode = "login";
 
@@ -1487,59 +1491,167 @@ print("Task submitted:", task.id)`;
         else tplBtn.classList.add("hidden");
       }
 
-      // 4. Dropzone Slots — default is ref-to-video (Seedance 2.5 / 2.0)
+    function renderDropzones(model) {
+      model = model || (modelCatalogData[activeVideoModel] || {});
       const dropzoneEl = document.getElementById("dynamic-dropzones");
-      if (dropzoneEl) {
-        if (model.ui_layout_type === "video_first_last") {
-          dropzoneEl.innerHTML = `
-            <div class="flex items-center gap-1.5">
-              <div id="dropzone-first" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors">
-                <span class="text-base text-slate-400 font-light">+</span>
-                <span class="text-[9px] text-slate-400 leading-none mt-1">first frame</span>
-              </div>
-              <span class="text-slate-500 font-mono text-sm px-0.5">⇌</span>
-              <div id="dropzone-last" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors">
-                <span class="text-base text-slate-400 font-light">+</span>
-                <span class="text-[9px] text-slate-400 leading-none mt-1">last frame</span>
-              </div>
+      if (!dropzoneEl) return;
+
+      if (model.category === "image") {
+        dropzoneEl.innerHTML = `
+          <div id="dropzone-image" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors relative group" title="Click to import reference images or folder, or drag & drop">
+            <svg class="w-4 h-4 text-purple-400 mb-1 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+            <span class="text-[9px] text-slate-400 leading-none group-hover:text-slate-200">Reference</span>
+          </div>
+        `;
+        selectedVideoMode = "image_generation";
+        if (typeof updateDropzoneRefBadge === "function") updateDropzoneRefBadge();
+        const tray = document.getElementById("imported-assets-tray");
+        if (tray && importedAssets.length > 0) tray.classList.remove("hidden");
+        return;
+      }
+
+      if (selectedVideoMode === "first_last_frame") {
+        const firstHtml = firstFrameData ? `
+          <div id="dropzone-first" class="w-16 h-16 rounded-xl border border-cyan-500/40 bg-[#11131C] relative overflow-hidden group cursor-pointer" title="Click to replace first frame">
+            <img src="${firstFrameData.url}" class="w-full h-full object-cover rounded-xl" />
+            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <span class="text-[9px] text-white font-medium">first</span>
             </div>
-          `;
-          selectedVideoMode = "first_last_frame";
-        } else if (model.ui_layout_type === "video_first") {
-          dropzoneEl.innerHTML = `
-            <div id="dropzone-first" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors">
-              <span class="text-base text-slate-400 font-light">+</span>
-              <span class="text-[9px] text-slate-400 leading-none mt-1">first frame</span>
+            <button type="button" id="btn-remove-first-frame" class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/70 hover:bg-red-500 text-white text-[10px] flex items-center justify-center leading-none z-10 transition-colors" title="Remove first frame">×</button>
+          </div>
+        ` : `
+          <div id="dropzone-first" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors relative group" title="Click or drop to set first frame">
+            <svg class="w-4 h-4 text-slate-400 group-hover:text-cyan-400 transition-colors mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span class="text-[9px] text-slate-400 leading-none group-hover:text-slate-200">first frame</span>
+          </div>
+        `;
+
+        const lastHtml = lastFrameData ? `
+          <div id="dropzone-last" class="w-16 h-16 rounded-xl border border-cyan-500/40 bg-[#11131C] relative overflow-hidden group cursor-pointer" title="Click to replace last frame">
+            <img src="${lastFrameData.url}" class="w-full h-full object-cover rounded-xl" />
+            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <span class="text-[9px] text-white font-medium">last</span>
             </div>
-          `;
-          selectedVideoMode = "first_last_frame";
-        } else if (model.ui_layout_type === "image_standard" || model.ui_layout_type === "image_group") {
-          dropzoneEl.innerHTML = `
-            <div id="dropzone-image" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors relative group" title="Click to import reference images or folder, or drag & drop">
-              <svg class="w-4 h-4 text-purple-400 mb-1 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-              <span class="text-[9px] text-slate-400 leading-none group-hover:text-slate-200">Reference</span>
-            </div>
-          `;
-          selectedVideoMode = "image_generation";
-          if (typeof updateDropzoneRefBadge === "function") updateDropzoneRefBadge();
-        } else {
-          dropzoneEl.innerHTML = `
-            <div id="dropzone-ref" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors relative group" title="Click to import files or folder, or drag & drop">
-              <span class="text-base text-slate-400 font-light group-hover:text-cyan-400 transition-colors">+</span>
-              <span class="text-[9px] text-slate-400 leading-none mt-1 group-hover:text-slate-200">Reference</span>
-            </div>
-          `;
-          selectedVideoMode = "ref_to_video";
-          if (typeof updateDropzoneRefBadge === "function") updateDropzoneRefBadge();
+            <button type="button" id="btn-remove-last-frame" class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/70 hover:bg-red-500 text-white text-[10px] flex items-center justify-center leading-none z-10 transition-colors" title="Remove last frame">×</button>
+          </div>
+        ` : `
+          <div id="dropzone-last" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors relative group" title="Click or drop to set last frame">
+            <svg class="w-4 h-4 text-slate-400 group-hover:text-cyan-400 transition-colors mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span class="text-[9px] text-slate-400 leading-none group-hover:text-slate-200">last frame</span>
+          </div>
+        `;
+
+        dropzoneEl.innerHTML = `
+          <div class="flex items-center gap-1.5">
+            ${firstHtml}
+            <span class="text-slate-500 font-mono text-sm px-0.5 select-none">⇌</span>
+            ${lastHtml}
+          </div>
+        `;
+
+        const rmFirst = document.getElementById("btn-remove-first-frame");
+        if (rmFirst) {
+          rmFirst.onclick = (e) => {
+            e.stopPropagation();
+            firstFrameData = null;
+            const inp = document.getElementById("video-first-frame");
+            if (inp) inp.value = "";
+            renderDropzones(model);
+          };
+        }
+        const rmLast = document.getElementById("btn-remove-last-frame");
+        if (rmLast) {
+          rmLast.onclick = (e) => {
+            e.stopPropagation();
+            lastFrameData = null;
+            const inp = document.getElementById("video-last-frame");
+            if (inp) inp.value = "";
+            renderDropzones(model);
+          };
+        }
+
+        const tray = document.getElementById("imported-assets-tray");
+        if (tray) tray.classList.add("hidden");
+      } else {
+        // ref_to_video mode
+        dropzoneEl.innerHTML = `
+          <div id="dropzone-ref" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors relative group" title="Click to import files or folder, or drag & drop">
+            <span class="text-base text-slate-400 font-light group-hover:text-cyan-400 transition-colors">+</span>
+            <span class="text-[9px] text-slate-400 leading-none mt-1 group-hover:text-slate-200">Reference</span>
+          </div>
+        `;
+        selectedVideoMode = "ref_to_video";
+        if (typeof updateDropzoneRefBadge === "function") updateDropzoneRefBadge();
+        const tray = document.getElementById("imported-assets-tray");
+        if (tray && importedAssets.length > 0) tray.classList.remove("hidden");
+      }
+    }
+
+    function setGenerationMode(newMode, model) {
+      selectedVideoMode = newMode;
+      model = model || (modelCatalogData[activeVideoModel] || {});
+      const promptInput = document.getElementById("video-prompt-input");
+
+      if (selectedVideoMode === "first_last_frame") {
+        if (promptInput) {
+          promptInput.placeholder = model.first_last_placeholder || "Enter the content screen you want to generate, or enter a creative description in combination with the image (optional).";
+        }
+      } else {
+        if (promptInput) {
+          promptInput.placeholder = model.ref_placeholder || model.placeholder || "Use @to quickly reference uploaded files, such as referring to actions in @Video 1 to generate videos of characters fighting in @Pictures 2 and @Pictures 3.";
         }
       }
 
+      const triggerLabel = document.getElementById("generation-mode-label");
+      if (triggerLabel) {
+        triggerLabel.innerText = selectedVideoMode === "first_last_frame" ? "First/last frame" : "Ref-to-video";
+      }
+      const triggerIcon = document.getElementById("generation-mode-icon");
+      if (triggerIcon) {
+        triggerIcon.innerHTML = selectedVideoMode === "first_last_frame"
+          ? `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>`
+          : `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+      }
 
+      document.querySelectorAll(".generation-mode-item").forEach(item => {
+        const itemMode = item.getAttribute("data-mode");
+        const check = item.querySelector(".mode-check");
+        if (check) {
+          if (itemMode === selectedVideoMode) {
+            check.classList.remove("hidden");
+            item.classList.add("text-white", "bg-white/10");
+          } else {
+            check.classList.add("hidden");
+            item.classList.remove("text-white", "bg-white/10");
+          }
+        }
+      });
+
+      renderDropzones(model);
+    }
+
+      // Initialize selectedVideoMode for this model if needed
+      if (model.category === "image") {
+        selectedVideoMode = "image_generation";
+      } else if (model.ui_layout_type === "video_first_last" || (model.mode_selector && model.mode_selector.default === "First/last frame")) {
+        if (!selectedVideoMode || selectedVideoMode === "ref_to_video") {
+          selectedVideoMode = "first_last_frame";
+        }
+      } else if (selectedVideoMode !== "first_last_frame") {
+        selectedVideoMode = "ref_to_video";
+      }
+
+      // 4. Dropzone Slots
+      renderDropzones(model);
 
       // 5. Placeholder
       const promptInput = document.getElementById("video-prompt-input");
-      if (promptInput && model.placeholder) {
-        promptInput.placeholder = model.placeholder;
+      if (promptInput) {
+        if (selectedVideoMode === "first_last_frame") {
+          promptInput.placeholder = model.first_last_placeholder || "Enter the content screen you want to generate, or enter a creative description in combination with the image (optional).";
+        } else {
+          promptInput.placeholder = model.ref_placeholder || model.placeholder || "Use @to quickly reference uploaded files, such as referring to actions in @Video 1 to generate videos of characters fighting in @Pictures 2 and @Pictures 3.";
+        }
       }
 
       // 6. Dynamic Bottom Pills Bar
@@ -1548,10 +1660,39 @@ print("Task submitted:", task.id)`;
         let html = "";
         const selClass = "bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[11px] font-medium rounded-lg px-2.5 py-1 cursor-pointer focus:ring-0";
         if (model.mode_selector && model.mode_selector.enabled) {
+          const isFirstLast = selectedVideoMode === "first_last_frame";
           html += `
-            <select id="studio-active-mode-select" class="${selClass}">
-              ${(model.mode_selector.options || []).map(opt => `<option value="${opt}" ${opt === model.mode_selector.default ? 'selected' : ''} class="bg-[#11131C]">${opt}</option>`).join('')}
-            </select>
+            <div class="relative inline-block" id="generation-mode-dropdown-wrapper">
+              <button id="btn-generation-mode-trigger" type="button" class="${selClass} flex items-center gap-1.5" title="Select Generation Mode">
+                <span id="generation-mode-icon" class="text-slate-300">
+                  ${isFirstLast
+                    ? `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>`
+                    : `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`
+                  }
+                </span>
+                <span id="generation-mode-label">${isFirstLast ? 'First/last frame' : 'Ref-to-video'}</span>
+                <svg class="w-3 h-3 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+              </button>
+              <div id="generation-mode-menu" class="hidden absolute bottom-full mb-1.5 left-0 z-50 w-52 bg-[#12141F] border border-white/15 rounded-xl shadow-2xl p-1.5 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
+                <div class="px-2.5 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider border-b border-white/5 mb-1">
+                  Generation mode
+                </div>
+                <button type="button" data-mode="ref_to_video" class="generation-mode-item w-full flex items-center justify-between px-2.5 py-2 text-xs text-slate-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer text-left ${!isFirstLast ? 'text-white bg-white/10' : ''}">
+                  <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-slate-300 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span>Ref-to-video</span>
+                  </div>
+                  <span class="mode-check text-cyan-400 font-bold ${!isFirstLast ? '' : 'hidden'}">✓</span>
+                </button>
+                <button type="button" data-mode="first_last_frame" class="generation-mode-item w-full flex items-center justify-between px-2.5 py-2 text-xs text-slate-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer text-left mt-0.5 ${isFirstLast ? 'text-white bg-white/10' : ''}">
+                  <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-slate-300 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                    <span>First/last frame</span>
+                  </div>
+                  <span class="mode-check text-cyan-400 font-bold ${isFirstLast ? '' : 'hidden'}">✓</span>
+                </button>
+              </div>
+            </div>
           `;
         }
         const ratios = model.ratios && model.ratios.length ? model.ratios : ["16:9", "9:16", "1:1"];
@@ -1592,6 +1733,25 @@ print("Task submitted:", task.id)`;
           </select>`;
         }
         pillsBar.innerHTML = html;
+
+        // Wire generation mode trigger & options
+        const modeTrigger = document.getElementById("btn-generation-mode-trigger");
+        const modeMenu = document.getElementById("generation-mode-menu");
+        if (modeTrigger && modeMenu) {
+          modeTrigger.onclick = (e) => {
+            e.stopPropagation();
+            modeMenu.classList.toggle("hidden");
+          };
+          modeMenu.querySelectorAll(".generation-mode-item").forEach(btn => {
+            btn.onclick = (e) => {
+              e.stopPropagation();
+              const m = btn.getAttribute("data-mode");
+              setGenerationMode(m, model);
+              modeMenu.classList.add("hidden");
+            };
+          });
+        }
+
         const ratioEl = document.getElementById("video-aspect-ratio");
         const durEl = document.getElementById("video-duration");
         const resEl = document.getElementById("video-resolution");
@@ -1663,14 +1823,7 @@ print("Task submitted:", task.id)`;
       const statusEl = document.getElementById("player-status-caption");
       if (statusEl) statusEl.innerText = "Ready for " + (model.display_name || modelId);
 
-      const studioModeSel = document.getElementById("studio-active-mode-select");
-      if (studioModeSel) {
-        studioModeSel.onchange = () => {
-          const v = (studioModeSel.value || "").toLowerCase();
-          if (v.includes("first")) selectedVideoMode = "first_last_frame";
-          else selectedVideoMode = "ref_to_video";
-        };
-      }
+
     }
 
     function renderInventorySettings(data) {
@@ -2421,9 +2574,70 @@ print("Task submitted:", task.id)`;
       btnClearAssets.onclick = clearAllReferenceAssets;
     }
 
+    async function uploadFrameFile(file, target) {
+      if (!file) return;
+      const formData = new FormData();
+      formData.append("files", file);
+      try {
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const uploaded = (data.uploaded && data.uploaded[0]) || (data.assets && data.assets[data.assets.length - 1]);
+          if (uploaded) {
+            const frameInfo = {
+              url: uploaded.url,
+              local_path: uploaded.local_path,
+              filename: uploaded.filename
+            };
+            if (target === "first") {
+              firstFrameData = frameInfo;
+              const inp = document.getElementById("video-first-frame");
+              if (inp) inp.value = uploaded.url || uploaded.local_path;
+            } else {
+              lastFrameData = frameInfo;
+              const inp = document.getElementById("video-last-frame");
+              if (inp) inp.value = uploaded.url || uploaded.local_path;
+            }
+            renderDropzones();
+          }
+        } else {
+          alert("Failed to upload frame image.");
+        }
+      } catch (e) {
+        console.error("Frame upload error:", e);
+      }
+    }
+
+    const firstFrameFileInput = document.getElementById("first-frame-file-input");
+    if (firstFrameFileInput) {
+      firstFrameFileInput.onchange = async () => {
+        if (firstFrameFileInput.files && firstFrameFileInput.files.length) {
+          await uploadFrameFile(firstFrameFileInput.files[0], "first");
+          firstFrameFileInput.value = "";
+        }
+      };
+    }
+
+    const lastFrameFileInput = document.getElementById("last-frame-file-input");
+    if (lastFrameFileInput) {
+      lastFrameFileInput.onchange = async () => {
+        if (lastFrameFileInput.files && lastFrameFileInput.files.length) {
+          await uploadFrameFile(lastFrameFileInput.files[0], "last");
+          lastFrameFileInput.value = "";
+        }
+      };
+    }
+
     document.addEventListener("click", (e) => {
       if (refUploadMenu && !refUploadMenu.contains(e.target) && !e.target.closest("#dropzone-ref, #dropzone-image")) {
         refUploadMenu.classList.add("hidden");
+      }
+      const genMenu = document.getElementById("generation-mode-menu");
+      if (genMenu && !genMenu.contains(e.target) && !e.target.closest("#btn-generation-mode-trigger")) {
+        genMenu.classList.add("hidden");
       }
       const mentionPopup = document.getElementById("mention-autocomplete-popup");
       if (mentionPopup && !mentionPopup.contains(e.target) && e.target.id !== "video-prompt-input") {
@@ -2440,35 +2654,65 @@ print("Task submitted:", task.id)`;
           if (refUploadMenu) {
             refUploadMenu.classList.toggle("hidden");
           }
+          return;
+        }
+
+        const dzFirst = e.target.closest("#dropzone-first");
+        if (dzFirst && !e.target.closest("#btn-remove-first-frame")) {
+          e.stopPropagation();
+          const inp = document.getElementById("first-frame-file-input");
+          if (inp) inp.click();
+          return;
+        }
+
+        const dzLast = e.target.closest("#dropzone-last");
+        if (dzLast && !e.target.closest("#btn-remove-last-frame")) {
+          e.stopPropagation();
+          const inp = document.getElementById("last-frame-file-input");
+          if (inp) inp.click();
+          return;
         }
       });
 
       dynamicDropzonesEl.addEventListener("dragover", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const dzRef = e.target.closest("#dropzone-ref, #dropzone-image");
-        if (dzRef) {
-          dzRef.classList.add("border-cyan-400", "bg-cyan-500/10");
+        const dz = e.target.closest("#dropzone-ref, #dropzone-image, #dropzone-first, #dropzone-last");
+        if (dz) {
+          dz.classList.add("border-cyan-400", "bg-cyan-500/10");
         }
       });
 
       dynamicDropzonesEl.addEventListener("dragleave", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const dzRef = e.target.closest("#dropzone-ref, #dropzone-image");
-        if (dzRef) {
-          dzRef.classList.remove("border-cyan-400", "bg-cyan-500/10");
+        const dz = e.target.closest("#dropzone-ref, #dropzone-image, #dropzone-first, #dropzone-last");
+        if (dz) {
+          dz.classList.remove("border-cyan-400", "bg-cyan-500/10");
         }
       });
 
       dynamicDropzonesEl.addEventListener("drop", async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const dzRef = document.getElementById("dropzone-ref") || document.getElementById("dropzone-image");
-        if (dzRef) dzRef.classList.remove("border-cyan-400", "bg-cyan-500/10");
-        const files = await extractFilesFromDataTransfer(e.dataTransfer);
-        if (files.length) {
-          await uploadReferenceFiles(files);
+        const dzFirst = e.target.closest("#dropzone-first");
+        const dzLast = e.target.closest("#dropzone-last");
+        const dzRef = e.target.closest("#dropzone-ref, #dropzone-image") || document.getElementById("dropzone-ref") || document.getElementById("dropzone-image");
+
+        if (dzFirst) {
+          dzFirst.classList.remove("border-cyan-400", "bg-cyan-500/10");
+          const files = await extractFilesFromDataTransfer(e.dataTransfer);
+          if (files.length) await uploadFrameFile(files[0], "first");
+        } else if (dzLast) {
+          dzLast.classList.remove("border-cyan-400", "bg-cyan-500/10");
+          const files = await extractFilesFromDataTransfer(e.dataTransfer);
+          if (files.length) await uploadFrameFile(files[0], "last");
+        } else if (dzRef) {
+          dzRef.classList.remove("border-cyan-400", "bg-cyan-500/10");
+          const files = await extractFilesFromDataTransfer(e.dataTransfer);
+          if (files.length) {
+            await uploadReferenceFiles(files);
+          }
         }
       });
     }
@@ -2905,8 +3149,8 @@ print("Task submitted:", task.id)`;
 
       if (!isImageModel) {
         if (selectedVideoMode === "first_last_frame") {
-          payload.first_frame_image = document.getElementById("video-first-frame").value || null;
-          payload.last_frame_image = document.getElementById("video-last-frame").value || null;
+          payload.first_frame_image = document.getElementById("video-first-frame").value || (firstFrameData ? (firstFrameData.url || firstFrameData.local_path) : null);
+          payload.last_frame_image = document.getElementById("video-last-frame").value || (lastFrameData ? (lastFrameData.url || lastFrameData.local_path) : null);
         } else if (selectedVideoMode === "ip_effects") {
           payload.ip_effect_name = document.getElementById("video-select-ip-preset").value;
         }

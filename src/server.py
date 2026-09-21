@@ -881,6 +881,22 @@ def create_app():
                                 "url": ref.get("url") or f"/uploads/reference_assets/{os.path.basename(local_path)}",
                             })
 
+                def _resolve_frame_path(frame_src: Optional[str]) -> Optional[str]:
+                    if not frame_src:
+                        return None
+                    if frame_src.startswith("http://") or frame_src.startswith("https://") or frame_src.startswith("data:"):
+                        return frame_src
+                    if os.path.exists(frame_src):
+                        return frame_src
+                    cand_name = os.path.basename(frame_src)
+                    cand_path = os.path.join(uploads_dir, cand_name)
+                    if os.path.exists(cand_path):
+                        return cand_path
+                    return frame_src
+
+                resolved_first_frame = _resolve_frame_path(req.first_frame_image)
+                resolved_last_frame = _resolve_frame_path(req.last_frame_image)
+
                 gen_kwargs = {
                     "prompt": req.prompt,
                     "output_path": clip_path,
@@ -893,8 +909,8 @@ def create_app():
                 if provider in ("seedance", "byteplus", "bytedance"):
                     gen_kwargs.update({
                         "generation_mode": req.generation_mode,
-                        "first_frame_image": req.first_frame_image,
-                        "last_frame_image": req.last_frame_image,
+                        "first_frame_image": resolved_first_frame,
+                        "last_frame_image": resolved_last_frame,
                         "ip_effect_name": req.ip_effect_name,
                         "reference_assets": resolved_assets or None,
                         "resolution": req.resolution,

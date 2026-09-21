@@ -89,6 +89,21 @@ def test_seedance_25_capability_controls():
     assert m.provider == "seedance"
 
 
+def test_seedance_generation_modes():
+    s25 = get_model_info("dreamina-seedance-2-5-260628")
+    assert s25.mode_selector["enabled"] is True
+    assert "Ref-to-video" in s25.mode_selector["options"]
+    assert "First/last frame" in s25.mode_selector["options"]
+    assert "@to quickly reference" in s25.ref_placeholder
+    assert "creative description in combination with the image" in s25.first_last_placeholder
+
+    s20 = get_model_info("dreamina-seedance-2-0-260128")
+    assert s20.mode_selector["options"] == ["Ref-to-video", "First/last frame"]
+
+    s15 = get_model_info("bytedance-seedance-1-5-pro-251215")
+    assert s15.mode_selector["options"] == ["Ref-to-video", "First/last frame"]
+
+
 def test_defaults():
     assert DEFAULT_VIDEO_MODEL == "dreamina-seedance-2-5-260628"
     assert DEFAULT_DIRECTOR_MODEL == "seed-2-0-lite-260228"

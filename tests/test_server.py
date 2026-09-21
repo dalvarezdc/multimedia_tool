@@ -170,6 +170,25 @@ def test_cutscene_generate_passes_ratio(client, monkeypatch):
     assert data["model"] == "dreamina-seedance-2-5-260628"
     assert data["provider"] == "seedance"
 
+
+def test_cutscene_generate_first_last_frame_mode(client, monkeypatch):
+    monkeypatch.setenv("ARK_API_KEY", "test_mock_key")
+    payload = {
+        "chapter_id": 12,
+        "prompt": "Morph from dawn to dusk",
+        "generation_mode": "first_last_frame",
+        "first_frame_image": "/uploads/reference_assets/frame1.png",
+        "last_frame_image": "/uploads/reference_assets/frame2.png",
+        "provider": "seedance",
+        "video_model": "dreamina-seedance-2-5-260628",
+        "duration_seconds": 5,
+    }
+    response = client.post("/api/cutscenes/generate", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["model"] == "dreamina-seedance-2-5-260628"
+    assert data["provider"] == "seedance"
+
 def test_settings_update_models(client, monkeypatch):
     payload = {
         "director_model": "seed-2-0-pro-260328",

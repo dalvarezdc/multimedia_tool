@@ -135,7 +135,7 @@ class SeedanceClient:
                     "image_url": {"url": self._prepare_image_reference(first_frame_image)},
                     "role": "first_frame"
                 })
-            if last_frame_image and first_frame_image:
+            if last_frame_image:
                 content_payload.append({
                     "type": "image_url",
                     "image_url": {"url": self._prepare_image_reference(last_frame_image)},
