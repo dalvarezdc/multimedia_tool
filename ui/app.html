@@ -275,12 +275,22 @@
             </div>
 
             <!-- Right Cost & Submit Button -->
-            <div class="flex items-center gap-3 ml-auto shrink-0">
+            <div class="flex items-center gap-2.5 ml-auto shrink-0">
+              <!-- Live generation status indicator capsule (shown while generating) -->
+              <div id="generation-status-capsule" class="hidden items-center gap-2 px-3 py-1 rounded-full bg-surface-2/95 border border-purple-500/30 text-xs shadow-lg">
+                <span id="generation-status-dot" class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-400"></span>
+                </span>
+                <span id="generation-stage-label" class="text-slate-200 font-medium tracking-wide">Preparing…</span>
+                <span id="generation-elapsed-badge" class="text-[10px] text-cyan-300 font-mono bg-cyan-950/60 border border-cyan-800/40 px-1.5 py-0.5 rounded">0s</span>
+              </div>
+
               <span id="dynamic-cost-label" class="text-xs text-slate-400 font-mono">USD 0.6048</span>
               <button 
                 id="btn-generate-video-action" 
                 type="button" 
-                class="w-9 h-9 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white flex items-center justify-center font-bold text-lg shadow-glow-lavender transition-all transform active:scale-95 cursor-pointer"
+                class="w-9 h-9 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white flex items-center justify-center font-bold text-lg shadow-glow-lavender transition-all transform active:scale-95 cursor-pointer disabled:opacity-85 disabled:cursor-not-allowed"
                 title="Generate"
               >
                 ↑
@@ -1012,43 +1022,106 @@
 
     function updateApiModal(modelId) {
       const model = modelCatalogData[modelId] || {};
-      const prompt = (document.getElementById("video-prompt-input") || {}).value || "Cinematic cutscene";
-      const ratio = (model.pills && model.pills.find(p => p.includes(":"))) || "16:9";
-      const resolution = (model.pills && model.pills.find(p => p.toLowerCase().includes("p") || p.toLowerCase().includes("k"))) || "720p";
+      const promptInput = document.getElementById("video-prompt-input");
+      const prompt = (promptInput && promptInput.value.trim()) || "Cinematic cutscene";
+      const ratioEl = document.getElementById("video-aspect-ratio");
+      const durationEl = document.getElementById("video-duration");
+      const resolutionEl = document.getElementById("video-resolution");
+      const audioEl = document.getElementById("video-audio");
+      
+      const ratio = (ratioEl && ratioEl.value) || (model.pills && model.pills.find(p => p.includes(":"))) || "16:9";
+      const duration = parseInt((durationEl && durationEl.value) || "5", 10);
+      const resolution = ((resolutionEl && resolutionEl.value) || (model.pills && model.pills.find(p => p.toLowerCase().includes("p") || p.toLowerCase().includes("k"))) || "720p").toLowerCase();
+      const generateAudio = audioEl ? audioEl.value !== "off" : true;
 
-      const curlCode = `curl -X POST "https://ark.ap-southeast.bytepluses.com/api/v3/contents/generations/tasks" \\
+      let curlCode = "";
+      let pythonCode = "";
+
+      if (modelId && modelId.includes("grok")) {
+        const grokPayload = {
+          model: modelId,
+          prompt: prompt,
+          duration: duration,
+          aspect_ratio: ratio
+        };
+        curlCode = `curl -X POST "https://api.x.ai/v1/videos/generations" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer $XAI_API_KEY" \\
+  -d '${JSON.stringify(grokPayload, null, 2)}'`;
+
+        pythonCode = `import requests
+
+url = "https://api.x.ai/v1/videos/generations"
+headers = {
+    "Authorization": "Bearer YOUR_XAI_API_KEY",
+    "Content-Type": "application/json"
+}
+payload = {
+    "model": "${modelId}",
+    "prompt": ${JSON.stringify(prompt)},
+    "duration": ${duration},
+    "aspect_ratio": "${ratio}"
+}
+
+res = requests.post(url, headers=headers, json=payload)
+print("Response:", res.json())`;
+      } else {
+        const contentList = [];
+        if (importedAssets && importedAssets.length > 0) {
+          importedAssets.forEach(a => {
+            const isVid = a.type === "video";
+            const assetUrl = a.url 
+              ? (window.location.origin + a.url)
+              : (a.local_path || `data:${isVid ? 'video/mp4' : 'image/jpeg'};base64,<BASE64_DATA>`);
+            contentList.push({
+              type: isVid ? "video_url" : "image_url",
+              [isVid ? "video_url" : "image_url"]: {
+                url: assetUrl
+              },
+              role: isVid ? "reference_video" : "reference_image"
+            });
+          });
+        }
+        contentList.push({
+          type: "text",
+          text: prompt
+        });
+
+        const taskPayload = {
+          model: modelId,
+          content: contentList,
+          ratio: ratio,
+          resolution: resolution,
+          duration: duration,
+          generate_audio: generateAudio,
+          watermark: false
+        };
+
+        curlCode = `curl -X POST "https://ark.ap-southeast.bytepluses.com/api/v3/contents/generations/tasks" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer $ARK_API_KEY" \\
-  -d '{
-    "model": "${modelId}",
-    "content": {
-      "text": ${JSON.stringify(prompt)},
-      "ratio": "${ratio}",
-      "resolution": "${resolution.toLowerCase()}",
-      "duration": 5,
-      "generate_audio": true,
-      "watermark": false
-    }
-  }'`;
+  -d '${JSON.stringify(taskPayload, null, 2)}'`;
 
-      const pythonCode = `from arkruntime import Ark
+        const pyContentIndented = JSON.stringify(contentList, null, 4).replace(/\n/g, "\n    ");
+        pythonCode = `from arkruntime import Ark
 
 client = Ark(
     base_url="https://ark.ap-southeast.bytepluses.com/api/v3",
     api_key="YOUR_ARK_API_KEY"
 )
 
-# Submit generation task
+# Submit generation task with multimodal references
 task = client.content_generation.tasks.create(
     model="${modelId}",
-    content=[
-        {"type": "text", "text": ${JSON.stringify(prompt)}}
-    ],
-    duration=5,
+    content=${pyContentIndented},
+    duration=${duration},
     ratio="${ratio}",
+    resolution="${resolution}",
+    generate_audio=${generateAudio ? "True" : "False"},
     watermark=False
 )
 print("Task submitted:", task.id)`;
+      }
 
       const curlEl = document.getElementById("api-curl-code");
       const pyEl = document.getElementById("api-python-code");
@@ -1654,6 +1727,7 @@ print("Task submitted:", task.id)`;
         list.innerHTML = "";
         if (count) count.innerText = "0";
         updateDropzoneRefBadge();
+        if (modelSelect && modelSelect.value) updateApiModal(modelSelect.value);
         return;
       }
 
@@ -1675,17 +1749,15 @@ print("Task submitted:", task.id)`;
           >
             ${asset.token}
           </button>
-          <div class="max-w-[130px] truncate">
-            <span class="text-[11px] text-slate-200 block truncate" title="${asset.filename}">${asset.filename}</span>
-            <span class="text-[9px] text-slate-500 font-mono">${formatBytes(asset.size)}</span>
-          </div>
+          <span class="text-xs text-slate-300 font-medium truncate max-w-[110px]" title="${asset.filename}">${asset.filename}</span>
+          <span class="text-[10px] text-slate-500 font-mono">${formatBytes(asset.size)}</span>
           <button 
             type="button" 
-            class="delete-asset-btn text-slate-500 hover:text-red-400 p-0.5 rounded transition-colors cursor-pointer ml-1" 
+            class="delete-asset-btn text-slate-500 hover:text-red-400 p-1 rounded-md hover:bg-white/5 transition-colors cursor-pointer ml-1" 
             data-id="${asset.id}" 
             title="Remove asset"
           >
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6L6 18M6 6l12 12" stroke-width="2" stroke-linecap="round"/></svg>
+            ✕
           </button>
         </div>
       `).join('');
@@ -1705,6 +1777,8 @@ print("Task submitted:", task.id)`;
           await deleteReferenceAsset(id);
         };
       });
+
+      if (modelSelect && modelSelect.value) updateApiModal(modelSelect.value);
     }
 
     function insertTokenIntoPrompt(token) {
@@ -1718,6 +1792,7 @@ print("Task submitted:", task.id)`;
       promptInput.focus();
       const newPos = start + insertion.length;
       promptInput.setSelectionRange(newPos, newPos);
+      if (modelSelect && modelSelect.value) updateApiModal(modelSelect.value);
     }
 
     async function uploadReferenceFiles(fileList) {
@@ -2011,12 +2086,14 @@ print("Task submitted:", task.id)`;
       promptTextarea.focus();
       const newCursorPos = ctx.matchStart + insertion.length;
       promptTextarea.setSelectionRange(newCursorPos, newCursorPos);
+      if (modelSelect && modelSelect.value) updateApiModal(modelSelect.value);
     }
 
     if (promptTextarea) {
       promptTextarea.addEventListener("input", () => {
         mentionSelectedIndex = 0;
         updateMentionAutocomplete();
+        if (modelSelect && modelSelect.value) updateApiModal(modelSelect.value);
       });
 
       promptTextarea.addEventListener("keydown", (e) => {
@@ -2090,10 +2167,91 @@ print("Task submitted:", task.id)`;
       return msg;
     }
 
+    const generationStatusCapsule = document.getElementById("generation-status-capsule");
+    const generationStatusDot = document.getElementById("generation-status-dot");
+    const generationStageLabel = document.getElementById("generation-stage-label");
+    const generationElapsedBadge = document.getElementById("generation-elapsed-badge");
+    const dynamicCostLabel = document.getElementById("dynamic-cost-label");
+
+    const SPINNER_SVG = `<svg class="animate-spin w-4 h-4 text-white" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>`;
+
+    function setGenerationUiState(state, stageLabel = "", elapsed = 0) {
+      if (state === "generating") {
+        btnGenVideo.disabled = true;
+        btnGenVideo.innerHTML = SPINNER_SVG;
+        btnGenVideo.setAttribute("title", "Generating in progress...");
+        if (dynamicCostLabel) dynamicCostLabel.classList.add("hidden");
+        if (generationStatusCapsule) {
+          generationStatusCapsule.classList.remove("hidden");
+          generationStatusCapsule.classList.add("flex");
+        }
+        if (generationStatusDot) {
+          generationStatusDot.innerHTML = `<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-400"></span>`;
+        }
+        if (generationStageLabel) {
+          generationStageLabel.classList.remove("text-emerald-300", "text-rose-300");
+          generationStageLabel.innerText = stageLabel || "Preparing…";
+        }
+        if (generationElapsedBadge) generationElapsedBadge.innerText = `${elapsed || 0}s`;
+      } else if (state === "success") {
+        btnGenVideo.disabled = false;
+        btnGenVideo.innerHTML = "✓";
+        btnGenVideo.classList.add("text-emerald-300");
+        if (generationStatusDot) {
+          generationStatusDot.innerHTML = `<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>`;
+        }
+        if (generationStageLabel) {
+          generationStageLabel.innerText = "Video ready";
+          generationStageLabel.classList.add("text-emerald-300");
+        }
+        if (generationElapsedBadge) generationElapsedBadge.innerText = `${elapsed || 0}s`;
+        setTimeout(() => {
+          resetGenerationUi();
+        }, 3000);
+      } else if (state === "failed") {
+        btnGenVideo.disabled = false;
+        btnGenVideo.innerHTML = genBtnLabel;
+        btnGenVideo.classList.remove("text-emerald-300");
+        if (generationStatusDot) {
+          generationStatusDot.innerHTML = `<span class="relative inline-flex rounded-full h-2 w-2 bg-rose-400"></span>`;
+        }
+        if (generationStageLabel) {
+          generationStageLabel.innerText = stageLabel || "Generation failed";
+          generationStageLabel.classList.add("text-rose-300");
+        }
+        setTimeout(() => {
+          resetGenerationUi();
+        }, 4000);
+      } else {
+        resetGenerationUi();
+      }
+    }
+
+    function resetGenerationUi() {
+      btnGenVideo.disabled = false;
+      btnGenVideo.innerHTML = genBtnLabel;
+      btnGenVideo.setAttribute("title", "Generate");
+      btnGenVideo.classList.remove("text-emerald-300");
+      if (dynamicCostLabel) dynamicCostLabel.classList.remove("hidden");
+      if (generationStatusCapsule) {
+        generationStatusCapsule.classList.remove("flex");
+        generationStatusCapsule.classList.add("hidden");
+      }
+      if (generationStatusDot) {
+        generationStatusDot.innerHTML = `<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-400"></span>`;
+      }
+      if (generationStageLabel) {
+        generationStageLabel.classList.remove("text-emerald-300", "text-rose-300");
+        generationStageLabel.innerText = "Preparing…";
+      }
+    }
+
     async function pollCutscene(chapterId, model) {
-      for (let i = 0; i < 80; i++) {
+      for (let i = 0; i < 90; i++) {
         const res = await fetch(`/api/cutscenes/status/${chapterId}`);
         const data = await res.json();
+        const elapsed = data.elapsed_seconds != null ? data.elapsed_seconds : Math.round(i * 2.5);
+
         if (data.status === "succeeded" || data.status === "qa_warning") {
           if (data.path) {
             videoPlayer.src = data.path;
@@ -2107,14 +2265,20 @@ print("Task submitted:", task.id)`;
             (document.getElementById("video-prompt-input").value || "Generated clip").slice(0, 28) + ` (${document.getElementById("video-duration").value}s)`,
             `${modelLabel(model)} • ${selectedVideoMode.replaceAll("_", "-")}`
           );
+          setGenerationUiState("success", "Video ready", elapsed);
           return;
         }
         if (data.status === "failed") {
+          setGenerationUiState("failed", "Failed", elapsed);
           throw new Error(formatApiError(data.error) || "Generation failed");
         }
-        document.getElementById("player-status-caption").innerText = `Generating with ${modelLabel(model)}...`;
+
+        const stageText = data.stage_label || (data.stage ? data.stage.charAt(0).toUpperCase() + data.stage.slice(1) : "Generating…");
+        setGenerationUiState("generating", stageText, elapsed);
+        document.getElementById("player-status-caption").innerText = `${modelLabel(model)} • ${stageText}`;
         await new Promise(r => setTimeout(r, 2500));
       }
+      setGenerationUiState("failed", "Timed out");
       throw new Error("Timed out waiting for video generation");
     }
 
@@ -2123,7 +2287,7 @@ print("Task submitted:", task.id)`;
       const model = modelSelect.value;
       if (!model || model.includes("seedream") || model.includes("deepseek") || model.includes("glm-") || model.includes("hyper3d")) {
         alert("Pick a Seedance or Grok video model before generating.");
-        btnGenVideo.disabled = false;
+        resetGenerationUi();
         return;
       }
       const durationEl = document.getElementById("video-duration");
@@ -2146,8 +2310,7 @@ print("Task submitted:", task.id)`;
         return;
       }
 
-      btnGenVideo.innerText = "Submitting…";
-      btnGenVideo.disabled = true;
+      setGenerationUiState("generating", "Submitting…", 0);
 
       const chapterId = Date.now() % 100000;
       const payload = {
@@ -2158,13 +2321,19 @@ print("Task submitted:", task.id)`;
         provider: isGrok ? "grok" : "seedance",
         video_model: model,
         generation_mode: selectedVideoMode,
-        reference_assets: importedAssets.map(a => ({ id: a.id })),
+        reference_assets: importedAssets.map(a => ({
+          id: a.id,
+          filename: a.filename,
+          type: a.type,
+          token: a.token,
+          url: a.url,
+          local_path: a.local_path
+        })),
         api_key: isGrok ? localXaiKey : localApiKey,
         resolution: resolutionEl ? resolutionEl.value : "720p",
         generate_audio: audioEl ? audioEl.value !== "off" : false,
         draft_mode: draftEl ? draftEl.value === "on" : false
       };
-
 
       if (selectedVideoMode === "first_last_frame") {
         payload.first_frame_image = document.getElementById("video-first-frame").value || null;
@@ -2180,18 +2349,16 @@ print("Task submitted:", task.id)`;
           body: JSON.stringify(payload)
         });
         if (res.ok) {
-          document.getElementById("player-status-caption").innerText = `Generating with ${modelLabel(model)}...`;
-          btnGenVideo.innerText = "Generating…";
+          setGenerationUiState("generating", "Submitting to ModelArk…", 1);
           await pollCutscene(chapterId, model);
         } else {
           const err = await res.json();
+          setGenerationUiState("failed", "Submission failed");
           alert("Error: " + (err.detail || "Generation failed"));
         }
       } catch (err) {
+        setGenerationUiState("failed", "Failed");
         alert(formatApiError(err.message) || "Generation request failed.");
-      } finally {
-        btnGenVideo.innerText = genBtnLabel;
-        btnGenVideo.disabled = false;
       }
     };
 

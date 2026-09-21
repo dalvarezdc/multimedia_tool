@@ -9,14 +9,14 @@ import time
 import base64
 import logging
 import mimetypes
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Callable
 import requests
 from arkruntime import Ark
 
 logger = logging.getLogger(__name__)
 
 class SeedanceClient:
-    """Client wrapper for ByteDance's Seedance video generation model on BytePlus ModelArk."""
+    """Client wrapper for ByteDance / BytePlus Seedance Video Generation models via ModelArk."""
 
     def __init__(
         self,
@@ -37,15 +37,37 @@ class SeedanceClient:
         )
 
     def _prepare_image_reference(self, image_source: str) -> str:
-        """Converts a local file path or returns a remote URL for multimodal input."""
-        if image_source.startswith("http://") or image_source.startswith("https://"):
+        """Converts a local file path or returns a remote URL / data URI for multimodal input."""
+        if not image_source:
+            return image_source
+        if image_source.startswith("http://") or image_source.startswith("https://") or image_source.startswith("data:"):
             return image_source
         
-        if os.path.exists(image_source):
-            mime_type, _ = mimetypes.guess_type(image_source)
-            mime_type = mime_type or "image/png"
-            with open(image_source, "rb") as f:
+        target_path = None
+        if os.path.exists(image_source) and os.path.isfile(image_source):
+            target_path = image_source
+        else:
+            cleaned = image_source.lstrip("/")
+            if os.path.exists(cleaned) and os.path.isfile(cleaned):
+                target_path = cleaned
+            else:
+                proj_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                candidates = [
+                    os.path.join(proj_root, cleaned),
+                    os.path.join(proj_root, "uploads", "reference_assets", os.path.basename(image_source)),
+                    os.path.join("uploads", "reference_assets", os.path.basename(image_source))
+                ]
+                for c in candidates:
+                    if os.path.exists(c) and os.path.isfile(c):
+                        target_path = c
+                        break
+
+        if target_path and os.path.exists(target_path):
+            mime_type, _ = mimetypes.guess_type(target_path)
+            mime_type = mime_type or ("video/mp4" if target_path.lower().endswith((".mp4", ".mov", ".webm")) else "image/jpeg")
+            with open(target_path, "rb") as f:
                 encoded = base64.b64encode(f.read()).decode("utf-8")
+            logger.info(f"Prepared multimodal asset from {target_path} ({len(encoded)} base64 chars, mime={mime_type}).")
             return f"data:{mime_type};base64,{encoded}"
         
         return image_source
@@ -68,6 +90,7 @@ class SeedanceClient:
         reference_assets: Optional[List[Dict[str, Any]]] = None,
         poll_interval: int = 3,
         timeout_seconds: int = 300,
+        status_callback: Optional[Callable[[str, Dict[str, Any]], None]] = None,
     ) -> str:
         """Submits a video generation task, polls for completion, and saves the resulting MP4.
 
@@ -90,6 +113,9 @@ class SeedanceClient:
         """
         # Ensure directory exists
         os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+
+        if status_callback:
+            status_callback("preparing", {"message": "Preparing assets and prompt...", "elapsed": 0})
 
         mode = generation_mode.lower().replace("-", "_")
 
@@ -132,9 +158,10 @@ class SeedanceClient:
         # 3. Mode: Ref-to-Video (Default Omni-Reference)
         else:
             if reference_assets:
+                added_count = 0
                 for asset in reference_assets:
-                    asset_path = asset.get("local_path")
-                    if not asset_path or not os.path.isfile(asset_path):
+                    asset_path = asset.get("local_path") or asset.get("url") or asset.get("filename")
+                    if not asset_path:
                         continue
                     asset_type = asset.get("type", "image")
                     prepared_url = self._prepare_image_reference(asset_path)
@@ -144,7 +171,8 @@ class SeedanceClient:
                         ("video_url" if asset_type == "video" else "image_url"): {"url": prepared_url},
                         "role": role
                     })
-                logger.info(f"Configured Ref-to-Video with {len(reference_assets)} uploaded reference assets.")
+                    added_count += 1
+                logger.info(f"Configured Ref-to-Video with {added_count} reference assets in multimodal content payload.")
             elif character_reference_image:
                 content_payload.append({
                     "type": "image_url",
@@ -158,6 +186,9 @@ class SeedanceClient:
             "type": "text",
             "text": clean_prompt
         })
+
+        if status_callback:
+            status_callback("submitting", {"message": f"Submitting task to {self.model_id}...", "elapsed": 0})
 
         logger.info(f"Submitting Seedance task (model={self.model_id}, watermark={watermark})...")
         create_kwargs: Dict[str, Any] = {
@@ -180,15 +211,21 @@ class SeedanceClient:
             raise RuntimeError(f"Failed to obtain task_id from BytePlus response: {task_response}")
 
         logger.info(f"Task submitted successfully. Task ID: {task_id}")
+        if status_callback:
+            status_callback("queued", {"task_id": task_id, "message": "Queued in ModelArk GPU pool", "elapsed": 1})
 
         # Polling loop
         start_time = time.time()
         while time.time() - start_time < timeout_seconds:
             task_status = self.client.content_generation.tasks.get(task_id=task_id)
             status = getattr(task_status, "status", None) or task_status.get("status")
+            elapsed = int(time.time() - start_time)
 
             if status == "succeeded":
                 logger.info(f"Task {task_id} succeeded! Downloading video...")
+                if status_callback:
+                    status_callback("downloading", {"task_id": task_id, "elapsed": elapsed, "message": f"Downloading video stream ({elapsed}s)..."})
+
                 content = getattr(task_status, "content", None) or task_status.get("content")
                 video_url = getattr(content, "video_url", None) or content.get("video_url")
                 
@@ -197,11 +234,25 @@ class SeedanceClient:
 
                 self._download_file(video_url, output_path)
                 logger.info(f"Video saved to {output_path}")
+
+                if status_callback:
+                    status_callback("auditing", {"task_id": task_id, "elapsed": int(time.time() - start_time), "message": "Finalizing video..."})
+
                 return output_path
 
             elif status in ("failed", "cancelled"):
                 error_msg = getattr(task_status, "error", None) or task_status.get("error", "Unknown error")
                 raise RuntimeError(f"Seedance task {task_id} failed with status '{status}': {error_msg}")
+
+            else:
+                st_label = "Rendering video frames" if status in ("running", "processing") else "Queued in GPU cluster"
+                if status_callback:
+                    status_callback("rendering" if status in ("running", "processing") else "queued", {
+                        "task_id": task_id,
+                        "upstream_status": status,
+                        "elapsed": elapsed,
+                        "message": f"{st_label} ({elapsed}s)"
+                    })
 
             time.sleep(poll_interval)
 

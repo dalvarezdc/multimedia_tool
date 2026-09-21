@@ -6,7 +6,13 @@ from starlette.testclient import TestClient
 from src.server import create_app
 
 @pytest.fixture
-def client():
+def client(tmp_path, monkeypatch):
+    test_uploads = tmp_path / "uploads"
+    test_data = tmp_path / "data"
+    test_uploads.mkdir(parents=True, exist_ok=True)
+    test_data.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("MULTIMEDIA_UPLOADS_DIR", str(test_uploads))
+    monkeypatch.setenv("MULTIMEDIA_DATA_DIR", str(test_data))
     app = create_app()
     return TestClient(app)
 
@@ -319,6 +325,209 @@ def test_custom_models_endpoint_lifecycle(client):
     res_del = client.delete("/api/models/custom/ep-custom-seedance-lora-v1")
     assert res_del.status_code == 200
     assert res_del.json()["status"] == "success"
+
+
+def test_cutscene_status_includes_stage_tracking(client, monkeypatch):
+    monkeypatch.setenv("ARK_API_KEY", "test_mock_key")
+    from src.seedance.client import SeedanceClient
+    def mock_generate(self, **kwargs):
+        cb = kwargs.get("status_callback")
+        if cb:
+            cb("rendering", {"message": "Rendering video frames (5s)", "elapsed": 5})
+        return "./renders/cutscenes/chapter_99.mp4"
+
+    monkeypatch.setattr(SeedanceClient, "generate_video", mock_generate)
+
+    payload = {
+        "chapter_id": 99,
+        "prompt": "Epic action scene",
+        "provider": "seedance",
+        "video_model": "dreamina-seedance-2-5-260628"
+    }
+    gen_res = client.post("/api/cutscenes/generate", json=payload)
+    assert gen_res.status_code == 200
+
+    status_res = client.get("/api/cutscenes/status/99")
+    assert status_res.status_code == 200
+    st_data = status_res.json()
+    assert "stage" in st_data
+    assert "stage_label" in st_data
+    assert "elapsed_seconds" in st_data
+    assert st_data["model"] == "dreamina-seedance-2-5-260628"
+
+
+def test_ui_contains_generation_status_capsule(client):
+    res = client.get("/multimedia")
+    assert res.status_code == 200
+    html = res.text
+    assert "generation-status-capsule" in html
+    assert "generation-stage-label" in html
+    assert "generation-elapsed-badge" in html
+
+
+def test_reference_asset_persistence_across_reloads(tmp_path, monkeypatch):
+    test_uploads = tmp_path / "uploads"
+    test_data = tmp_path / "data"
+    test_uploads.mkdir(parents=True, exist_ok=True)
+    test_data.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("MULTIMEDIA_UPLOADS_DIR", str(test_uploads))
+    monkeypatch.setenv("MULTIMEDIA_DATA_DIR", str(test_data))
+
+    # 1. First server session uploads an asset
+    app1 = create_app()
+    client1 = TestClient(app1)
+    img_bytes = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4"
+    res_upload = client1.post("/api/upload", files=[("files", ("hero.png", img_bytes, "image/png"))])
+    assert res_upload.status_code == 200
+    uploaded_id = res_upload.json()["uploaded"][0]["id"]
+
+    # 2. Simulate server restart with fresh create_app()
+    app2 = create_app()
+    client2 = TestClient(app2)
+    res_assets = client2.get("/api/upload/assets")
+    assert res_assets.status_code == 200
+    assets = res_assets.json()["assets"]
+    assert len(assets) == 1
+    assert assets[0]["id"] == uploaded_id
+    assert assets[0]["filename"] == "hero.png"
+    assert assets[0]["token"] == "@Pictures 1"
+
+
+def test_reference_assets_disk_auto_discovery(tmp_path, monkeypatch):
+    test_uploads = tmp_path / "uploads"
+    test_data = tmp_path / "data"
+    test_uploads.mkdir(parents=True, exist_ok=True)
+    test_data.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("MULTIMEDIA_UPLOADS_DIR", str(test_uploads))
+    monkeypatch.setenv("MULTIMEDIA_DATA_DIR", str(test_data))
+
+    # Place an unindexed file directly on disk
+    manual_file = test_uploads / "aabbccdd_character.jpg"
+    manual_file.write_bytes(b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01")
+
+    app = create_app()
+    client = TestClient(app)
+    res = client.get("/api/upload/assets")
+    assert res.status_code == 200
+    assets = res.json()["assets"]
+    assert len(assets) == 1
+    assert assets[0]["id"] == "aabbccdd"
+    assert assets[0]["filename"] == "character.jpg"
+    assert assets[0]["token"] == "@Pictures 1"
+
+
+def test_cutscene_resolves_reference_assets_and_passes_to_seedance(tmp_path, monkeypatch):
+    test_uploads = tmp_path / "uploads"
+    test_data = tmp_path / "data"
+    test_uploads.mkdir(parents=True, exist_ok=True)
+    test_data.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("MULTIMEDIA_UPLOADS_DIR", str(test_uploads))
+    monkeypatch.setenv("MULTIMEDIA_DATA_DIR", str(test_data))
+    monkeypatch.setenv("ARK_API_KEY", "test_mock_key")
+
+    app = create_app()
+    client = TestClient(app)
+
+    img_file = test_uploads / "99887766_soldier.jpg"
+    img_file.write_bytes(b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01")
+
+    received_kwargs = {}
+    from src.seedance.client import SeedanceClient
+    def mock_generate(self, **kwargs):
+        received_kwargs.update(kwargs)
+        return "./renders/cutscenes/chapter_101.mp4"
+
+    monkeypatch.setattr(SeedanceClient, "generate_video", mock_generate)
+
+    payload = {
+        "chapter_id": 101,
+        "prompt": "Soldiers in white uniform battling",
+        "provider": "seedance",
+        "video_model": "dreamina-seedance-2-0-mini-260615",
+        "reference_assets": [
+            {
+                "id": "99887766",
+                "filename": "soldier.jpg",
+                "url": "/uploads/reference_assets/99887766_soldier.jpg"
+            }
+        ]
+    }
+    gen_res = client.post("/api/cutscenes/generate", json=payload)
+    assert gen_res.status_code == 200
+    assert "reference_assets" in received_kwargs
+    ref_assets = received_kwargs["reference_assets"]
+    assert len(ref_assets) == 1
+    assert ref_assets[0]["id"] == "99887766"
+    assert os.path.exists(ref_assets[0]["local_path"])
+
+
+def test_seedance_client_embeds_multimodal_content_payload(tmp_path, monkeypatch):
+    test_img = tmp_path / "reference.jpg"
+    test_img.write_bytes(b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01")
+
+    from src.seedance.client import SeedanceClient
+    import requests
+
+    client = SeedanceClient(api_key="mock_key")
+
+    captured_create_args = {}
+    class FakeTaskResponse:
+        id = "mock_task_123"
+
+    class FakeTaskStatus:
+        status = "succeeded"
+        content = {"video_url": "https://example.com/mock.mp4"}
+
+    class FakeTasksAPI:
+        def create(self, **kwargs):
+            captured_create_args.update(kwargs)
+            return FakeTaskResponse()
+
+        def get(self, task_id):
+            return FakeTaskStatus()
+
+    class FakeContentGen:
+        tasks = FakeTasksAPI()
+
+    client.client.content_generation = FakeContentGen()
+
+    class FakeReqResp:
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def raise_for_status(self):
+            pass
+        def iter_content(self, chunk_size=8192):
+            yield b"dummy_mp4_content"
+
+    monkeypatch.setattr(requests, "get", lambda *args, **kwargs: FakeReqResp())
+
+    out_file = tmp_path / "out.mp4"
+
+    client.generate_video(
+        prompt="Soldiers confront each other",
+        output_path=str(out_file),
+        reference_assets=[
+            {
+                "id": "ref1",
+                "type": "image",
+                "token": "@Pictures 1",
+                "local_path": str(test_img)
+            }
+        ]
+    )
+
+    assert "content" in captured_create_args
+    content = captured_create_args["content"]
+    assert len(content) == 2  # 1 image + 1 text prompt
+    assert content[0]["type"] == "image_url"
+    assert content[0]["role"] == "reference_image"
+    assert content[0]["image_url"]["url"].startswith("data:image/")
+    assert content[1]["type"] == "text"
+    assert "Soldiers confront each other" in content[1]["text"]
+
+
 
 
 

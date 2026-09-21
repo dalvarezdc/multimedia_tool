@@ -118,3 +118,47 @@ def test_seedance_content_roles(monkeypatch, tmp_path):
     assert "reference" not in roles2
 
 
+def test_seedance_status_callback_stages(monkeypatch, tmp_path):
+    monkeypatch.setenv("ARK_API_KEY", "mock_ark_key")
+    client = SeedanceClient()
+
+    poll_count = 0
+
+    class MockTasks:
+        def create(self, **kwargs):
+            return {"id": "task_stage_test"}
+
+        def get(self, task_id):
+            nonlocal poll_count
+            poll_count += 1
+            if poll_count == 1:
+                return {"status": "running"}
+            return {
+                "status": "succeeded",
+                "content": {"video_url": "https://example.com/stage_test.mp4"}
+            }
+
+    client.client.content_generation.tasks = MockTasks()
+    monkeypatch.setattr(client, "_download_file", lambda url, dest: None)
+
+    stages_recorded = []
+    def on_status(stage, meta):
+        stages_recorded.append((stage, meta))
+
+    client.generate_video(
+        prompt="A testing sequence",
+        output_path=str(tmp_path / "stage_out.mp4"),
+        status_callback=on_status,
+        poll_interval=0
+    )
+
+    stage_names = [s[0] for s in stages_recorded]
+    assert "preparing" in stage_names
+    assert "submitting" in stage_names
+    assert "queued" in stage_names
+    assert "rendering" in stage_names
+    assert "downloading" in stage_names
+    assert "auditing" in stage_names
+
+
+

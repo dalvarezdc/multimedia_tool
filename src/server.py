@@ -10,6 +10,7 @@ Exposes REST endpoints for:
 """
 
 import os
+import json
 import logging
 import time
 import uuid
@@ -117,6 +118,94 @@ def create_app():
     }
 
     ui_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ui")
+    data_dir = os.getenv("MULTIMEDIA_DATA_DIR") or os.path.join(os.path.dirname(ui_dir), "data")
+    uploads_dir = os.getenv("MULTIMEDIA_UPLOADS_DIR") or os.path.join(os.path.dirname(ui_dir), "uploads", "reference_assets")
+    os.makedirs(data_dir, exist_ok=True)
+    os.makedirs(uploads_dir, exist_ok=True)
+    assets_db_path = os.path.join(data_dir, "reference_assets.json")
+
+    def _save_reference_assets():
+        try:
+            os.makedirs(data_dir, exist_ok=True)
+            with open(assets_db_path, "w", encoding="utf-8") as f:
+                json.dump(store["reference_assets"], f, indent=2)
+        except Exception as e:
+            logger.warning(f"Failed to persist reference assets: {e}")
+
+    def _load_reference_assets():
+        loaded = []
+        if os.path.exists(assets_db_path):
+            try:
+                with open(assets_db_path, "r", encoding="utf-8") as f:
+                    loaded = json.load(f)
+            except Exception as e:
+                logger.warning(f"Failed to load persisted reference assets: {e}")
+                loaded = []
+
+        valid_records = []
+        for item in loaded:
+            lp = item.get("local_path")
+            if lp and os.path.exists(lp):
+                valid_records.append(item)
+            else:
+                fn = os.path.basename(item.get("url") or item.get("filename") or "")
+                fallback_path = os.path.join(uploads_dir, fn)
+                if fn and os.path.exists(fallback_path):
+                    item["local_path"] = fallback_path
+                    valid_records.append(item)
+
+        existing_filenames = {os.path.basename(r.get("local_path", "")) for r in valid_records}
+        if os.path.exists(uploads_dir):
+            video_extensions = {".mp4", ".mov", ".webm", ".avi", ".mkv"}
+            image_extensions = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"}
+            disk_files = sorted(os.listdir(uploads_dir))
+            for df in disk_files:
+                if df.startswith(".") or df in existing_filenames:
+                    continue
+                ext = os.path.splitext(df)[1].lower()
+                if ext not in video_extensions and ext not in image_extensions:
+                    continue
+                file_path = os.path.join(uploads_dir, df)
+                if not os.path.isfile(file_path):
+                    continue
+
+                parts = df.split("_", 1)
+                if len(parts) == 2 and len(parts[0]) == 8:
+                    uid = parts[0]
+                    orig_name = parts[1]
+                else:
+                    uid = str(uuid.uuid4())[:8]
+                    orig_name = df
+
+                is_video = ext in video_extensions
+                asset_type = "video" if is_video else "image"
+                valid_records.append({
+                    "id": uid,
+                    "filename": orig_name,
+                    "type": asset_type,
+                    "token": "",
+                    "url": f"/uploads/reference_assets/{df}",
+                    "local_path": file_path,
+                    "size": os.path.getsize(file_path),
+                    "uploaded_at": os.path.getmtime(file_path)
+                })
+                existing_filenames.add(df)
+
+        img_idx = 1
+        vid_idx = 1
+        for a in valid_records:
+            if a["type"] == "image":
+                a["token"] = f"@Pictures {img_idx}"
+                img_idx += 1
+            else:
+                a["token"] = f"@Video {vid_idx}"
+                vid_idx += 1
+
+        store["reference_assets"] = valid_records
+        _save_reference_assets()
+        return store["reference_assets"]
+
+    _load_reference_assets()
 
     # =========================================================================
     # 1. SETTINGS & CREDENTIALS API
@@ -329,9 +418,6 @@ def create_app():
     # =========================================================================
     # 3.5. ASSET UPLOAD & MULTIMODAL REFERENCE API
     # =========================================================================
-    uploads_dir = os.path.join(os.path.dirname(ui_dir), "uploads", "reference_assets")
-    os.makedirs(uploads_dir, exist_ok=True)
-
     @app.post("/api/upload")
     def upload_reference_assets(files: list[UploadFile] = File(...)):
         """Uploads one or more reference images/videos for Ref-to-video mode.
@@ -374,6 +460,7 @@ def create_app():
             store["reference_assets"].append(asset_record)
             uploaded_assets.append(asset_record)
 
+        _save_reference_assets()
         return {
             "status": "success",
             "uploaded": uploaded_assets,
@@ -382,7 +469,8 @@ def create_app():
 
     @app.get("/api/upload/assets")
     def get_reference_assets():
-        """Returns all imported reference assets."""
+        """Returns all imported reference assets, synced with disk."""
+        _load_reference_assets()
         return {"assets": store["reference_assets"]}
 
     @app.delete("/api/upload/assets/{asset_id}")
@@ -411,6 +499,7 @@ def create_app():
                 a["token"] = f"@Video {vid_idx}"
                 vid_idx += 1
 
+        _save_reference_assets()
         return {"status": "deleted", "assets": store["reference_assets"]}
 
     @app.delete("/api/upload/assets")
@@ -423,6 +512,7 @@ def create_app():
                 except OSError as e:
                     logger.warning(f"Failed to clear {a['local_path']}: {e}")
         store["reference_assets"] = []
+        _save_reference_assets()
         return {"status": "cleared", "assets": []}
 
 
@@ -438,26 +528,49 @@ def create_app():
         if provider in ("seedance", "byteplus", "bytedance"):
             ark_key = req.api_key or os.getenv("ARK_API_KEY")
             if not ark_key:
-                raise HTTPException(
-                    status_code=400,
-                    detail="BytePlus ARK_API_KEY is required for Seedance video generation. Please enter it in Settings (⚙)."
-                )
-        elif provider in ("grok", "xai"):
+                raise HTTPException(status_code=400, detail="ARK_API_KEY missing. Please configure in Settings.")
+        elif provider == "grok":
             xai_key = req.api_key or os.getenv("XAI_API_KEY")
             if not xai_key:
-                raise HTTPException(
-                    status_code=400,
-                    detail="XAI_API_KEY is required for Grok Imagine video generation. Please enter it in Settings (⚙)."
-                )
+                raise HTTPException(status_code=400, detail="XAI_API_KEY missing. Please configure in Settings.")
 
-        if provider in ("grok", "xai"):
-            video_model_id = req.video_model or os.getenv("XAI_VIDEO_MODEL", "grok-imagine-video-1.5")
-        else:
-            video_model_id = req.video_model or os.getenv("ARK_SEEDANCE_MODEL", DEFAULT_VIDEO_MODEL)
+        clip_dir = os.path.join(os.path.dirname(ui_dir), "renders", "cutscenes")
+        os.makedirs(clip_dir, exist_ok=True)
+        clip_path = os.path.join(clip_dir, f"chapter_{req.chapter_id}.mp4")
 
-        out_dir = "./renders/cutscenes"
-        os.makedirs(out_dir, exist_ok=True)
-        clip_path = os.path.join(out_dir, f"chapter_{req.chapter_id}.mp4")
+        video_model_id = req.video_model or (
+            "grok-imagine-video-1.5" if provider == "grok" else "dreamina-seedance-2-5-260628"
+        )
+        start_ts = time.time()
+
+        task_entry = {
+            "status": "generating",
+            "stage": "submitting",
+            "stage_label": "Submitting…",
+            "elapsed_seconds": 0,
+            "path": None,
+            "started_at": start_ts,
+            "generation_mode": req.generation_mode,
+            "model": video_model_id,
+            "model_used": video_model_id,
+            "watermark_free": True
+        }
+        if req.chapter_id is not None:
+            store["tasks"][req.chapter_id] = task_entry
+
+        def _on_status(stage: str, meta: Dict[str, Any]):
+            elapsed = int(time.time() - start_ts)
+            msg = meta.get("message") or f"{stage.capitalize()}..."
+            task_entry = store["tasks"].get(req.chapter_id, {})
+            task_entry.update({
+                "status": "processing",
+                "stage": stage,
+                "stage_label": msg,
+                "elapsed_seconds": elapsed,
+                "upstream_task_id": meta.get("task_id") or meta.get("request_id"),
+                "model": video_model_id,
+            })
+            store["tasks"][req.chapter_id] = task_entry
 
         def _worker():
             try:
@@ -469,15 +582,35 @@ def create_app():
 
                 resolved_assets = []
                 for ref in (req.reference_assets or []):
-                    asset_id = ref.get("id") if isinstance(ref, dict) else None
+                    if not isinstance(ref, dict):
+                        continue
+                    asset_id = ref.get("id")
                     stored = next((a for a in store["reference_assets"] if a["id"] == asset_id), None)
                     if stored:
                         resolved_assets.append({
                             "id": stored["id"],
+                            "filename": stored.get("filename", ""),
                             "type": stored["type"],
                             "token": stored["token"],
                             "local_path": stored["local_path"],
+                            "url": stored.get("url", "")
                         })
+                    else:
+                        local_path = ref.get("local_path")
+                        if not local_path or not os.path.exists(local_path):
+                            cand_name = os.path.basename(ref.get("url") or ref.get("filename") or "")
+                            cand_path = os.path.join(uploads_dir, cand_name)
+                            if cand_name and os.path.exists(cand_path):
+                                local_path = cand_path
+                        if local_path and os.path.exists(local_path):
+                            resolved_assets.append({
+                                "id": asset_id or str(uuid.uuid4())[:8],
+                                "filename": ref.get("filename") or os.path.basename(local_path),
+                                "type": ref.get("type") or ("video" if any(local_path.lower().endswith(ext) for ext in [".mp4", ".mov", ".webm", ".avi", ".mkv"]) else "image"),
+                                "token": ref.get("token") or f"@Pictures {len(resolved_assets)+1}",
+                                "local_path": local_path,
+                                "url": ref.get("url") or f"/uploads/reference_assets/{os.path.basename(local_path)}",
+                            })
 
                 gen_kwargs = {
                     "prompt": req.prompt,
@@ -486,6 +619,7 @@ def create_app():
                     "watermark": False,
                     "duration": req.duration_seconds,
                     "ratio": req.ratio,
+                    "status_callback": _on_status,
                 }
                 if provider in ("seedance", "byteplus", "bytedance"):
                     gen_kwargs.update({
@@ -501,14 +635,20 @@ def create_app():
 
                 generator.generate_video(**gen_kwargs)
 
+                _on_status("auditing", {"message": "Running QA audit & validation..."})
                 qa = VideoQAAgent()
                 passed, reason = qa.audit_clip(clip_path)
                 public_path = f"/renders/cutscenes/chapter_{req.chapter_id}.mp4"
+                total_elapsed = int(time.time() - start_ts)
                 store["tasks"][req.chapter_id] = {
                     "status": "succeeded" if passed else "qa_warning",
+                    "stage": "complete",
+                    "stage_label": "Ready",
+                    "elapsed_seconds": total_elapsed,
                     "path": public_path,
                     "reason": reason,
                     "generation_mode": req.generation_mode,
+                    "model": video_model_id,
                     "model_used": video_model_id
                 }
                 store["usage_records"].insert(0, {
@@ -523,12 +663,23 @@ def create_app():
                     "watermark_free": True
                 })
             except Exception as exc:
+                logger.error(f"Error generating video cutscene for chapter {req.chapter_id}: {exc}", exc_info=True)
                 store["tasks"][req.chapter_id] = {
                     "status": "failed",
+                    "stage": "failed",
+                    "stage_label": "Failed",
+                    "elapsed_seconds": int(time.time() - start_ts),
                     "error": str(exc)
                 }
 
-        store["tasks"][req.chapter_id] = {"status": "processing", "model": video_model_id}
+        store["tasks"][req.chapter_id] = {
+            "status": "processing",
+            "stage": "preparing",
+            "stage_label": "Preparing assets & prompt...",
+            "elapsed_seconds": 0,
+            "started_at": start_ts,
+            "model": video_model_id
+        }
         background_tasks.add_task(_worker)
         return {"status": "started", "chapter_id": req.chapter_id, "provider": provider, "model": video_model_id}
 
@@ -537,7 +688,10 @@ def create_app():
         """Returns status of a specific chapter cutscene task."""
         if chapter_id not in store["tasks"]:
             return {"status": "not_started"}
-        return store["tasks"][chapter_id]
+        task = store["tasks"][chapter_id]
+        if task.get("status") == "processing" and "started_at" in task:
+            task["elapsed_seconds"] = int(time.time() - task["started_at"])
+        return task
 
     # =========================================================================
     # 5. PAGES ROUTING: UNIFIED CONSOLE & SERVICES

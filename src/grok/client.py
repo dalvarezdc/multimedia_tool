@@ -9,7 +9,7 @@ import time
 import base64
 import logging
 import mimetypes
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Callable
 import requests
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,8 @@ class GrokVideoClient:
         duration: int = 5,
         ratio: str = "16:9",
         poll_interval: int = 4,
-        timeout_seconds: int = 300
+        timeout_seconds: int = 300,
+        status_callback: Optional[Callable[[str, Dict[str, Any]], None]] = None,
     ) -> str:
         """Submits video generation job to xAI Grok Imagine, polls for completion, and downloads MP4.
 
@@ -66,11 +67,15 @@ class GrokVideoClient:
             ratio: Aspect ratio (e.g. '16:9').
             poll_interval: Polling frequency in seconds.
             timeout_seconds: Maximum wait timeout before aborting.
+            status_callback: Optional progress callback receiving stage and metadata dict.
 
         Returns:
             The path to the downloaded MP4 file.
         """
         os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+
+        if status_callback:
+            status_callback("preparing", {"message": "Preparing prompt and parameters...", "elapsed": 0})
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -93,7 +98,9 @@ class GrokVideoClient:
         # 1. Submit Generation Job
         url = f"{self.base_url}/videos/generations"
         logger.info(f"Submitting Grok Imagine video job to {url} (model={self.model_id})...")
-        
+        if status_callback:
+            status_callback("submitting", {"message": f"Submitting job to {self.model_id}...", "elapsed": 0})
+
         resp = requests.post(url, json=payload, headers=headers, timeout=30)
         if not resp.ok:
             raise RuntimeError(f"xAI API error ({resp.status_code}): {resp.text}")
@@ -104,6 +111,8 @@ class GrokVideoClient:
             raise RuntimeError(f"xAI API did not return request_id: {res_data}")
 
         logger.info(f"xAI Grok job dispatched. Request ID: {request_id}. Polling...")
+        if status_callback:
+            status_callback("queued", {"request_id": request_id, "message": "Queued in xAI processing pool", "elapsed": 1})
 
         # 2. Status Polling Loop
         poll_url = f"{self.base_url}/videos/{request_id}"
@@ -118,9 +127,13 @@ class GrokVideoClient:
 
             status_data = poll_resp.json()
             status = status_data.get("status", "").lower()
+            elapsed = int(time.time() - start_time)
 
             if status in ("done", "succeeded", "completed"):
                 logger.info("Grok video generation succeeded! Downloading MP4...")
+                if status_callback:
+                    status_callback("downloading", {"request_id": request_id, "elapsed": elapsed, "message": f"Downloading video stream ({elapsed}s)..."})
+
                 video_url = status_data.get("video_url") or status_data.get("url")
                 if not video_url and "result" in status_data:
                     video_url = status_data["result"].get("video_url")
@@ -130,11 +143,24 @@ class GrokVideoClient:
 
                 self._download_file(video_url, output_path)
                 logger.info(f"Video saved to {output_path}")
+
+                if status_callback:
+                    status_callback("auditing", {"request_id": request_id, "elapsed": int(time.time() - start_time), "message": "Finalizing video..."})
+
                 return output_path
 
             elif status in ("failed", "error", "cancelled"):
                 error_msg = status_data.get("error", "Unknown error")
                 raise RuntimeError(f"Grok video generation failed: {error_msg}")
+
+            else:
+                if status_callback:
+                    status_callback("rendering", {
+                        "request_id": request_id,
+                        "upstream_status": status,
+                        "elapsed": elapsed,
+                        "message": f"Sampling video frames ({elapsed}s)"
+                    })
 
             time.sleep(poll_interval)
 
