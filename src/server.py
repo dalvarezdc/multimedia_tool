@@ -27,6 +27,7 @@ from src.models_registry import (
     DEFAULT_IMAGE_MODEL,
     get_all_models_grouped,
 )
+from src.inventory import inventory_manager
 
 try:
     from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
@@ -48,6 +49,13 @@ class SettingsRequest(BaseModel):
     video_model: Optional[str] = None
     rpg_resolution: Optional[str] = None
     chapter_count: Optional[int] = Field(default=None, ge=2, le=8)
+
+class CustomModelRequest(BaseModel):
+    id: str
+    display_name: Optional[str] = None
+    category: Optional[str] = "video"
+    provider: Optional[str] = "seedance"
+
 
 class PlanRequest(BaseModel):
     topic: str = ""
@@ -213,18 +221,48 @@ def create_app():
         }
 
     # =========================================================================
-    # 2. MODELARK CATALOG API
+    # 2. MODELARK CATALOG & LIVE INVENTORY API
     # =========================================================================
     @app.get("/api/models")
     def list_available_models():
-        """Returns all 24 BytePlus ModelArk models organized by functional category."""
+        """Returns dynamic merged model inventory with live API status."""
+        return inventory_manager.get_inventory()
+
+    @app.post("/api/models/refresh")
+    def refresh_models(req: Optional[SettingsRequest] = None):
+        """Fetches live models from BytePlus ModelArk and xAI APIs,
+        merges with capability overlays, and caches snapshot.
+        """
+        ark_key = (req.ark_api_key if req else None) or os.getenv("ARK_API_KEY")
+        xai_key = (req.xai_api_key if req else None) or os.getenv("XAI_API_KEY")
+        ark_base = (req.ark_base_url if req else None) or os.getenv("ARK_BASE_URL")
+        snapshot = inventory_manager.refresh_inventory(
+            ark_key=ark_key,
+            xai_key=xai_key,
+            ark_base_url=ark_base
+        )
         return {
-            "catalog": get_all_models_grouped(),
-            "total_models": len(MODEL_CATALOG),
-            "active_director_model": os.getenv("ARK_LLM_MODEL", DEFAULT_DIRECTOR_MODEL),
-            "active_video_model": os.getenv("ARK_SEEDANCE_MODEL", DEFAULT_VIDEO_MODEL),
-            "active_image_model": os.getenv("ARK_SEEDREAM_MODEL", DEFAULT_IMAGE_MODEL)
+            "status": "success",
+            "message": f"Synced {snapshot['total_models']} models ({snapshot['live_count']} live in API).",
+            "snapshot": snapshot
         }
+
+    @app.post("/api/models/custom")
+    def add_custom_model(req: CustomModelRequest):
+        """Registers a custom model ID or deployed endpoint ID (e.g. ep-...)."""
+        if not req.id.strip():
+            raise HTTPException(status_code=400, detail="Model/Endpoint ID is required.")
+        created = inventory_manager.save_custom_model(req.model_dump())
+        return {"status": "success", "model": created}
+
+    @app.delete("/api/models/custom/{model_id}")
+    def delete_custom_model(model_id: str):
+        """Deletes a custom registered model endpoint."""
+        deleted = inventory_manager.delete_custom_model(model_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Custom model endpoint not found.")
+        return {"status": "success", "message": f"Custom model {model_id} removed."}
+
 
     # =========================================================================
     # 3. STORYBOARD PLANNING API
@@ -476,7 +514,7 @@ def create_app():
                 store["usage_records"].insert(0, {
                     "id": f"gen-{req.chapter_id}",
                     "timestamp": time.strftime("%Y-%m-%d %H:%M"),
-                    "service": "AI Video Studio",
+                    "service": "Multimedia Studio",
                     "model": video_model_id,
                     "mode": req.generation_mode,
                     "prompt": req.prompt,
@@ -507,11 +545,13 @@ def create_app():
     @app.get("/")
     @app.get("/app")
     @app.get("/video")
+    @app.get("/multimedia")
     @app.get("/rpg")
     @app.get("/api-keys")
     @app.get("/docs")
     @app.get("/settings")
     @app.get("/usage")
+
     def serve_console():
         app_file = os.path.join(ui_dir, "app.html")
         if os.path.exists(app_file):

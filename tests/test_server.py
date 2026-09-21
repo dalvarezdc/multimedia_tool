@@ -110,14 +110,16 @@ def test_cutscene_generate_modes(client, monkeypatch):
         assert data["chapter_id"] == 1
         assert data["model"] == "dreamina-seedance-2-5-260628"
 
-def test_api_models_endpoint(client):
+def test_api_models_endpoint(client, monkeypatch):
+    monkeypatch.delenv("ARK_SEEDANCE_MODEL", raising=False)
     response = client.get("/api/models")
     assert response.status_code == 200
     data = response.json()
-    assert data["total_models"] == 28
+    assert data["total_models"] >= 28
     assert "video" in data["catalog"]
     assert "director_llm" in data["catalog"]
-    assert data["active_video_model"] == "dreamina-seedance-2-5-260628"
+    assert "dreamina-seedance" in data["active_video_model"]
+
 
 def test_cutscene_generate_passes_ratio(client, monkeypatch):
     monkeypatch.setenv("ARK_API_KEY", "test_mock_key")
@@ -276,5 +278,47 @@ def test_ui_contains_reference_import_elements(client):
     assert "mention-autocomplete-popup" in html
     assert "ref-file-input" in html
     assert "ref-folder-input" in html
+
+def test_multimedia_route_and_ui_renaming(client):
+    res = client.get("/multimedia")
+    assert res.status_code == 200
+    html = res.text
+    assert "Multimedia Studio" in html
+    assert "Model Inventory &amp; API Sync" in html or "Model Inventory & API Sync" in html
+    assert "btn-refresh-inventory" in html
+    assert "inventory-table-body" in html
+
+def test_models_refresh_endpoint(client, monkeypatch):
+    monkeypatch.setenv("ARK_API_KEY", "test_mock_key")
+    res = client.post("/api/models/refresh")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "success"
+    assert "snapshot" in data
+    assert data["snapshot"]["total_models"] >= 20
+
+def test_custom_models_endpoint_lifecycle(client):
+    # Register custom endpoint
+    payload = {
+        "id": "ep-custom-seedance-lora-v1",
+        "display_name": "Studio Fine-tuned Seedance",
+        "category": "video"
+    }
+    res_add = client.post("/api/models/custom", json=payload)
+    assert res_add.status_code == 200
+    assert res_add.json()["status"] == "success"
+
+    # Verify present in /api/models
+    res_list = client.get("/api/models")
+    assert res_list.status_code == 200
+    models_data = res_list.json()
+    all_ids = [m["id"] for m in models_data["all_models"]]
+    assert "ep-custom-seedance-lora-v1" in all_ids
+
+    # Delete custom endpoint
+    res_del = client.delete("/api/models/custom/ep-custom-seedance-lora-v1")
+    assert res_del.status_code == 200
+    assert res_del.json()["status"] == "success"
+
 
 

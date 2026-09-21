@@ -55,6 +55,8 @@ renders/
 output/
 temp/
 cache/
+uploads/
+data/
 *.mp4
 *.webm
 *.mov

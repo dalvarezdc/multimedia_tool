@@ -127,7 +127,7 @@
         <div class="text-sm font-semibold tracking-tight">RetroArk <span class="text-slate-500 font-normal">Console</span></div>
       </div>
       <nav class="px-2 pt-2 space-y-0.5 text-[13px]">
-        <button data-view="video" class="sidebar-link active w-full text-left px-3 py-2 rounded-lg text-slate-200">Video Studio</button>
+        <button data-view="video" class="sidebar-link active w-full text-left px-3 py-2 rounded-lg text-slate-200">Multimedia Studio</button>
         <button data-view="rpg" class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">RPG Studio</button>
         <div class="h-px bg-white/[0.06] my-3 mx-2"></div>
         <button data-view="settings" class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">Settings</button>
@@ -149,7 +149,8 @@
     <!-- Top Console Header Bar -->
     <header class="h-14 border-b border-white/[0.06] px-6 flex items-center justify-between shrink-0 bg-[#090A0F]/80 backdrop-blur-md z-30">
       <div class="flex items-center gap-3">
-        <h1 id="breadcrumb-title" class="text-[15px] font-medium text-slate-100 hidden">Video Studio</h1>
+        <h1 id="breadcrumb-title" class="text-[15px] font-medium text-slate-100 hidden">Multimedia Studio</h1>
+
         <div class="flex items-center gap-2 bg-surface/80 border border-white/10 rounded-xl px-3 py-1.5 shadow-sm">
           <span id="header-model-icon" class="text-purple-400 flex items-center">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h10a2 2 0 0 1 2 2v2.586l3.293-3.293A1 1 0 0 1 21 6v12a1 1 0 0 1-1.707.707L16 15.414V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>
@@ -239,7 +240,7 @@
                 rows="3" 
                 class="w-full bg-transparent border-0 text-slate-100 placeholder:text-slate-500 text-sm focus:ring-0 resize-none leading-relaxed p-0 pr-8"
                 placeholder="Use @ to quickly reference uploaded files, such as referring to actions in @Video 1 to generate videos of characters fighting in @Pictures 2 and @Pictures 3."
-              >Cinematic close-up tracking shot of Hermes with winged golden helmet soaring over ancient Greek stone temples under starry night sky, dramatic volumetric starlight, 1080p photorealistic, highly detailed.</textarea>
+              ></textarea>
               <button id="btn-expand-prompt" type="button" title="Expand Prompt" class="absolute top-0 right-0 p-1 text-slate-500 hover:text-white transition-colors cursor-pointer">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </button>
@@ -542,7 +543,91 @@
           <div id="pref-feedback" class="text-[12px] hidden"></div>
           <button id="btn-save-pref" class="btn-primary">Save defaults</button>
         </div>
+
+        <!-- Panel 3: Live Model Inventory & API Discovery (mm-ic9) -->
+        <div class="panel p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/[0.06]">
+            <div>
+              <h3 class="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                <span>Model Inventory & API Sync</span>
+                <span id="inventory-live-badge" class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Synced</span>
+              </h3>
+              <p class="text-xs text-slate-400 mt-0.5">Live models resolved from BytePlus ModelArk & xAI endpoints with capability overlays.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btn-open-add-custom-model" type="button" class="btn-quiet text-xs px-3 py-1.5 flex items-center gap-1.5 cursor-pointer">
+                <span>+ Custom Endpoint</span>
+              </button>
+              <button id="btn-refresh-inventory" type="button" class="btn-primary text-xs px-3.5 py-1.5 flex items-center gap-1.5 cursor-pointer">
+                <span id="refresh-spin-icon" class="inline-block">↻</span>
+                <span>Refresh from API</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Sync Metadata Banner -->
+          <div class="flex flex-wrap items-center justify-between text-xs bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2.5 text-slate-400">
+            <div class="flex items-center gap-3 flex-wrap">
+              <span>Last Synced: <strong id="inventory-last-synced" class="text-slate-200 font-mono">Loading...</strong></span>
+              <span>•</span>
+              <span>Available: <strong id="inventory-total-count" class="text-cyan-400 font-mono">0</strong> models</span>
+              <span>•</span>
+              <span>Live in API: <strong id="inventory-live-count" class="text-emerald-400 font-mono">0</strong></span>
+            </div>
+            <div id="inventory-sync-feedback" class="text-emerald-400 font-medium hidden">Synced successfully!</div>
+          </div>
+
+          <!-- Custom Model Inline Form (hidden by default) -->
+          <div id="custom-model-form" class="hidden p-4 rounded-xl bg-white/[0.03] border border-white/10 space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-semibold text-slate-200">Register Custom Endpoint / Model ID</h4>
+              <button id="btn-close-custom-model-form" type="button" class="text-slate-500 hover:text-white text-xs cursor-pointer">✕</button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="label">Endpoint / Model ID</label>
+                <input id="input-custom-model-id" type="text" placeholder="ep-20250101-xxxx or model-id" class="field text-xs font-mono" />
+              </div>
+              <div>
+                <label class="label">Display Name</label>
+                <input id="input-custom-model-name" type="text" placeholder="e.g. Dedicated Seedance EP" class="field text-xs" />
+              </div>
+              <div>
+                <label class="label">Category</label>
+                <select id="select-custom-model-cat" class="field text-xs">
+                  <option value="video">Video Generation</option>
+                  <option value="image">Image Generation</option>
+                  <option value="director_llm">Director LLM</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-1">
+              <button id="btn-cancel-custom-model" type="button" class="btn-quiet text-xs cursor-pointer">Cancel</button>
+              <button id="btn-save-custom-model" type="button" class="btn-primary text-xs cursor-pointer">Register Endpoint</button>
+            </div>
+          </div>
+
+          <!-- Models Inventory Table -->
+          <div class="max-h-80 overflow-y-auto pr-1 border border-white/5 rounded-xl">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-white/[0.04] text-slate-400 font-medium border-b border-white/5 sticky top-0 backdrop-blur-md">
+                <tr>
+                  <th class="py-2.5 px-3">Model / Endpoint ID</th>
+                  <th class="py-2.5 px-3">Category</th>
+                  <th class="py-2.5 px-3">Provider</th>
+                  <th class="py-2.5 px-3">Capabilities</th>
+                  <th class="py-2.5 px-3">Status</th>
+                  <th class="py-2.5 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="inventory-table-body" class="divide-y divide-white/5 text-slate-300 font-mono text-[11px]">
+                <!-- Populated dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
+
 
       <!-- ========================================================================== -->
       <!-- VIEW 6: USAGE RECORDS & METRICS                                            -->
@@ -740,7 +825,8 @@
     const breadcrumbCategory = document.getElementById("breadcrumb-category");
 
     const viewMeta = {
-      video: { title: "Video Studio", cat: "Service" },
+      video: { title: "Multimedia Studio", cat: "Service" },
+      multimedia: { title: "Multimedia Studio", cat: "Service" },
       rpg: { title: "RPG Studio", cat: "Service" },
       "api-keys": { title: "Settings", cat: "Settings" },
       docs: { title: "Guide", cat: "Guide" },
@@ -750,8 +836,10 @@
 
     function switchView(viewName) {
       if (viewName === "api-keys") viewName = "settings";
+      if (viewName === "multimedia") viewName = "video";
       if (!viewMeta[viewName]) viewName = "video";
       activeView = viewName;
+
 
       sidebarLinks.forEach(link => {
         if (link.getAttribute("data-view") === viewName) {
@@ -1018,6 +1106,14 @@ print("Task submitted:", task.id)`;
             </div>
           `;
           selectedVideoMode = "first_last_frame";
+        } else if (model.ui_layout_type === "image_standard" || model.ui_layout_type === "image_group") {
+          dropzoneEl.innerHTML = `
+            <div id="dropzone-image" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors relative group" title="Image Generation Anchor">
+              <svg class="w-4 h-4 text-purple-400 mb-1" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+              <span class="text-[9px] text-slate-400 leading-none group-hover:text-slate-200">Image</span>
+            </div>
+          `;
+          selectedVideoMode = "image_generation";
         } else {
           dropzoneEl.innerHTML = `
             <div id="dropzone-ref" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors relative group" title="Click to import files or folder, or drag & drop">
@@ -1029,6 +1125,7 @@ print("Task submitted:", task.id)`;
           if (typeof updateDropzoneRefBadge === "function") updateDropzoneRefBadge();
         }
       }
+
 
 
       // 5. Placeholder
@@ -1136,6 +1233,122 @@ print("Task submitted:", task.id)`;
       }
     }
 
+    function renderInventorySettings(data) {
+      const catalog = data.catalog || {};
+      const allModels = data.all_models || [];
+      const tbody = document.getElementById("inventory-table-body");
+      const lastSyncedEl = document.getElementById("inventory-last-synced");
+      const totalCountEl = document.getElementById("inventory-total-count");
+      const liveCountEl = document.getElementById("inventory-live-count");
+      const liveBadgeEl = document.getElementById("inventory-live-badge");
+
+      if (lastSyncedEl) lastSyncedEl.innerText = data.last_synced_str || "Just now";
+      if (totalCountEl) totalCountEl.innerText = data.total_models || allModels.length;
+      if (liveCountEl) liveCountEl.innerText = data.live_count || 0;
+      if (liveBadgeEl) {
+        if (data.live_count > 0) {
+          liveBadgeEl.className = "px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+          liveBadgeEl.innerText = `${data.live_count} Live in API`;
+        } else {
+          liveBadgeEl.className = "px-2 py-0.5 rounded-full text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30";
+          liveBadgeEl.innerText = "Presets Ready";
+        }
+      }
+
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      if (!allModels.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500 font-sans">No models detected. Click Refresh from API to sync.</td></tr>`;
+        return;
+      }
+
+      allModels.forEach(m => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-white/5 transition-colors";
+
+        let statusBadge = "";
+        if (m.source === "live_api" || m.is_live) {
+          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium">● Verified in API</span>`;
+        } else if (m.source === "custom_endpoint" || m.is_custom) {
+          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 font-medium">Custom</span>`;
+        } else {
+          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-white/10 text-slate-400 font-medium">Preset</span>`;
+        }
+
+        let catBadge = "";
+        if (m.category === "video") catBadge = `<span class="text-cyan-400">Video</span>`;
+        else if (m.category === "image") catBadge = `<span class="text-purple-400">Image</span>`;
+        else if (m.category === "director_llm") catBadge = `<span class="text-amber-400">Director LLM</span>`;
+        else catBadge = `<span class="text-slate-400">${m.category}</span>`;
+
+        const caps = [];
+        if (m.resolutions && m.resolutions.length) caps.push(m.resolutions.join("/"));
+        if (m.durations && m.durations.length) caps.push(`${m.durations.join("/")}s`);
+        if (m.supports_audio) caps.push("Audio");
+        if (m.supports_draft) caps.push("Draft");
+        const capStr = caps.join(" · ") || "Standard";
+
+        tr.innerHTML = `
+          <td class="py-2 px-3">
+            <strong class="text-slate-200 block">${m.display_name || m.id}</strong>
+            <span class="text-slate-500 text-[10px]">${m.id}</span>
+          </td>
+          <td class="py-2 px-3">${catBadge}</td>
+          <td class="py-2 px-3 text-slate-400">${(m.provider || "seedance").toUpperCase()}</td>
+          <td class="py-2 px-3 text-slate-400 text-[10px] font-sans">${capStr}</td>
+          <td class="py-2 px-3">${statusBadge}</td>
+          <td class="py-2 px-3 text-right">
+            <div class="flex items-center justify-end gap-1.5 font-sans">
+              <button type="button" class="btn-use-model px-2 py-1 bg-white/5 hover:bg-white/10 text-white rounded text-[10px] transition-colors cursor-pointer" data-id="${m.id}" data-category="${m.category}">
+                Use in Studio
+              </button>
+              ${m.is_custom ? `<button type="button" class="btn-del-custom text-slate-500 hover:text-red-400 p-1 rounded cursor-pointer" data-id="${m.id}" title="Delete endpoint">✕</button>` : ''}
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Bind actions
+      tbody.querySelectorAll(".btn-use-model").forEach(btn => {
+        btn.onclick = () => {
+          const mid = btn.getAttribute("data-id");
+          const cat = btn.getAttribute("data-category");
+          if (cat === "video" || cat === "image") {
+            modelSelect.value = mid;
+            activeVideoModel = mid;
+            localStorage.setItem("ARK_SEEDANCE_MODEL", mid);
+            updateStudioForModel(mid);
+            switchView("video");
+          } else if (cat === "director_llm") {
+            const dirSel = document.getElementById("pref-director-model");
+            if (dirSel) dirSel.value = mid;
+            localStorage.setItem("ARK_LLM_MODEL", mid);
+            activeDirectorModel = mid;
+            switchView("rpg");
+          }
+        };
+      });
+
+      tbody.querySelectorAll(".btn-del-custom").forEach(btn => {
+        btn.onclick = async () => {
+          const mid = btn.getAttribute("data-id");
+          if (!confirm(`Remove custom endpoint "${mid}"?`)) return;
+          try {
+            const res = await fetch(`/api/models/custom/${encodeURIComponent(mid)}`, { method: "DELETE" });
+            if (res.ok) {
+              await loadModelsCatalog();
+            } else {
+              alert("Failed to remove custom model.");
+            }
+          } catch (e) {
+            alert("Error deleting model: " + e.message);
+          }
+        };
+      });
+    }
+
     async function loadModelsCatalog() {
       try {
         const res = await fetch("/api/models");
@@ -1147,32 +1360,50 @@ print("Task submitted:", task.id)`;
         modelCatalogData = {};
 
         const videoModels = catalog.video || [];
-        const groups = { seedance: "BytePlus Seedance", grok: "xAI Grok" };
-        const grouped = { seedance: [], grok: [] };
-        videoModels.forEach(m => {
-          modelCatalogData[m.id] = m;
-          const key = (m.provider === "grok") ? "grok" : "seedance";
-          grouped[key].push(m);
-        });
-        Object.entries(grouped).forEach(([key, list]) => {
-          if (!list.length) return;
-          const grp = document.createElement("optgroup");
-          grp.label = groups[key];
-          list.forEach(m => {
+        const imageModels = catalog.image || [];
+
+        // 1. Video Models Group
+        if (videoModels.length) {
+          const vGroup = document.createElement("optgroup");
+          vGroup.label = "Video Generation Models";
+          videoModels.forEach(m => {
+            modelCatalogData[m.id] = m;
             const opt = document.createElement("option");
             opt.value = m.id;
-            opt.innerText = m.display_name;
+            const livePrefix = m.is_live ? "● " : "";
+            const liveSuffix = m.is_live ? " (Live)" : "";
+            opt.innerText = `${livePrefix}${m.display_name}${liveSuffix}`;
             if (m.id === activeVideoModel) opt.selected = true;
-            grp.appendChild(opt);
+            vGroup.appendChild(opt);
           });
-          modelSelect.appendChild(grp);
-        });
+          modelSelect.appendChild(vGroup);
+        }
+
+        // 2. Image Models Group (SeeDream)
+        if (imageModels.length) {
+          const iGroup = document.createElement("optgroup");
+          iGroup.label = "Image Generation Models";
+          imageModels.forEach(m => {
+            modelCatalogData[m.id] = m;
+            const opt = document.createElement("option");
+            opt.value = m.id;
+            const livePrefix = m.is_live ? "● " : "";
+            const liveSuffix = m.is_live ? " (Live)" : "";
+            opt.innerText = `${livePrefix}${m.display_name}${liveSuffix}`;
+            if (m.id === activeVideoModel) opt.selected = true;
+            iGroup.appendChild(opt);
+          });
+          modelSelect.appendChild(iGroup);
+        }
 
         if (!modelCatalogData[activeVideoModel]) {
-          activeVideoModel = Object.keys(modelCatalogData)[0] || "dreamina-seedance-2-0-fast-260128";
+          activeVideoModel = Object.keys(modelCatalogData)[0] || "dreamina-seedance-2-5-260628";
         }
         modelSelect.value = activeVideoModel;
         updateStudioForModel(activeVideoModel);
+
+        // Render Inventory in Settings
+        renderInventorySettings(data);
       } catch (err) {
         console.error("Failed to load models catalog", err);
       }
@@ -1184,6 +1415,105 @@ print("Task submitted:", task.id)`;
       localStorage.setItem("ARK_SEEDANCE_MODEL", activeVideoModel);
       updateStudioForModel(activeVideoModel);
     };
+
+    // --- Model Inventory Refresh & Custom Endpoint Handlers ---
+    const btnRefreshInventory = document.getElementById("btn-refresh-inventory");
+    const refreshSpinIcon = document.getElementById("refresh-spin-icon");
+    const syncFeedback = document.getElementById("inventory-sync-feedback");
+
+    if (btnRefreshInventory) {
+      btnRefreshInventory.onclick = async () => {
+        btnRefreshInventory.disabled = true;
+        if (refreshSpinIcon) refreshSpinIcon.classList.add("animate-spin");
+        try {
+          const res = await fetch("/api/models/refresh", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ark_api_key: localApiKey || undefined,
+              xai_api_key: localXaiKey || undefined,
+              ark_base_url: localArkBase || undefined
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            await loadModelsCatalog();
+            if (syncFeedback) {
+              syncFeedback.innerText = data.message || "Synced successfully!";
+              syncFeedback.classList.remove("hidden");
+              setTimeout(() => syncFeedback.classList.add("hidden"), 4000);
+            }
+          } else {
+            const err = await res.json();
+            alert("Model sync error: " + (err.detail || "Refresh failed"));
+          }
+        } catch (e) {
+          alert("Failed to refresh models: " + e.message);
+        } finally {
+          btnRefreshInventory.disabled = false;
+          if (refreshSpinIcon) refreshSpinIcon.classList.remove("animate-spin");
+        }
+      };
+    }
+
+    const btnOpenCustomForm = document.getElementById("btn-open-add-custom-model");
+    const btnCloseCustomForm = document.getElementById("btn-close-custom-model-form");
+    const btnCancelCustomForm = document.getElementById("btn-cancel-custom-model");
+    const customModelForm = document.getElementById("custom-model-form");
+    const btnSaveCustomModel = document.getElementById("btn-save-custom-model");
+
+    function toggleCustomModelForm(show) {
+      if (!customModelForm) return;
+      if (show) customModelForm.classList.remove("hidden");
+      else customModelForm.classList.add("hidden");
+    }
+
+    if (btnOpenCustomForm) btnOpenCustomForm.onclick = () => toggleCustomModelForm(true);
+    if (btnCloseCustomForm) btnCloseCustomForm.onclick = () => toggleCustomModelForm(false);
+    if (btnCancelCustomForm) btnCancelCustomForm.onclick = () => toggleCustomModelForm(false);
+
+    if (btnSaveCustomModel) {
+      btnSaveCustomModel.onclick = async () => {
+        const idInput = document.getElementById("input-custom-model-id");
+        const nameInput = document.getElementById("input-custom-model-name");
+        const catInput = document.getElementById("select-custom-model-cat");
+
+        const id = (idInput.value || "").trim();
+        const name = (nameInput.value || "").trim() || id;
+        const category = catInput.value || "video";
+
+        if (!id) {
+          alert("Please enter a Model or Endpoint ID.");
+          idInput.focus();
+          return;
+        }
+
+        try {
+          const res = await fetch("/api/models/custom", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: id,
+              display_name: name,
+              category: category,
+              provider: id.includes("grok") ? "grok" : "seedance"
+            })
+          });
+          if (res.ok) {
+            idInput.value = "";
+            nameInput.value = "";
+            toggleCustomModelForm(false);
+            await loadModelsCatalog();
+          } else {
+            const err = await res.json();
+            alert("Error registering custom model: " + (err.detail || "Failed"));
+          }
+        } catch (e) {
+          alert("Error: " + e.message);
+        }
+      };
+    }
+
 
     // Header Action Modals
     const modalApiRef = document.getElementById("modal-api-reference");
