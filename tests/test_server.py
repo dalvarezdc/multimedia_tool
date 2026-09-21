@@ -307,6 +307,14 @@ def test_api_models_includes_grok_video(client):
     assert img["category"] == "image"
 
 
+def test_ui_recent_creations_includes_elapsed_tag(client):
+    html = client.get("/app").text
+    assert "recent-elapsed-tag" in html
+    assert "function formatElapsed" in html
+    assert "prependRecentGeneration" in html
+    assert "Time to generate" in html
+
+
 def test_ui_image_result_uses_png_download_chrome(client):
     html = client.get("/app").text
     assert "Download MP4" in html

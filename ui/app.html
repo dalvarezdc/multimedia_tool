@@ -2342,19 +2342,30 @@ print("Task submitted:", task.id)`;
       });
     }
 
-    function prependRecentGeneration(title, meta) {
+    function formatElapsed(seconds) {
+      const s = Math.max(0, Math.round(Number(seconds) || 0));
+      if (s < 60) return `${s}s`;
+      const m = Math.floor(s / 60);
+      const rem = s % 60;
+      return `${m}m ${String(rem).padStart(2, "0")}s`;
+    }
 
+    function prependRecentGeneration(title, meta, elapsedSeconds) {
       const list = document.getElementById("recent-generations-list");
       const empty = document.getElementById("recent-empty");
       if (empty) empty.remove();
       const row = document.createElement("div");
-      row.className = "p-2.5 rounded-xl bg-surface/70 border border-white/5 flex items-center justify-between";
+      row.className = "p-2.5 rounded-xl bg-surface/70 border border-white/5 flex items-center justify-between gap-2";
+      const elapsedLabel = formatElapsed(elapsedSeconds);
       row.innerHTML = `
-        <div>
-          <strong class="text-slate-200 text-[11px] block">${title}</strong>
+        <div class="min-w-0">
+          <strong class="text-slate-200 text-[11px] block truncate">${title}</strong>
           <span class="text-[10px] text-slate-500">${meta}</span>
         </div>
-        <span class="text-emerald-400 text-[10px]">Ready</span>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="recent-elapsed-tag text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800/40 px-1.5 py-0.5 rounded" title="Time to generate">${elapsedLabel}</span>
+          <span class="text-emerald-400 text-[10px]">Ready</span>
+        </div>
       `;
       list.prepend(row);
     }
@@ -2526,7 +2537,8 @@ print("Task submitted:", task.id)`;
           const durText = (!isImage && durEl && durEl.value) ? ` (${durEl.value}s)` : "";
           prependRecentGeneration(
             (document.getElementById("video-prompt-input").value || (isImage ? "Generated image" : "Generated clip")).slice(0, 28) + durText,
-            `${modelLabel(model)} • ${selectedVideoMode.replaceAll("_", "-")}`
+            `${modelLabel(model)} • ${selectedVideoMode.replaceAll("_", "-")}`,
+            elapsed
           );
           setGenerationUiState("success", isImage ? "Image ready" : "Video ready", elapsed);
           return;
