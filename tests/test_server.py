@@ -299,6 +299,15 @@ def test_api_models_includes_grok_video(client):
     assert 15 in grok["durations"]
 
 
+def test_ui_image_result_uses_png_download_chrome(client):
+    html = client.get("/app").text
+    assert "Download MP4" in html
+    assert "Download PNG" in html
+    assert "isImageResultShowing" in html
+    assert "syncPlayerResultChrome" in html
+    assert "seedream-output.png" in html
+
+
 def test_ui_contains_reference_import_elements(client):
     response = client.get("/app")
     assert response.status_code == 200

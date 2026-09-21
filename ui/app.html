@@ -2209,6 +2209,22 @@ print("Task submitted:", task.id)`;
       list.prepend(row);
     }
 
+    function isImageResultShowing() {
+      const imgPlayer = document.getElementById("main-image-player");
+      return !!(imgPlayer && !imgPlayer.classList.contains("hidden") && imgPlayer.getAttribute("src"));
+    }
+
+    function syncPlayerResultChrome(modelName) {
+      const isImg = isImageResultShowing();
+      const dl = document.getElementById("btn-download-video");
+      if (dl) dl.textContent = isImg ? "Download PNG" : "Download MP4";
+      const caption = document.getElementById("player-status-caption");
+      if (caption && isImg && modelName) {
+        caption.innerText = "Active: " + modelName + " image";
+      }
+      updatePreviewSpec();
+    }
+
     function updatePreviewSpec() {
       const ratioEl = document.getElementById("video-aspect-ratio");
       const durationEl = document.getElementById("video-duration");
@@ -2217,11 +2233,14 @@ print("Task submitted:", task.id)`;
       if (!badge) return;
       const ratio = (ratioEl && ratioEl.value) || "16:9";
       const res = resEl ? resEl.value : "";
-      if (durationEl && durationEl.value) {
+      const imageShowing = isImageResultShowing();
+      if (!imageShowing && durationEl && durationEl.value) {
         badge.innerText = res ? `${ratio} · ${res} · ${durationEl.value}s` : `${ratio} · ${durationEl.value}s`;
       } else {
         badge.innerText = res ? `${ratio} · ${res}` : ratio;
       }
+      const dl = document.getElementById("btn-download-video");
+      if (dl) dl.textContent = imageShowing ? "Download PNG" : "Download MP4";
     }
 
     function formatApiError(msg) {
@@ -2352,9 +2371,9 @@ print("Task submitted:", task.id)`;
             }
             if (hint) hint.classList.add("hidden");
           }
-          document.getElementById("player-status-caption").innerText = "Active: " + modelLabel(model) + " Output";
+          syncPlayerResultChrome(modelLabel(model));
           const durEl = document.getElementById("video-duration");
-          const durText = durEl ? ` (${durEl.value}s)` : "";
+          const durText = (!isImage && durEl && durEl.value) ? ` (${durEl.value}s)` : "";
           prependRecentGeneration(
             (document.getElementById("video-prompt-input").value || (isImage ? "Generated image" : "Generated clip")).slice(0, 28) + durText,
             `${modelLabel(model)} • ${selectedVideoMode.replaceAll("_", "-")}`
