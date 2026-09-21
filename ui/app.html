@@ -339,9 +339,10 @@
         <!-- Output Result Panel: Player + Generation History -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
           <div class="lg:col-span-8 panel overflow-hidden rounded-2xl">
-            <div class="relative aspect-video bg-black rounded-t-2xl overflow-hidden">
+            <div class="relative aspect-video bg-black rounded-t-2xl overflow-hidden flex items-center justify-center">
               <video id="main-video-player" class="w-full h-full object-cover" loop playsinline preload="metadata"></video>
-              <div id="preview-empty-hint" class="absolute inset-0 flex items-center justify-center text-[13px] text-slate-500 pointer-events-none">No clip generated yet. Submit prompt above to start.</div>
+              <img id="main-image-player" class="w-full h-full object-contain hidden" alt="Generated visual" />
+              <div id="preview-empty-hint" class="absolute inset-0 flex items-center justify-center text-[13px] text-slate-500 pointer-events-none">No media generated yet. Submit prompt above to start.</div>
               <div class="absolute top-3 right-3 z-10 flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-full px-3 py-1 border border-white/10">
                 <span class="text-[10px] font-mono text-emerald-400">Zero Watermark</span>
                 <input id="video-volume" type="range" min="0" max="1" step="0.05" value="0.7" class="volume-slider w-14" />
@@ -1065,6 +1066,52 @@ payload = {
 
 res = requests.post(url, headers=headers, json=payload)
 print("Response:", res.json())`;
+      } else if (model.category === "image" || (modelId && modelId.toLowerCase().includes("seedream"))) {
+        const imageArgList = [];
+        if (importedAssets && importedAssets.length > 0) {
+          importedAssets.forEach(a => {
+            const assetUrl = a.url 
+              ? (window.location.origin + a.url)
+              : (a.local_path || "data:image/jpeg;base64,<BASE64_DATA>");
+            imageArgList.push(assetUrl);
+          });
+        }
+        const imgPayload = {
+          model: modelId,
+          prompt: prompt,
+          size: ratio,
+          watermark: false
+        };
+        if (imageArgList.length === 1) {
+          imgPayload.image = imageArgList[0];
+        } else if (imageArgList.length > 1) {
+          imgPayload.image = imageArgList;
+        }
+
+        curlCode = `curl -X POST "https://ark.ap-southeast.bytepluses.com/api/v3/images/generations" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer $ARK_API_KEY" \\
+  -d '${JSON.stringify(imgPayload, null, 2)}'`;
+
+        const pyImageParam = imageArgList.length > 0
+          ? `image=${JSON.stringify(imageArgList.length === 1 ? imageArgList[0] : imageArgList, null, 4).replace(/\n/g, "\n    ")},\n    `
+          : "";
+
+        pythonCode = `from arkruntime import Ark
+
+client = Ark(
+    base_url="https://ark.ap-southeast.bytepluses.com/api/v3",
+    api_key="YOUR_ARK_API_KEY"
+)
+
+# Submit SeeDream image generation
+response = client.images.generate(
+    model="${modelId}",
+    prompt=${JSON.stringify(prompt)},
+    ${pyImageParam}size="${ratio}",
+    watermark=False
+)
+print("Generated image URL:", response.data[0].url if response.data else "None")`;
       } else {
         const contentList = [];
         if (importedAssets && importedAssets.length > 0) {
@@ -1181,12 +1228,13 @@ print("Task submitted:", task.id)`;
           selectedVideoMode = "first_last_frame";
         } else if (model.ui_layout_type === "image_standard" || model.ui_layout_type === "image_group") {
           dropzoneEl.innerHTML = `
-            <div id="dropzone-image" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors relative group" title="Image Generation Anchor">
-              <svg class="w-4 h-4 text-purple-400 mb-1" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-              <span class="text-[9px] text-slate-400 leading-none group-hover:text-slate-200">Image</span>
+            <div id="dropzone-image" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors relative group" title="Click to import reference images or folder, or drag & drop">
+              <svg class="w-4 h-4 text-purple-400 mb-1 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+              <span class="text-[9px] text-slate-400 leading-none group-hover:text-slate-200">Reference</span>
             </div>
           `;
           selectedVideoMode = "image_generation";
+          if (typeof updateDropzoneRefBadge === "function") updateDropzoneRefBadge();
         } else {
           dropzoneEl.innerHTML = `
             <div id="dropzone-ref" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors relative group" title="Click to import files or folder, or drag & drop">
@@ -1229,31 +1277,40 @@ print("Task submitted:", task.id)`;
             ${resolutions.map(r => `<option value="${r}" class="bg-[#11131C]">${String(r).toUpperCase()}</option>`).join('')}
           </select>`;
         }
-        const durations = model.durations && model.durations.length ? model.durations : [5, 10];
-        html += `<select id="video-duration" class="${selClass}" title="Duration">
-          ${durations.map(d => `<option value="${d}" class="bg-[#11131C]">${d} seconds</option>`).join('')}
-        </select>`;
-        if (model.supports_audio) {
-          html += `<select id="video-audio" class="${selClass}" title="Audio">
-            <option value="on" selected class="bg-[#11131C]">Sound on</option>
-            <option value="off" class="bg-[#11131C]">Sound off</option>
+        if (model.category !== "image") {
+          const durations = model.durations && model.durations.length ? model.durations : [5, 10];
+          html += `<select id="video-duration" class="${selClass}" title="Duration">
+            ${durations.map(d => `<option value="${d}" class="bg-[#11131C]">${d} seconds</option>`).join('')}
           </select>`;
-        }
-        const clips = model.clip_counts && model.clip_counts.length ? model.clip_counts : [1];
-        html += `<select id="video-clip-count" class="${selClass}" title="Number of videos">
-          ${clips.map(n => `<option value="${n}" class="bg-[#11131C]">${n} video${n === 1 ? '' : 's'}</option>`).join('')}
-        </select>`;
-        if (model.supports_draft) {
-          html += `<select id="video-draft" class="${selClass}" title="Draft mode">
-            <option value="off" selected class="bg-[#11131C]">Final</option>
-            <option value="on" class="bg-[#11131C]">Draft mode</option>
+          if (model.supports_audio) {
+            html += `<select id="video-audio" class="${selClass}" title="Audio">
+              <option value="on" selected class="bg-[#11131C]">Sound on</option>
+              <option value="off" class="bg-[#11131C]">Sound off</option>
+            </select>`;
+          }
+          const clips = model.clip_counts && model.clip_counts.length ? model.clip_counts : [1];
+          html += `<select id="video-clip-count" class="${selClass}" title="Number of videos">
+            ${clips.map(n => `<option value="${n}" class="bg-[#11131C]">${n} video${n === 1 ? '' : 's'}</option>`).join('')}
+          </select>`;
+          if (model.supports_draft) {
+            html += `<select id="video-draft" class="${selClass}" title="Draft mode">
+              <option value="off" selected class="bg-[#11131C]">Final</option>
+              <option value="on" class="bg-[#11131C]">Draft mode</option>
+            </select>`;
+          }
+        } else {
+          const pieces = model.clip_counts && model.clip_counts.length ? model.clip_counts : [1];
+          html += `<select id="video-clip-count" class="${selClass}" title="Number of images">
+            ${pieces.map(n => `<option value="${n}" class="bg-[#11131C]">${n} piece${n === 1 ? '' : 's'}</option>`).join('')}
           </select>`;
         }
         pillsBar.innerHTML = html;
         const ratioEl = document.getElementById("video-aspect-ratio");
         const durEl = document.getElementById("video-duration");
+        const resEl = document.getElementById("video-resolution");
         if (ratioEl) ratioEl.onchange = updatePreviewSpec;
         if (durEl) durEl.onchange = updatePreviewSpec;
+        if (resEl) resEl.onchange = updatePreviewSpec;
         updatePreviewSpec();
       }
 
@@ -1665,9 +1722,16 @@ print("Task submitted:", task.id)`;
       videoPlayer.volume = parseFloat(videoVolume.value);
     };
     document.getElementById("btn-download-video").onclick = () => {
+      const imgPlayer = document.getElementById("main-image-player");
+      const isImg = imgPlayer && !imgPlayer.classList.contains("hidden") && imgPlayer.src;
       const a = document.createElement("a");
-      a.href = videoPlayer.currentSrc || videoPlayer.src;
-      a.download = "seedance-output.mp4";
+      if (isImg) {
+        a.href = imgPlayer.src;
+        a.download = "seedream-output.png";
+      } else {
+        a.href = videoPlayer.currentSrc || videoPlayer.src;
+        a.download = "seedance-output.mp4";
+      }
       a.click();
     };
 
@@ -1693,14 +1757,14 @@ print("Task submitted:", task.id)`;
     }
 
     function updateDropzoneRefBadge() {
-      const dzRef = document.getElementById("dropzone-ref");
-      if (!dzRef) return;
-      let badge = dzRef.querySelector(".asset-count-badge");
+      const dz = document.getElementById("dropzone-ref") || document.getElementById("dropzone-image");
+      if (!dz) return;
+      let badge = dz.querySelector(".asset-count-badge");
       if (importedAssets.length > 0) {
         if (!badge) {
           badge = document.createElement("span");
           badge.className = "asset-count-badge absolute -top-1.5 -right-1.5 bg-cyan-500 text-black text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center pointer-events-none";
-          dzRef.appendChild(badge);
+          dz.appendChild(badge);
         }
         badge.innerText = importedAssets.length;
       } else if (badge) {
@@ -1938,7 +2002,7 @@ print("Task submitted:", task.id)`;
     }
 
     document.addEventListener("click", (e) => {
-      if (refUploadMenu && !refUploadMenu.contains(e.target) && !e.target.closest("#dropzone-ref")) {
+      if (refUploadMenu && !refUploadMenu.contains(e.target) && !e.target.closest("#dropzone-ref, #dropzone-image")) {
         refUploadMenu.classList.add("hidden");
       }
       const mentionPopup = document.getElementById("mention-autocomplete-popup");
@@ -1950,7 +2014,7 @@ print("Task submitted:", task.id)`;
     const dynamicDropzonesEl = document.getElementById("dynamic-dropzones");
     if (dynamicDropzonesEl) {
       dynamicDropzonesEl.addEventListener("click", (e) => {
-        const dzRef = e.target.closest("#dropzone-ref");
+        const dzRef = e.target.closest("#dropzone-ref, #dropzone-image");
         if (dzRef) {
           e.stopPropagation();
           if (refUploadMenu) {
@@ -1962,7 +2026,7 @@ print("Task submitted:", task.id)`;
       dynamicDropzonesEl.addEventListener("dragover", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const dzRef = e.target.closest("#dropzone-ref");
+        const dzRef = e.target.closest("#dropzone-ref, #dropzone-image");
         if (dzRef) {
           dzRef.classList.add("border-cyan-400", "bg-cyan-500/10");
         }
@@ -1971,7 +2035,7 @@ print("Task submitted:", task.id)`;
       dynamicDropzonesEl.addEventListener("dragleave", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const dzRef = e.target.closest("#dropzone-ref");
+        const dzRef = e.target.closest("#dropzone-ref, #dropzone-image");
         if (dzRef) {
           dzRef.classList.remove("border-cyan-400", "bg-cyan-500/10");
         }
@@ -1980,7 +2044,7 @@ print("Task submitted:", task.id)`;
       dynamicDropzonesEl.addEventListener("drop", async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const dzRef = document.getElementById("dropzone-ref");
+        const dzRef = document.getElementById("dropzone-ref") || document.getElementById("dropzone-image");
         if (dzRef) dzRef.classList.remove("border-cyan-400", "bg-cyan-500/10");
         const files = await extractFilesFromDataTransfer(e.dataTransfer);
         if (files.length) {
@@ -2152,9 +2216,12 @@ print("Task submitted:", task.id)`;
       const badge = document.getElementById("preview-spec-badge");
       if (!badge) return;
       const ratio = (ratioEl && ratioEl.value) || "16:9";
-      const duration = (durationEl && durationEl.value) || "5";
       const res = resEl ? resEl.value : "";
-      badge.innerText = res ? `${ratio} · ${res} · ${duration}s` : `${ratio} · ${duration}s`;
+      if (durationEl && durationEl.value) {
+        badge.innerText = res ? `${ratio} · ${res} · ${durationEl.value}s` : `${ratio} · ${durationEl.value}s`;
+      } else {
+        badge.innerText = res ? `${ratio} · ${res}` : ratio;
+      }
     }
 
     function formatApiError(msg) {
@@ -2253,19 +2320,46 @@ print("Task submitted:", task.id)`;
         const elapsed = data.elapsed_seconds != null ? data.elapsed_seconds : Math.round(i * 2.5);
 
         if (data.status === "succeeded" || data.status === "qa_warning") {
+          const imgPlayer = document.getElementById("main-image-player");
+          const playOverlay = document.getElementById("btn-video-play");
+          const hint = document.getElementById("preview-empty-hint");
+          const isImage = data.type === "image" || (data.path && (data.path.endsWith(".png") || data.path.endsWith(".jpg") || data.path.endsWith(".webp")));
+
           if (data.path) {
-            videoPlayer.src = data.path;
-            videoPlayer.load();
-            showPlayOverlay(true);
-            const hint = document.getElementById("preview-empty-hint");
+            if (isImage) {
+              if (videoPlayer) {
+                videoPlayer.pause();
+                videoPlayer.classList.add("hidden");
+              }
+              if (imgPlayer) {
+                imgPlayer.src = data.path;
+                imgPlayer.classList.remove("hidden");
+              }
+              if (playOverlay) playOverlay.classList.add("hidden");
+              const volContainer = document.getElementById("video-volume") ? document.getElementById("video-volume").parentElement : null;
+              if (volContainer) volContainer.classList.add("opacity-30", "pointer-events-none");
+            } else {
+              if (imgPlayer) imgPlayer.classList.add("hidden");
+              if (videoPlayer) {
+                videoPlayer.classList.remove("hidden");
+                videoPlayer.src = data.path;
+                videoPlayer.load();
+              }
+              if (playOverlay) playOverlay.classList.remove("hidden");
+              showPlayOverlay(true);
+              const volContainer = document.getElementById("video-volume") ? document.getElementById("video-volume").parentElement : null;
+              if (volContainer) volContainer.classList.remove("opacity-30", "pointer-events-none");
+            }
             if (hint) hint.classList.add("hidden");
           }
           document.getElementById("player-status-caption").innerText = "Active: " + modelLabel(model) + " Output";
+          const durEl = document.getElementById("video-duration");
+          const durText = durEl ? ` (${durEl.value}s)` : "";
           prependRecentGeneration(
-            (document.getElementById("video-prompt-input").value || "Generated clip").slice(0, 28) + ` (${document.getElementById("video-duration").value}s)`,
+            (document.getElementById("video-prompt-input").value || (isImage ? "Generated image" : "Generated clip")).slice(0, 28) + durText,
             `${modelLabel(model)} • ${selectedVideoMode.replaceAll("_", "-")}`
           );
-          setGenerationUiState("success", "Video ready", elapsed);
+          setGenerationUiState("success", isImage ? "Image ready" : "Video ready", elapsed);
           return;
         }
         if (data.status === "failed") {
@@ -2279,14 +2373,19 @@ print("Task submitted:", task.id)`;
         await new Promise(r => setTimeout(r, 2500));
       }
       setGenerationUiState("failed", "Timed out");
-      throw new Error("Timed out waiting for video generation");
+      throw new Error("Timed out waiting for generation");
     }
 
     btnGenVideo.onclick = async () => {
       const prompt = document.getElementById("video-prompt-input").value;
       const model = modelSelect.value;
-      if (!model || model.includes("seedream") || model.includes("deepseek") || model.includes("glm-") || model.includes("hyper3d")) {
-        alert("Pick a Seedance or Grok video model before generating.");
+      const currentModelObj = (typeof availableModels !== "undefined" && availableModels.find(m => m.id === model)) || (typeof modelCatalogData !== "undefined" && modelCatalogData[model]) || {};
+      const isImageModel = currentModelObj.category === "image" || (model && model.toLowerCase().includes("seedream"));
+      const isGrok = model && model.toLowerCase().includes("grok");
+      const isVideoModel = currentModelObj.category === "video" || (model && model.toLowerCase().includes("seedance")) || isGrok;
+
+      if (!model || (!isImageModel && !isVideoModel)) {
+        alert("Pick a supported Seedance, Seedream, or Grok model before generating.");
         resetGenerationUi();
         return;
       }
@@ -2297,7 +2396,6 @@ print("Task submitted:", task.id)`;
       const resolutionEl = document.getElementById("video-resolution");
       const audioEl = document.getElementById("video-audio");
       const draftEl = document.getElementById("video-draft");
-      const isGrok = model.includes("grok");
 
       if (isGrok && !localXaiKey) {
         switchView("settings");
@@ -2313,7 +2411,25 @@ print("Task submitted:", task.id)`;
       setGenerationUiState("generating", "Submitting…", 0);
 
       const chapterId = Date.now() % 100000;
-      const payload = {
+      const payload = isImageModel ? {
+        chapter_id: chapterId,
+        task_id: String(chapterId),
+        prompt: prompt,
+        image_model: model,
+        ratio: ratio,
+        resolution: resolutionEl ? resolutionEl.value : "2k",
+        provider: "seedream",
+        reference_assets: importedAssets.map(a => ({
+          id: a.id,
+          filename: a.filename,
+          type: a.type,
+          token: a.token,
+          url: a.url,
+          local_path: a.local_path
+        })),
+        api_key: localApiKey,
+        watermark: false
+      } : {
         chapter_id: chapterId,
         prompt: prompt,
         duration_seconds: duration,
@@ -2335,15 +2451,18 @@ print("Task submitted:", task.id)`;
         draft_mode: draftEl ? draftEl.value === "on" : false
       };
 
-      if (selectedVideoMode === "first_last_frame") {
-        payload.first_frame_image = document.getElementById("video-first-frame").value || null;
-        payload.last_frame_image = document.getElementById("video-last-frame").value || null;
-      } else if (selectedVideoMode === "ip_effects") {
-        payload.ip_effect_name = document.getElementById("video-select-ip-preset").value;
+      if (!isImageModel) {
+        if (selectedVideoMode === "first_last_frame") {
+          payload.first_frame_image = document.getElementById("video-first-frame").value || null;
+          payload.last_frame_image = document.getElementById("video-last-frame").value || null;
+        } else if (selectedVideoMode === "ip_effects") {
+          payload.ip_effect_name = document.getElementById("video-select-ip-preset").value;
+        }
       }
 
+      const endpoint = isImageModel ? "/api/images/generate" : "/api/cutscenes/generate";
       try {
-        const res = await fetch("/api/cutscenes/generate", {
+        const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)

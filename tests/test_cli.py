@@ -96,7 +96,7 @@ def test_cli_generates_and_logs_qa_failure(tmp_path, monkeypatch, caplog):
 
 
 def test_cli_grok_provider_qa_pass(tmp_path, monkeypatch, caplog):
-    caplog.set_level("INFO")
+    caplog.set_level("INFO", logger="multimedia_tool")
     out = tmp_path / "renders"
     gen = _FakeGenerator()
 
