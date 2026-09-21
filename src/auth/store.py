@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import secrets
 import sqlite3
 import uuid
@@ -17,6 +18,30 @@ SESSION_DAYS = 30
 PENDING_2FA_SECONDS = 600
 
 PROTON_EMAIL_DOMAINS = ("proton.me", "protonmail.com", "protonmail.ch", "pm.me")
+LOCAL_USER_DOMAIN = "local"
+USERNAME_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{2,31}$")
+
+
+def normalize_identifier(raw: str) -> str:
+    """Accepts an email or a local username. Usernames are stored as name@local."""
+    value = (raw or "").strip().lower()
+    if not value:
+        raise ValueError("Username or email is required.")
+    if "@" in value:
+        host = value.split("@")[-1]
+        if "." not in host and host != LOCAL_USER_DOMAIN:
+            raise ValueError("A valid email is required.")
+        return value
+    if not USERNAME_RE.match(value):
+        raise ValueError("Username must be 3–32 characters: letters, numbers, dot, underscore, or hyphen.")
+    return f"{value}@{LOCAL_USER_DOMAIN}"
+
+
+def public_handle(email: str) -> str:
+    email = (email or "").strip().lower()
+    if email.endswith(f"@{LOCAL_USER_DOMAIN}"):
+        return email[: -(len(LOCAL_USER_DOMAIN) + 1)]
+    return email
 
 
 def session_cookie_name() -> str:
@@ -116,14 +141,12 @@ class AuthStore:
         password: Optional[str] = None,
         display_name: Optional[str] = None,
     ) -> Dict[str, Any]:
-        email = email.strip().lower()
-        if "@" not in email or "." not in email.split("@")[-1]:
-            raise ValueError("A valid email is required.")
+        email = normalize_identifier(email)
         if password is not None and len(password) < 8:
             raise ValueError("Password must be at least 8 characters.")
         user_id = str(uuid.uuid4())
         pw_hash = hash_password(password) if password else None
-        name = (display_name or email.split("@")[0]).strip()
+        name = (display_name or public_handle(email)).strip()
         with self._connect() as conn:
             try:
                 conn.execute(
@@ -131,7 +154,7 @@ class AuthStore:
                     (user_id, email, pw_hash, name, time.time()),
                 )
             except sqlite3.IntegrityError as exc:
-                raise ValueError("An account with that email already exists.") from exc
+                raise ValueError("An account with that username or email already exists.") from exc
         return self.get_user(user_id)
 
     def get_user(self, user_id: str) -> Optional[Dict[str, Any]]:
@@ -140,18 +163,24 @@ class AuthStore:
         return dict(row) if row else None
 
     def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        try:
+            ident = normalize_identifier(email)
+        except ValueError:
+            return None
         with self._connect() as conn:
             row = conn.execute(
                 "SELECT * FROM users WHERE email = ?",
-                (email.strip().lower(),),
+                (ident,),
             ).fetchone()
         return dict(row) if row else None
 
     def public_user(self, user: Dict[str, Any]) -> Dict[str, Any]:
+        handle = public_handle(user["email"])
         return {
             "id": user["id"],
             "email": user["email"],
-            "display_name": user.get("display_name") or user["email"].split("@")[0],
+            "username": handle,
+            "display_name": user.get("display_name") or handle,
             "totp_enabled": bool(user.get("totp_enabled")),
             "has_password": bool(user.get("password_hash")),
         }

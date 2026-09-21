@@ -47,6 +47,27 @@ def test_register_login_logout_and_me(client):
     assert ok.json()["status"] == "ok"
 
 
+def test_register_and_login_with_username_only(client):
+    res = client.post("/api/auth/register", json={
+        "email": "ada",
+        "password": "correct-horse",
+        "display_name": "Ada",
+    })
+    assert res.status_code == 200
+    body = res.json()["user"]
+    assert body["username"] == "ada"
+    assert body["email"] == "ada@local"
+    client.post("/api/auth/logout")
+    assert client.post("/api/auth/login", json={"email": "ada", "password": "correct-horse"}).status_code == 200
+    client.post("/api/auth/logout")
+    assert client.post("/api/auth/login", json={"email": "ada@local", "password": "correct-horse"}).status_code == 200
+
+
+def test_register_rejects_bad_username(client):
+    res = client.post("/api/auth/register", json={"email": "ab", "password": "longenough"})
+    assert res.status_code == 400
+
+
 def test_register_rejects_short_password_and_duplicate(client):
     assert client.post("/api/auth/register", json={"email": "a@b.co", "password": "short"}).status_code == 422
     client.post("/api/auth/register", json={"email": "a@b.co", "password": "longenough"})
@@ -129,6 +150,8 @@ def test_ui_has_account_controls(client):
     html = client.get("/app").text
     assert "header-btn-account" in html
     assert "account-modal" in html
+    assert "Username or email" in html
+    assert "Create account" in html
     assert "data-oauth=\"google\"" in html
     assert "data-oauth=\"github\"" in html
     assert "data-oauth=\"proton\"" in html

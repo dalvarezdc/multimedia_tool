@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RetroArk Console — AI Video & RPG Studio</title>
-  
+
   <!-- Modern Grotesk, Pixel & Monospace Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -44,37 +47,50 @@
   </script>
 
   <style>
-    :root { color-scheme: dark; }
-    body { letter-spacing: -0.01em; }
+    :root {
+      color-scheme: dark;
+    }
+
+    body {
+      letter-spacing: -0.01em;
+    }
+
     .panel {
       background: #11131c;
-      border: 1px solid rgba(255,255,255,0.07);
+      border: 1px solid rgba(255, 255, 255, 0.07);
       border-radius: 16px;
     }
+
     .sidebar-link.active {
-      background: rgba(255,255,255,0.07);
+      background: rgba(255, 255, 255, 0.07);
       color: #f8fafc;
     }
-    .field, select.field, textarea.field {
+
+    .field,
+    select.field,
+    textarea.field {
       width: 100%;
       background: #0b0d14;
-      border: 1px solid rgba(255,255,255,0.08);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 10px;
       padding: 10px 12px;
       color: #e2e8f0;
       font-size: 13px;
       line-height: 1.45;
     }
+
     .field:focus {
       outline: none;
-      border-color: rgba(0,229,255,0.5);
+      border-color: rgba(0, 229, 255, 0.5);
     }
+
     .label {
       display: block;
       font-size: 11px;
       color: #94a3b8;
       margin-bottom: 6px;
     }
+
     .btn-primary {
       background: #00e5ff;
       color: #090a0f;
@@ -83,59 +99,109 @@
       padding: 10px 16px;
       font-size: 13px;
     }
-    .btn-primary:disabled { opacity: 0.5; }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+    }
+
     .btn-quiet {
       background: transparent;
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       color: #cbd5e1;
       border-radius: 10px;
       padding: 8px 12px;
       font-size: 13px;
     }
-    .btn-quiet:hover { background: rgba(255,255,255,0.05); color: #fff; }
-    .mode-on { background: rgba(255,255,255,0.08); color: #fff; }
-    .mode-off { color: #94a3b8; }
-    .mode-off:hover { color: #e2e8f0; background: rgba(255,255,255,0.04); }
+
+    .btn-quiet:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+    }
+
+    .mode-on {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .mode-off {
+      color: #94a3b8;
+    }
+
+    .mode-off:hover {
+      color: #e2e8f0;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
     .play-triangle {
-      width: 0; height: 0;
+      width: 0;
+      height: 0;
       border-top: 12px solid transparent;
       border-bottom: 12px solid transparent;
       border-left: 20px solid currentColor;
       margin-left: 3px;
     }
+
     input[type="range"].volume-slider {
-      -webkit-appearance: none; appearance: none;
-      height: 3px; background: rgba(255,255,255,0.35); border-radius: 999px; outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.35);
+      border-radius: 999px;
+      outline: none;
     }
+
     input[type="range"].volume-slider::-webkit-slider-thumb {
-      -webkit-appearance: none; width: 11px; height: 11px; border-radius: 999px; background: #fff; cursor: pointer;
+      -webkit-appearance: none;
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      background: #fff;
+      cursor: pointer;
     }
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-thumb { background: #232738; border-radius: 8px; }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #232738;
+      border-radius: 8px;
+    }
   </style>
 </head>
 
-<body class="bg-obsidian text-slate-100 min-h-screen flex font-sans selection:bg-electric selection:text-black overflow-hidden">
+<body
+  class="bg-obsidian text-slate-100 min-h-screen flex font-sans selection:bg-electric selection:text-black overflow-hidden">
 
   <!-- ============================================================================== -->
   <!-- 1. PERSISTENT LEFT SIDEBAR (Inspired by BytePlus ModelArk Console)              -->
   <!-- ============================================================================== -->
-  <aside class="w-52 bg-[#0B0D14] border-r border-white/[0.06] flex flex-col justify-between shrink-0 h-screen select-none">
+  <aside
+    class="w-52 bg-[#0B0D14] border-r border-white/[0.06] flex flex-col justify-between shrink-0 h-screen select-none">
     <div>
       <div class="h-14 flex items-center gap-2.5 px-4">
-        <div class="w-7 h-7 rounded-md bg-electric text-black flex items-center justify-center text-[11px] font-bold">R</div>
-        <div class="text-sm font-semibold tracking-tight">RetroArk <span class="text-slate-500 font-normal">Console</span></div>
+        <div class="w-7 h-7 rounded-md bg-electric text-black flex items-center justify-center text-[11px] font-bold">R
+        </div>
+        <div class="text-sm font-semibold tracking-tight">RetroArk <span
+            class="text-slate-500 font-normal">Console</span></div>
       </div>
       <nav class="px-2 pt-2 space-y-0.5 text-[13px]">
-        <button data-view="video" class="sidebar-link active w-full text-left px-3 py-2 rounded-lg text-slate-200">Multimedia Studio</button>
-        <button data-view="rpg" class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">RPG Studio</button>
+        <button data-view="video"
+          class="sidebar-link active w-full text-left px-3 py-2 rounded-lg text-slate-200">Multimedia Studio</button>
+        <button data-view="rpg"
+          class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">RPG
+          Studio</button>
         <div class="h-px bg-white/[0.06] my-3 mx-2"></div>
-        <button data-view="settings" class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">Settings</button>
-        <button data-view="docs" class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">Guide</button>
-        <button data-view="usage" class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">Activity</button>
+        <button data-view="settings"
+          class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">Settings</button>
+        <button data-view="docs"
+          class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">Guide</button>
+        <button data-view="usage"
+          class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">Activity</button>
       </nav>
     </div>
-    <button id="sidebar-open-keys" class="m-3 px-3 py-2 rounded-lg bg-white/[0.03] hover:bg-white/5 text-left text-[12px] text-slate-400 flex items-center gap-2">
+    <button id="sidebar-open-keys"
+      class="m-3 px-3 py-2 rounded-lg bg-white/[0.03] hover:bg-white/5 text-left text-[12px] text-slate-400 flex items-center gap-2">
       <span id="sidebar-key-dot" class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
       <span id="sidebar-key-label">Set API key</span>
     </button>
@@ -145,37 +211,55 @@
   <!-- 2. MAIN CONSOLE WORKSPACE                                                      -->
   <!-- ============================================================================== -->
   <div class="flex-1 flex flex-col h-screen overflow-hidden">
-    
+
     <!-- Top Console Header Bar -->
-    <header class="h-14 border-b border-white/[0.06] px-6 flex items-center justify-between shrink-0 bg-[#090A0F]/80 backdrop-blur-md z-30">
+    <header
+      class="h-14 border-b border-white/[0.06] px-6 flex items-center justify-between shrink-0 bg-[#090A0F]/80 backdrop-blur-md z-30">
       <div class="flex items-center gap-3">
         <h1 id="breadcrumb-title" class="text-[15px] font-medium text-slate-100 hidden">Multimedia Studio</h1>
 
         <div class="flex items-center gap-2 bg-surface/80 border border-white/10 rounded-xl px-3 py-1.5 shadow-sm">
           <span id="header-model-icon" class="text-purple-400 flex items-center">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h10a2 2 0 0 1 2 2v2.586l3.293-3.293A1 1 0 0 1 21 6v12a1 1 0 0 1-1.707.707L16 15.414V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M4 4h10a2 2 0 0 1 2 2v2.586l3.293-3.293A1 1 0 0 1 21 6v12a1 1 0 0 1-1.707.707L16 15.414V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+            </svg>
           </span>
-          <select id="video-select-model" class="bg-transparent border-0 text-white font-medium text-xs sm:text-sm focus:ring-0 cursor-pointer pr-4 py-0">
+          <select id="video-select-model"
+            class="bg-transparent border-0 text-white font-medium text-xs sm:text-sm focus:ring-0 cursor-pointer pr-4 py-0">
             <!-- Populated dynamically from MODEL_CATALOG -->
           </select>
         </div>
       </div>
       <div class="flex items-center gap-2 sm:gap-3 text-[12px] text-slate-400">
-        <button id="header-btn-api-modal" type="button" class="px-2.5 py-1 rounded-lg bg-white/[0.05] hover:bg-white/10 text-slate-200 font-mono text-xs flex items-center gap-1 border border-white/10 transition-colors cursor-pointer">
+        <button id="header-btn-api-modal" type="button"
+          class="px-2.5 py-1 rounded-lg bg-white/[0.05] hover:bg-white/10 text-slate-200 font-mono text-xs flex items-center gap-1 border border-white/10 transition-colors cursor-pointer">
           <span>API</span>
         </button>
-        <button id="header-btn-docs" type="button" title="Documentation" class="p-1.5 rounded-lg hover:bg-white/5 hover:text-white transition-colors cursor-pointer">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="2"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke-width="2"/></svg>
+        <button id="header-btn-docs" type="button" title="Documentation"
+          class="p-1.5 rounded-lg hover:bg-white/5 hover:text-white transition-colors cursor-pointer">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="2" />
+            <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke-width="2" />
+          </svg>
         </button>
-        <button id="header-btn-template-lib" type="button" title="Template Library" class="hidden px-2 py-1 rounded-lg bg-white/[0.04] hover:bg-white/10 text-slate-300 text-xs flex items-center gap-1.5 transition-colors cursor-pointer">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12 2 10 5-10 5L2 7l10-5zm0 10 10 5-10 5-10-5 10-5z" stroke-width="2"/></svg>
+        <button id="header-btn-template-lib" type="button" title="Template Library"
+          class="hidden px-2 py-1 rounded-lg bg-white/[0.04] hover:bg-white/10 text-slate-300 text-xs flex items-center gap-1.5 transition-colors cursor-pointer">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="m12 2 10 5-10 5L2 7l10-5zm0 10 10 5-10 5-10-5 10-5z" stroke-width="2" />
+          </svg>
           <span class="hidden md:inline">template library</span>
         </button>
-        <button id="header-btn-settings" type="button" title="Settings & Sliders" class="p-1.5 rounded-lg hover:bg-white/5 hover:text-white transition-colors cursor-pointer">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" stroke-width="2" stroke-linecap="round"/></svg>
+        <button id="header-btn-settings" type="button" title="Settings & Sliders"
+          class="p-1.5 rounded-lg hover:bg-white/5 hover:text-white transition-colors cursor-pointer">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" stroke-width="2"
+              stroke-linecap="round" />
+          </svg>
         </button>
         <div class="h-4 w-px bg-white/10 mx-1"></div>
-        <button id="header-btn-account" type="button" class="flex items-center gap-1.5 hover:text-white cursor-pointer px-2 py-1 rounded-lg hover:bg-white/5">
+        <button id="header-btn-account" type="button"
+          class="flex items-center gap-1.5 hover:text-white cursor-pointer px-2 py-1 rounded-lg hover:bg-white/5">
           <span id="header-account-label">Sign in</span>
         </button>
         <button id="header-btn-api" class="flex items-center gap-1.5 hover:text-white cursor-pointer">
@@ -200,7 +284,8 @@
         </div>
 
         <!-- Studio Composer Card (BytePlus ModelArk shape) -->
-        <div class="glass-card rounded-2xl p-4 sm:p-5 border border-white/10 shadow-2xl relative transition-all duration-300">
+        <div
+          class="glass-card rounded-2xl p-4 sm:p-5 border border-white/10 shadow-2xl relative transition-all duration-300">
           <div class="flex flex-col sm:flex-row gap-4 items-start relative">
             <!-- Dynamic Dropzone Slots -->
             <div id="dynamic-dropzones" class="flex items-center gap-2 shrink-0 relative">
@@ -208,23 +293,33 @@
             </div>
 
             <!-- Reference Upload Popover Menu -->
-            <div id="ref-upload-menu" class="hidden absolute top-18 left-0 z-40 w-60 bg-[#11131C] border border-white/15 rounded-xl shadow-2xl p-1.5 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
-              <div class="px-2.5 py-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider border-b border-white/5 flex items-center justify-between">
+            <div id="ref-upload-menu"
+              class="hidden absolute top-18 left-0 z-40 w-60 bg-[#11131C] border border-white/15 rounded-xl shadow-2xl p-1.5 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
+              <div
+                class="px-2.5 py-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider border-b border-white/5 flex items-center justify-between">
                 <span>Import Reference</span>
                 <span class="text-cyan-400 text-[9px] font-mono">Ark Multimodal</span>
               </div>
-              <button id="btn-menu-upload-files" type="button" class="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs text-slate-200 hover:text-white hover:bg-white/10 rounded-lg text-left transition-colors cursor-pointer mt-1">
+              <button id="btn-menu-upload-files" type="button"
+                class="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs text-slate-200 hover:text-white hover:bg-white/10 rounded-lg text-left transition-colors cursor-pointer mt-1">
                 <div class="w-6 h-6 rounded bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
-                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
                 </div>
                 <div>
                   <span class="font-medium block leading-snug">Import Files</span>
                   <span class="text-[10px] text-slate-500 block leading-tight">Images or video clips</span>
                 </div>
               </button>
-              <button id="btn-menu-upload-folder" type="button" class="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs text-slate-200 hover:text-white hover:bg-white/10 rounded-lg text-left transition-colors cursor-pointer mt-0.5">
+              <button id="btn-menu-upload-folder" type="button"
+                class="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs text-slate-200 hover:text-white hover:bg-white/10 rounded-lg text-left transition-colors cursor-pointer mt-0.5">
                 <div class="w-6 h-6 rounded bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
-                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
                 </div>
                 <div>
                   <span class="font-medium block leading-snug">Import Folder</span>
@@ -238,18 +333,20 @@
 
             <!-- Textarea with Expand Icon and Mention Autocomplete -->
             <div class="flex-1 w-full relative min-h-[90px]">
-              <textarea 
-                id="video-prompt-input" 
-                rows="3" 
+              <textarea id="video-prompt-input" rows="3"
                 class="w-full bg-transparent border-0 text-slate-100 placeholder:text-slate-500 text-sm focus:ring-0 resize-none leading-relaxed p-0 pr-8"
-                placeholder="Use @ to quickly reference uploaded files, such as referring to actions in @Video 1 to generate videos of characters fighting in @Pictures 2 and @Pictures 3."
-              ></textarea>
-              <button id="btn-expand-prompt" type="button" title="Expand Prompt" class="absolute top-0 right-0 p-1 text-slate-500 hover:text-white transition-colors cursor-pointer">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                placeholder="Use @ to quickly reference uploaded files, such as referring to actions in @Video 1 to generate videos of characters fighting in @Pictures 2 and @Pictures 3."></textarea>
+              <button id="btn-expand-prompt" type="button" title="Expand Prompt"
+                class="absolute top-0 right-0 p-1 text-slate-500 hover:text-white transition-colors cursor-pointer">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
               </button>
 
               <!-- Mention Autocomplete Popup -->
-              <div id="mention-autocomplete-popup" class="hidden absolute top-full left-0 z-50 mt-1 w-80 max-h-64 overflow-y-auto bg-[#11131C] border border-white/15 rounded-xl shadow-2xl p-1.5 backdrop-blur-xl">
+              <div id="mention-autocomplete-popup"
+                class="hidden absolute top-full left-0 z-50 mt-1 w-80 max-h-64 overflow-y-auto bg-[#11131C] border border-white/15 rounded-xl shadow-2xl p-1.5 backdrop-blur-xl">
                 <!-- Populated by JS -->
               </div>
             </div>
@@ -260,10 +357,13 @@
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center gap-2">
                 <span class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">Referenced Assets</span>
-                <span id="imported-assets-count" class="text-[10px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded-full font-mono font-medium">0</span>
+                <span id="imported-assets-count"
+                  class="text-[10px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded-full font-mono font-medium">0</span>
                 <span class="text-[10px] text-slate-500 hidden sm:inline">Click token to insert into prompt</span>
               </div>
-              <button id="btn-clear-all-assets" type="button" class="text-[10px] text-slate-500 hover:text-red-400 transition-colors cursor-pointer">Clear all</button>
+              <button id="btn-clear-all-assets" type="button"
+                class="text-[10px] text-slate-500 hover:text-red-400 transition-colors cursor-pointer">Clear
+                all</button>
             </div>
             <div id="imported-assets-list" class="flex flex-wrap items-center gap-2 max-h-36 overflow-y-auto pr-1">
               <!-- Asset Chips rendered here -->
@@ -280,22 +380,22 @@
             <!-- Right Cost & Submit Button -->
             <div class="flex items-center gap-2.5 ml-auto shrink-0">
               <!-- Live generation status indicator capsule (shown while generating) -->
-              <div id="generation-status-capsule" class="hidden items-center gap-2 px-3 py-1 rounded-full bg-surface-2/95 border border-purple-500/30 text-xs shadow-lg">
+              <div id="generation-status-capsule"
+                class="hidden items-center gap-2 px-3 py-1 rounded-full bg-surface-2/95 border border-purple-500/30 text-xs shadow-lg">
                 <span id="generation-status-dot" class="relative flex h-2 w-2">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                  <span
+                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                   <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-400"></span>
                 </span>
                 <span id="generation-stage-label" class="text-slate-200 font-medium tracking-wide">Preparing…</span>
-                <span id="generation-elapsed-badge" class="text-[10px] text-cyan-300 font-mono bg-cyan-950/60 border border-cyan-800/40 px-1.5 py-0.5 rounded">0s</span>
+                <span id="generation-elapsed-badge"
+                  class="text-[10px] text-cyan-300 font-mono bg-cyan-950/60 border border-cyan-800/40 px-1.5 py-0.5 rounded">0s</span>
               </div>
 
               <span id="dynamic-cost-label" class="text-xs text-slate-400 font-mono">USD 0.6048</span>
-              <button 
-                id="btn-generate-video-action" 
-                type="button" 
+              <button id="btn-generate-video-action" type="button"
                 class="w-9 h-9 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white flex items-center justify-center font-bold text-lg shadow-glow-lavender transition-all transform active:scale-95 cursor-pointer disabled:opacity-85 disabled:cursor-not-allowed"
-                title="Generate"
-              >
+                title="Generate">
                 ↑
               </button>
             </div>
@@ -315,7 +415,9 @@
           <input id="video-first-frame" type="text" />
           <input id="video-last-frame" type="text" />
           <input id="video-image-ref" type="text" />
-          <select id="video-select-ip-preset"><option value="anime_hero_aura">Anime</option></select>
+          <select id="video-select-ip-preset">
+            <option value="anime_hero_aura">Anime</option>
+          </select>
           <div id="video-dynamic-inputs"></div>
           <button data-video-mode="ref_to_video">Ref-to-video</button>
           <button data-video-mode="first_last_frame">First/last frame</button>
@@ -326,18 +428,25 @@
 
         <!-- Try the following example ^ & Prompt manual -->
         <div class="flex items-center justify-between text-xs px-1 text-slate-400">
-          <button id="btn-toggle-examples" type="button" class="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer py-1">
+          <button id="btn-toggle-examples" type="button"
+            class="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer py-1">
             <span>Try the following example</span>
             <span id="example-chevron" class="text-[11px] transform transition-transform">▲</span>
           </button>
-          <button id="btn-prompt-manual" type="button" class="flex items-center gap-1.5 hover:text-electric transition-colors cursor-pointer py-1">
-            <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 18h6M10 22h4M12 2v1M12 17a5 5 0 1 0-5-5c0 1.5.8 2.8 2 3.6V17h6v-1.4c1.2-.8 2-2.1 2-3.6a5 5 0 0 0-5-5z" stroke-width="2" stroke-linecap="round"/></svg>
+          <button id="btn-prompt-manual" type="button"
+            class="flex items-center gap-1.5 hover:text-electric transition-colors cursor-pointer py-1">
+            <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path
+                d="M9 18h6M10 22h4M12 2v1M12 17a5 5 0 1 0-5-5c0 1.5.8 2.8 2 3.6V17h6v-1.4c1.2-.8 2-2.1 2-3.6a5 5 0 0 0-5-5z"
+                stroke-width="2" stroke-linecap="round" />
+            </svg>
             <span>Prompt manual</span>
           </button>
         </div>
 
         <!-- Examples Gallery Drawer -->
-        <div id="examples-drawer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 transition-all duration-300">
+        <div id="examples-drawer"
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 transition-all duration-300">
           <!-- Populated by JS from model.sample_examples -->
         </div>
 
@@ -345,21 +454,30 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
           <div class="lg:col-span-8 panel overflow-hidden rounded-2xl">
             <div class="relative aspect-video bg-black rounded-t-2xl overflow-hidden flex items-center justify-center">
-              <video id="main-video-player" class="w-full h-full object-cover" loop playsinline preload="metadata"></video>
+              <video id="main-video-player" class="w-full h-full object-cover" loop playsinline
+                preload="metadata"></video>
               <img id="main-image-player" class="w-full h-full object-contain hidden" alt="Generated visual" />
-              <div id="preview-empty-hint" class="absolute inset-0 flex items-center justify-center text-[13px] text-slate-500 pointer-events-none">No media generated yet. Submit prompt above to start.</div>
-              <div class="absolute top-3 right-3 z-10 flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-full px-3 py-1 border border-white/10">
+              <div id="preview-empty-hint"
+                class="absolute inset-0 flex items-center justify-center text-[13px] text-slate-500 pointer-events-none">
+                No media generated yet. Submit prompt above to start.</div>
+              <div
+                class="absolute top-3 right-3 z-10 flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-full px-3 py-1 border border-white/10">
                 <span class="text-[10px] font-mono text-emerald-400">Zero Watermark</span>
-                <input id="video-volume" type="range" min="0" max="1" step="0.05" value="0.7" class="volume-slider w-14" />
+                <input id="video-volume" type="range" min="0" max="1" step="0.05" value="0.7"
+                  class="volume-slider w-14" />
               </div>
-              <button id="btn-video-play" type="button" class="absolute inset-0 z-10 flex items-center justify-center text-white/80 hover:text-white">
+              <button id="btn-video-play" type="button"
+                class="absolute inset-0 z-10 flex items-center justify-center text-white/80 hover:text-white">
                 <span class="play-triangle"></span>
               </button>
             </div>
             <div class="px-5 py-3.5 flex items-center justify-between text-[12px] text-slate-400 bg-surface">
               <span id="player-status-caption">Ready for generation</span>
-              <span id="preview-spec-badge" class="font-mono text-slate-300 bg-white/5 px-2.5 py-1 rounded-md">16:9 · 5s</span>
-              <button id="btn-download-video" class="px-3 py-1 rounded-lg bg-electric/10 text-electric border border-electric/30 hover:bg-electric hover:text-black font-medium transition-all cursor-pointer">Download MP4</button>
+              <span id="preview-spec-badge" class="font-mono text-slate-300 bg-white/5 px-2.5 py-1 rounded-md">16:9 ·
+                5s</span>
+              <button id="btn-download-video"
+                class="px-3 py-1 rounded-lg bg-electric/10 text-electric border border-electric/30 hover:bg-electric hover:text-black font-medium transition-all cursor-pointer">Download
+                MP4</button>
             </div>
           </div>
           <div class="lg:col-span-4 panel p-4 rounded-2xl space-y-3">
@@ -368,7 +486,8 @@
               <span id="recent-history-caption" class="text-[10px] text-slate-500">Session log</span>
             </div>
             <div id="recent-generations-list" class="space-y-2 text-[12px] max-h-[260px] overflow-y-auto pr-1">
-              <div id="recent-empty" class="text-slate-500 py-4 text-center text-xs">No generations yet. Sign in to keep history across sessions.</div>
+              <div id="recent-empty" class="text-slate-500 py-4 text-center text-xs">No generations yet. Sign in to keep
+                history across sessions.</div>
             </div>
           </div>
         </div>
@@ -379,19 +498,15 @@
       <!-- ========================================================================== -->
       <section id="view-rpg" class="content-view space-y-4 max-w-6xl mx-auto hidden">
         <div class="flex flex-wrap items-center gap-2">
-          <input 
-            id="rpg-topic-input" 
-            type="text" 
-            value="How Local LLMs Work on Apple Silicon" 
-            placeholder="Topic for the Director LLM…"
-            class="field flex-1 min-w-[220px]"
-          />
+          <input id="rpg-topic-input" type="text" value="How Local LLMs Work on Apple Silicon"
+            placeholder="Topic for the Director LLM…" class="field flex-1 min-w-[220px]" />
           <button id="btn-rpg-generate-world" class="btn-primary">Generate world</button>
           <button id="btn-rpg-improve-world" class="btn-quiet">Improve</button>
           <button id="btn-rpg-export-mp4" class="btn-quiet">Record</button>
           <div class="flex ml-auto rounded-lg bg-white/[0.04] p-0.5 text-[12px]">
             <button id="btn-rpg-mode-play" class="px-3 py-1.5 rounded-md bg-white text-black">Walk</button>
-            <button id="btn-rpg-mode-director" class="px-3 py-1.5 rounded-md text-slate-400 hover:text-white">Auto</button>
+            <button id="btn-rpg-mode-director"
+              class="px-3 py-1.5 rounded-md text-slate-400 hover:text-white">Auto</button>
           </div>
         </div>
 
@@ -407,7 +522,8 @@
               <span id="rpg-world-topic" class="block text-[11px] text-slate-500">—</span>
             </div>
           </div>
-          <div id="rpg-proximity-prompt" class="absolute bottom-24 inset-x-0 flex justify-center pointer-events-none hidden">
+          <div id="rpg-proximity-prompt"
+            class="absolute bottom-24 inset-x-0 flex justify-center pointer-events-none hidden">
             <div class="bg-black/60 rounded-md px-3 py-1.5 text-[12px] text-white">Space to talk</div>
           </div>
           <div id="rpg-dialogue-box" class="absolute bottom-3 inset-x-3 panel p-4 hidden">
@@ -416,9 +532,11 @@
               <span class="text-[11px] text-slate-500">Space to close</span>
             </div>
             <p id="rpg-dialogue-text" class="text-[13px] text-slate-200 leading-relaxed"></p>
-            <button id="btn-rpg-shrine-cutscene" type="button" class="mt-3 btn-primary text-[12px]">Generate shrine cutscene</button>
+            <button id="btn-rpg-shrine-cutscene" type="button" class="mt-3 btn-primary text-[12px]">Generate shrine
+              cutscene</button>
           </div>
-          <div id="rpg-director-controls" class="absolute bottom-3 inset-x-3 bg-black/60 rounded-xl px-3 py-2 hidden items-center gap-3">
+          <div id="rpg-director-controls"
+            class="absolute bottom-3 inset-x-3 bg-black/60 rounded-xl px-3 py-2 hidden items-center gap-3">
             <button id="btn-rpg-toggle-play" class="w-8 h-8 rounded-full bg-white text-black">▶</button>
             <span id="rpg-director-time" class="text-[12px] text-slate-300 tabular-nums">00:00 / 00:00</span>
             <input id="rpg-scrubber" type="range" min="0" max="1440" value="0" class="flex-1 accent-electric" />
@@ -449,20 +567,26 @@
         <div class="space-y-4 text-[13px] text-slate-300 leading-relaxed">
           <div class="panel p-5 space-y-2">
             <h3 class="text-sm font-medium text-white">1. Keys</h3>
-            <p class="leading-relaxed text-xs">Paste a BytePlus <code class="font-mono text-electric">ARK_API_KEY</code> for Seedance video and the Director LLM. Paste an xAI key only if you pick Grok. Save writes the key to this browser and the running server process, not to disk. Restarting without <code class="font-mono">.env</code> clears the server copy.</p>
+            <p class="leading-relaxed text-xs">Paste a BytePlus <code class="font-mono text-electric">ARK_API_KEY</code>
+              for Seedance video and the Director LLM. Paste an xAI key only if you pick Grok. Save writes the key to
+              this browser and the running server process, not to disk. Restarting without <code
+                class="font-mono">.env</code> clears the server copy.</p>
           </div>
           <div class="panel p-5 space-y-2">
             <h3 class="text-sm font-medium text-white">2. Video Studio</h3>
             <ol class="list-decimal ml-4 space-y-1 text-xs leading-relaxed">
               <li>Write a prompt. Pick a Seedance or Grok model, aspect ratio, and duration.</li>
-              <li>Ref-to-video attaches the reference image. First/last frame sends start/end stills. IP effects prepend a tag onto the prompt.</li>
-              <li>Generate calls <code class="font-mono">/api/cutscenes/generate</code>, polls status, then loads the file from <code class="font-mono">/renders/cutscenes</code>.</li>
+              <li>Ref-to-video attaches the reference image. First/last frame sends start/end stills. IP effects prepend
+                a tag onto the prompt.</li>
+              <li>Generate calls <code class="font-mono">/api/cutscenes/generate</code>, polls status, then loads the
+                file from <code class="font-mono">/renders/cutscenes</code>.</li>
             </ol>
           </div>
           <div class="panel p-5 space-y-2">
             <h3 class="text-sm font-medium text-white">3. RPG Studio</h3>
             <ol class="list-decimal ml-4 space-y-1 text-xs leading-relaxed">
-              <li>Enter a topic. Generate world calls the Director LLM (<code class="font-mono">/api/plan</code>) and places shrines from the returned chapters.</li>
+              <li>Enter a topic. Generate world calls the Director LLM (<code class="font-mono">/api/plan</code>) and
+                places shrines from the returned chapters.</li>
               <li>WASD walks. Space opens shrine dialogue (the model's narration_text).</li>
               <li>Improve with LLM sends the current storyboard back for tighter titles, dialogue, and spacing.</li>
               <li>Generate shrine cutscene sends that shrine's seedance_prompt to video generation.</li>
@@ -471,11 +595,13 @@
           </div>
           <div class="panel p-5 space-y-2">
             <h3 class="text-sm font-medium text-white">4. Settings</h3>
-            <p>Keys and defaults live on one page. Save posts to <code class="font-mono text-slate-400">/api/settings</code> and localStorage.</p>
+            <p>Keys and defaults live on one page. Save posts to <code
+                class="font-mono text-slate-400">/api/settings</code> and localStorage.</p>
           </div>
           <div class="panel p-5 space-y-2">
             <h3 class="text-sm font-medium text-white">5. Activity</h3>
-            <p class="leading-relaxed text-xs">In-memory log for this server process: finished video jobs and RPG worlds that were planned or improved. It resets when the server restarts.</p>
+            <p class="leading-relaxed text-xs">In-memory log for this server process: finished video jobs and RPG worlds
+              that were planned or improved. It resets when the server restarts.</p>
           </div>
         </div>
       </section>
@@ -486,11 +612,14 @@
       <section id="view-settings" class="content-view space-y-8 max-w-xl mx-auto hidden">
         <div class="panel p-6 space-y-4" id="account-settings-panel">
           <h2 class="text-sm font-medium text-slate-200">Account</h2>
-          <p id="account-settings-status" class="text-[12px] text-slate-400">Not signed in. History is kept only for this tab.</p>
+          <p id="account-settings-status" class="text-[12px] text-slate-400">Not signed in. History is kept only for
+            this tab.</p>
           <div id="account-2fa-block" class="hidden space-y-3">
-            <p class="text-[12px] text-slate-400">Two-factor authentication is optional. Use any TOTP app (Proton Authenticator, Google Authenticator, Authy).</p>
+            <p class="text-[12px] text-slate-400">Two-factor authentication is optional. Use any TOTP app (Proton
+              Authenticator, Google Authenticator, Authy).</p>
             <div id="account-2fa-qr-wrap" class="hidden">
-              <img id="account-2fa-qr" alt="2FA QR code" class="w-40 h-40 rounded-lg border border-white/10 bg-white p-2" />
+              <img id="account-2fa-qr" alt="2FA QR code"
+                class="w-40 h-40 rounded-lg border border-white/10 bg-white p-2" />
               <p id="account-2fa-secret" class="text-[11px] font-mono text-slate-400 break-all mt-2"></p>
               <input id="account-2fa-code" class="field mt-2" placeholder="6-digit code" inputmode="numeric" />
               <button id="btn-2fa-enable" type="button" class="btn-primary mt-2">Enable 2FA</button>
@@ -513,7 +642,8 @@
           </div>
           <div>
             <label class="label" for="keys-page-input-base">BytePlus base URL</label>
-            <input id="keys-page-input-base" type="text" value="https://ark.ap-southeast.bytepluses.com/api/v3" class="field font-mono" />
+            <input id="keys-page-input-base" type="text" value="https://ark.ap-southeast.bytepluses.com/api/v3"
+              class="field font-mono" />
           </div>
           <div>
             <div class="flex items-center justify-between mb-1">
@@ -584,15 +714,19 @@
             <div>
               <h3 class="text-sm font-semibold text-slate-100 flex items-center gap-2">
                 <span>Model Inventory & API Sync</span>
-                <span id="inventory-live-badge" class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Synced</span>
+                <span id="inventory-live-badge"
+                  class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Synced</span>
               </h3>
-              <p class="text-xs text-slate-400 mt-0.5">Live models resolved from BytePlus ModelArk & xAI endpoints with capability overlays.</p>
+              <p class="text-xs text-slate-400 mt-0.5">Live models resolved from BytePlus ModelArk & xAI endpoints with
+                capability overlays.</p>
             </div>
             <div class="flex items-center gap-2">
-              <button id="btn-open-add-custom-model" type="button" class="btn-quiet text-xs px-3 py-1.5 flex items-center gap-1.5 cursor-pointer">
+              <button id="btn-open-add-custom-model" type="button"
+                class="btn-quiet text-xs px-3 py-1.5 flex items-center gap-1.5 cursor-pointer">
                 <span>+ Custom Endpoint</span>
               </button>
-              <button id="btn-refresh-inventory" type="button" class="btn-primary text-xs px-3.5 py-1.5 flex items-center gap-1.5 cursor-pointer">
+              <button id="btn-refresh-inventory" type="button"
+                class="btn-primary text-xs px-3.5 py-1.5 flex items-center gap-1.5 cursor-pointer">
                 <span id="refresh-spin-icon" class="inline-block">↻</span>
                 <span>Refresh from API</span>
               </button>
@@ -600,11 +734,14 @@
           </div>
 
           <!-- Sync Metadata Banner -->
-          <div class="flex flex-wrap items-center justify-between text-xs bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2.5 text-slate-400">
+          <div
+            class="flex flex-wrap items-center justify-between text-xs bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2.5 text-slate-400">
             <div class="flex items-center gap-3 flex-wrap">
-              <span>Last Synced: <strong id="inventory-last-synced" class="text-slate-200 font-mono">Loading...</strong></span>
+              <span>Last Synced: <strong id="inventory-last-synced"
+                  class="text-slate-200 font-mono">Loading...</strong></span>
               <span>•</span>
-              <span>Available: <strong id="inventory-total-count" class="text-cyan-400 font-mono">0</strong> models</span>
+              <span>Available: <strong id="inventory-total-count" class="text-cyan-400 font-mono">0</strong>
+                models</span>
               <span>•</span>
               <span>Live in API: <strong id="inventory-live-count" class="text-emerald-400 font-mono">0</strong></span>
             </div>
@@ -615,16 +752,19 @@
           <div id="custom-model-form" class="hidden p-4 rounded-xl bg-white/[0.03] border border-white/10 space-y-3">
             <div class="flex items-center justify-between">
               <h4 class="text-xs font-semibold text-slate-200">Register Custom Endpoint / Model ID</h4>
-              <button id="btn-close-custom-model-form" type="button" class="text-slate-500 hover:text-white text-xs cursor-pointer">✕</button>
+              <button id="btn-close-custom-model-form" type="button"
+                class="text-slate-500 hover:text-white text-xs cursor-pointer">✕</button>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label class="label">Endpoint / Model ID</label>
-                <input id="input-custom-model-id" type="text" placeholder="ep-20250101-xxxx or model-id" class="field text-xs font-mono" />
+                <input id="input-custom-model-id" type="text" placeholder="ep-20250101-xxxx or model-id"
+                  class="field text-xs font-mono" />
               </div>
               <div>
                 <label class="label">Display Name</label>
-                <input id="input-custom-model-name" type="text" placeholder="e.g. Dedicated Seedance EP" class="field text-xs" />
+                <input id="input-custom-model-name" type="text" placeholder="e.g. Dedicated Seedance EP"
+                  class="field text-xs" />
               </div>
               <div>
                 <label class="label">Category</label>
@@ -636,15 +776,18 @@
               </div>
             </div>
             <div class="flex justify-end gap-2 pt-1">
-              <button id="btn-cancel-custom-model" type="button" class="btn-quiet text-xs cursor-pointer">Cancel</button>
-              <button id="btn-save-custom-model" type="button" class="btn-primary text-xs cursor-pointer">Register Endpoint</button>
+              <button id="btn-cancel-custom-model" type="button"
+                class="btn-quiet text-xs cursor-pointer">Cancel</button>
+              <button id="btn-save-custom-model" type="button" class="btn-primary text-xs cursor-pointer">Register
+                Endpoint</button>
             </div>
           </div>
 
           <!-- Models Inventory Table -->
           <div class="max-h-80 overflow-y-auto pr-1 border border-white/5 rounded-xl">
             <table class="w-full text-left text-xs">
-              <thead class="bg-white/[0.04] text-slate-400 font-medium border-b border-white/5 sticky top-0 backdrop-blur-md">
+              <thead
+                class="bg-white/[0.04] text-slate-400 font-medium border-b border-white/5 sticky top-0 backdrop-blur-md">
                 <tr>
                   <th class="py-2.5 px-3">Model / Endpoint ID</th>
                   <th class="py-2.5 px-3">Category</th>
@@ -712,55 +855,71 @@
   <!-- ============================================================================== -->
 
   <!-- Modal 1: ByteDance Generation Modes Info (i) -->
-  <div id="modal-mode-info" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 transition-all">
+  <div id="modal-mode-info"
+    class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 transition-all">
     <div class="panel max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between pb-4 border-b border-white/10 mb-6">
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-full bg-electric/10 border border-electric/30 text-electric flex items-center justify-center font-mono font-bold text-sm">ℹ</div>
+          <div
+            class="w-8 h-8 rounded-full bg-electric/10 border border-electric/30 text-electric flex items-center justify-center font-mono font-bold text-sm">
+            ℹ</div>
           <div>
             <h2 class="text-base font-bold text-slate-100">ByteDance Video Generation Modes</h2>
             <p class="text-xs text-slate-400 font-mono">BytePlus ModelArk • Seedance 2.5 API</p>
           </div>
         </div>
-        <button id="btn-close-modal-info" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white text-slate-400 hover:text-black flex items-center justify-center text-sm font-bold">✕</button>
+        <button id="btn-close-modal-info"
+          class="w-8 h-8 rounded-full bg-white/5 hover:bg-white text-slate-400 hover:text-black flex items-center justify-center text-sm font-bold">✕</button>
       </div>
 
       <div class="space-y-4 text-xs font-mono">
         <div class="p-4 rounded-2xl bg-surface/80 border border-white/5">
           <h3 class="text-sm font-bold text-electric mb-1">📹 Ref-to-video (Reference-to-Video)</h3>
-          <p class="text-slate-300 mb-2 font-sans">Conditions generation on character or scene reference images without freezing beginning/ending poses.</p>
-          <div class="text-slate-400 bg-black/40 p-2 rounded-lg">API Mapping: <code>image_url</code> referenced as <code>Image 1</code>.</div>
+          <p class="text-slate-300 mb-2 font-sans">Conditions generation on character or scene reference images without
+            freezing beginning/ending poses.</p>
+          <div class="text-slate-400 bg-black/40 p-2 rounded-lg">API Mapping: <code>image_url</code> referenced as
+            <code>Image 1</code>.</div>
         </div>
         <div class="p-4 rounded-2xl bg-surface/80 border border-white/5">
           <h3 class="text-sm font-bold text-lavender mb-1">🎞️ First/last frame (Keyframe Interpolation)</h3>
-          <p class="text-slate-300 mb-2 font-sans">Explicitly locks the exact starting frame and/or ending frame for smooth pose interpolation.</p>
-          <div class="text-slate-400 bg-black/40 p-2 rounded-lg">API Mapping: <code>role: "first_frame"</code> & <code>role: "last_frame"</code>.</div>
+          <p class="text-slate-300 mb-2 font-sans">Explicitly locks the exact starting frame and/or ending frame for
+            smooth pose interpolation.</p>
+          <div class="text-slate-400 bg-black/40 p-2 rounded-lg">API Mapping: <code>role: "first_frame"</code> &
+            <code>role: "last_frame"</code>.</div>
         </div>
         <div class="p-4 rounded-2xl bg-surface/80 border border-white/5">
           <h3 class="text-sm font-bold text-celestial mb-1">👤⁺ IP effects (Character Transformations)</h3>
-          <p class="text-slate-300 mb-2 font-sans">Prepends <code>[IP Effect: …]</code> to the prompt and attaches the character image. Not a BytePlus effect catalog.</p>
-          <div class="text-slate-400 bg-black/40 p-2 rounded-lg">API Mapping: image role <code>character_ip</code> plus a prompt prefix.</div>
+          <p class="text-slate-300 mb-2 font-sans">Prepends <code>[IP Effect: …]</code> to the prompt and attaches the
+            character image. Not a BytePlus effect catalog.</p>
+          <div class="text-slate-400 bg-black/40 p-2 rounded-lg">API Mapping: image role <code>character_ip</code> plus
+            a prompt prefix.</div>
         </div>
       </div>
 
       <div class="flex justify-end pt-4">
-        <button id="btn-got-it" class="px-5 py-2 rounded-xl bg-white text-black font-bold text-xs font-mono uppercase hover:bg-electric transition-all">Got It</button>
+        <button id="btn-got-it"
+          class="px-5 py-2 rounded-xl bg-white text-black font-bold text-xs font-mono uppercase hover:bg-electric transition-all">Got
+          It</button>
       </div>
     </div>
   </div>
 
   <!-- Modal 2: BytePlus ModelArk API Reference -->
-  <div id="modal-api-reference" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 transition-all">
+  <div id="modal-api-reference"
+    class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 transition-all">
     <div class="panel max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto space-y-4">
       <div class="flex items-center justify-between pb-3 border-b border-white/10">
         <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-bold text-xs">API</div>
+          <div
+            class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-bold text-xs">
+            API</div>
           <div>
             <h2 class="text-sm font-bold text-slate-100">BytePlus ModelArk API Reference</h2>
             <p class="text-[11px] text-slate-400 font-mono">Region: ap-southeast-1 • ModelArk/1330310</p>
           </div>
         </div>
-        <button id="btn-close-modal-api" class="w-7 h-7 rounded-full bg-white/5 hover:bg-white text-slate-400 hover:text-black flex items-center justify-center text-xs font-bold cursor-pointer">✕</button>
+        <button id="btn-close-modal-api"
+          class="w-7 h-7 rounded-full bg-white/5 hover:bg-white text-slate-400 hover:text-black flex items-center justify-center text-xs font-bold cursor-pointer">✕</button>
       </div>
 
       <div class="space-y-3 text-xs">
@@ -769,7 +928,8 @@
             <span>HTTP POST Endpoint</span>
             <span class="font-mono text-emerald-400">200 OK</span>
           </div>
-          <div class="bg-black/60 p-2.5 rounded-lg font-mono text-slate-300 select-all border border-white/5 text-[11px]">
+          <div
+            class="bg-black/60 p-2.5 rounded-lg font-mono text-slate-300 select-all border border-white/5 text-[11px]">
             POST https://ark.ap-southeast.bytepluses.com/api/v3/contents/generations/tasks
           </div>
         </div>
@@ -777,32 +937,39 @@
         <div>
           <div class="flex items-center justify-between text-slate-400 mb-1">
             <span>cURL Task Submission</span>
-            <button id="btn-copy-curl" class="text-electric hover:underline text-[11px] cursor-pointer">Copy cURL</button>
+            <button id="btn-copy-curl" class="text-electric hover:underline text-[11px] cursor-pointer">Copy
+              cURL</button>
           </div>
-          <pre id="api-curl-code" class="bg-black/60 p-3 rounded-lg font-mono text-slate-300 text-[11px] overflow-x-auto border border-white/5 leading-relaxed"></pre>
+          <pre id="api-curl-code"
+            class="bg-black/60 p-3 rounded-lg font-mono text-slate-300 text-[11px] overflow-x-auto border border-white/5 leading-relaxed"></pre>
         </div>
 
         <div>
           <div class="flex items-center justify-between text-slate-400 mb-1">
             <span>Python Ark SDK</span>
-            <button id="btn-copy-python" class="text-electric hover:underline text-[11px] cursor-pointer">Copy Python</button>
+            <button id="btn-copy-python" class="text-electric hover:underline text-[11px] cursor-pointer">Copy
+              Python</button>
           </div>
-          <pre id="api-python-code" class="bg-black/60 p-3 rounded-lg font-mono text-slate-300 text-[11px] overflow-x-auto border border-white/5 leading-relaxed"></pre>
+          <pre id="api-python-code"
+            class="bg-black/60 p-3 rounded-lg font-mono text-slate-300 text-[11px] overflow-x-auto border border-white/5 leading-relaxed"></pre>
         </div>
 
         <div class="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
-          <a href="https://ai.byteplus.com/ark/region:ap-southeast-1/docs/ModelArk/1330310" target="_blank" rel="noopener" class="text-electric hover:underline flex items-center gap-1">
+          <a href="https://ai.byteplus.com/ark/region:ap-southeast-1/docs/ModelArk/1330310" target="_blank"
+            rel="noopener" class="text-electric hover:underline flex items-center gap-1">
             <span>Official ModelArk 1330310 Documentation</span>
             <span>↗</span>
           </a>
-          <button id="btn-close-api-footer" class="px-4 py-1.5 rounded-lg bg-white text-black font-semibold hover:bg-electric transition-colors cursor-pointer">Close</button>
+          <button id="btn-close-api-footer"
+            class="px-4 py-1.5 rounded-lg bg-white text-black font-semibold hover:bg-electric transition-colors cursor-pointer">Close</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Modal 3: Prompt Manual -->
-  <div id="modal-prompt-manual" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 transition-all">
+  <div id="modal-prompt-manual"
+    class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 transition-all">
     <div class="panel max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto space-y-4">
       <div class="flex items-center justify-between pb-3 border-b border-white/10">
         <div class="flex items-center gap-2.5">
@@ -812,52 +979,57 @@
             <p class="text-[11px] text-slate-400 font-mono">Prompt engineering guidelines & token syntax</p>
           </div>
         </div>
-        <button id="btn-close-modal-prompt" class="w-7 h-7 rounded-full bg-white/5 hover:bg-white text-slate-400 hover:text-black flex items-center justify-center text-xs font-bold cursor-pointer">✕</button>
+        <button id="btn-close-modal-prompt"
+          class="w-7 h-7 rounded-full bg-white/5 hover:bg-white text-slate-400 hover:text-black flex items-center justify-center text-xs font-bold cursor-pointer">✕</button>
       </div>
 
       <div class="space-y-3 text-xs text-slate-300 leading-relaxed font-sans">
         <div class="p-3 rounded-xl bg-surface border border-white/5">
           <strong class="text-electric block mb-1">1. Referencing Uploaded Files (@ syntax)</strong>
-          <p class="text-slate-400">For Seedance 2.0 and 2.5 in Ref-to-video mode, reference files using <code class="text-purple-300 font-mono">@Video 1</code> for action motions, or <code class="text-purple-300 font-mono">@Pictures 2</code> and <code class="text-purple-300 font-mono">@Pictures 3</code> for character identity and background.</p>
+          <p class="text-slate-400">For Seedance 2.0 and 2.5 in Ref-to-video mode, reference files using <code
+              class="text-purple-300 font-mono">@Video 1</code> for action motions, or <code
+              class="text-purple-300 font-mono">@Pictures 2</code> and <code
+              class="text-purple-300 font-mono">@Pictures 3</code> for character identity and background.</p>
         </div>
         <div class="p-3 rounded-xl bg-surface border border-white/5">
           <strong class="text-lavender block mb-1">2. First / Last Frame Keyframing</strong>
-          <p class="text-slate-400">Provide start and end visual frames. Seedance 1.5 Pro interpolates natural fluid motion between both anchors, obeying physical lighting and character morphology.</p>
+          <p class="text-slate-400">Provide start and end visual frames. Seedance 1.5 Pro interpolates natural fluid
+            motion between both anchors, obeying physical lighting and character morphology.</p>
         </div>
         <div class="p-3 rounded-xl bg-surface border border-white/5">
           <strong class="text-celestial block mb-1">3. Camera & Atmosphere Keywords</strong>
-          <p class="text-slate-400">Use cinematic terminology: <em>tracking shot, low-angle hero perspective, volumetric lighting, 60fps, 35mm lens, shallow depth of field</em>.</p>
+          <p class="text-slate-400">Use cinematic terminology: <em>tracking shot, low-angle hero perspective, volumetric
+              lighting, 60fps, 35mm lens, shallow depth of field</em>.</p>
         </div>
       </div>
 
       <div class="flex justify-end pt-2">
-        <button id="btn-close-prompt-footer" class="px-4 py-1.5 rounded-lg bg-white text-black font-semibold hover:bg-electric transition-colors cursor-pointer">Got it</button>
+        <button id="btn-close-prompt-footer"
+          class="px-4 py-1.5 rounded-lg bg-white text-black font-semibold hover:bg-electric transition-colors cursor-pointer">Got
+          it</button>
       </div>
     </div>
   </div>
 
-  <div id="account-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+  <div id="account-modal"
+    class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="panel w-full max-w-md p-6 space-y-4 relative">
-      <button id="account-modal-close" type="button" class="absolute top-3 right-3 text-slate-400 hover:text-white text-lg leading-none">&times;</button>
-      <h2 id="account-modal-title" class="text-base font-semibold text-white">Sign in</h2>
-      <p class="text-[12px] text-slate-400">Save generation history across sessions. 2FA is optional.</p>
-      <div id="account-oauth-row" class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <button type="button" data-oauth="google" class="oauth-btn btn-quiet text-[12px]">Google</button>
-        <button type="button" data-oauth="github" class="oauth-btn btn-quiet text-[12px]">GitHub</button>
-        <button type="button" data-oauth="proton" class="oauth-btn btn-quiet text-[12px]">Proton</button>
-      </div>
-      <div class="h-px bg-white/10"></div>
+      <button id="account-modal-close" type="button"
+        class="absolute top-3 right-3 text-slate-400 hover:text-white text-lg leading-none">&times;</button>
+      <h2 id="account-modal-title" class="text-base font-semibold text-white">Create account</h2>
+      <p class="text-[12px] text-slate-400">Username and password are enough. Google, GitHub, and Proton are optional.</p>
       <form id="account-form" class="space-y-3">
         <div>
-          <label class="label" for="account-email">Email</label>
-          <input id="account-email" type="email" required class="field" autocomplete="username" />
+          <label class="label" for="account-email">Username or email</label>
+          <input id="account-email" type="text" required class="field" autocomplete="username" placeholder="ada or ada@example.com" />
         </div>
         <div>
           <label class="label" for="account-password">Password</label>
-          <input id="account-password" type="password" required minlength="8" class="field" autocomplete="current-password" />
+          <input id="account-password" type="password" required minlength="8" class="field"
+            autocomplete="new-password" />
         </div>
-        <div id="account-name-wrap" class="hidden">
-          <label class="label" for="account-name">Display name</label>
+        <div id="account-name-wrap">
+          <label class="label" for="account-name">Display name (optional)</label>
           <input id="account-name" type="text" class="field" autocomplete="nickname" />
         </div>
         <div id="account-2fa-login-wrap" class="hidden">
@@ -865,9 +1037,16 @@
           <input id="account-2fa-login" class="field" inputmode="numeric" autocomplete="one-time-code" />
         </div>
         <p id="account-form-error" class="text-[12px] text-rose-400 hidden"></p>
-        <button id="account-submit" type="submit" class="btn-primary w-full">Sign in</button>
+        <button id="account-submit" type="submit" class="btn-primary w-full">Create account</button>
       </form>
-      <button id="account-toggle-mode" type="button" class="text-[12px] text-cyan-300 hover:underline">Create an account</button>
+      <button id="account-toggle-mode" type="button" class="text-[12px] text-cyan-300 hover:underline">Have an account? Sign in</button>
+      <div class="h-px bg-white/10"></div>
+      <p class="text-[11px] text-slate-500 uppercase tracking-wider">Optional</p>
+      <div id="account-oauth-row" class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <button type="button" data-oauth="google" class="oauth-btn btn-quiet text-[12px]">Google</button>
+        <button type="button" data-oauth="github" class="oauth-btn btn-quiet text-[12px]">GitHub</button>
+        <button type="button" data-oauth="proton" class="oauth-btn btn-quiet text-[12px]">Proton</button>
+      </div>
       <button id="account-logout" type="button" class="hidden btn-quiet w-full">Sign out</button>
     </div>
   </div>
@@ -889,7 +1068,7 @@
     let firstFrameData = null;
     let lastFrameData = null;
     let currentUser = null;
-    let accountMode = "login";
+    let accountMode = "register";
 
     async function authFetch(url, opts) {
       return fetch(url, Object.assign({ credentials: "include" }, opts || {}));
@@ -913,9 +1092,9 @@
       const toggle = document.getElementById("account-toggle-mode");
       const title = document.getElementById("account-modal-title");
       if (currentUser) {
-        if (label) label.innerText = currentUser.display_name || currentUser.email;
+        if (label) label.innerText = currentUser.display_name || currentUser.username || currentUser.email;
         if (caption) caption.innerText = "Your history";
-        if (status) status.innerText = `Signed in as ${currentUser.email}` + (currentUser.totp_enabled ? " · 2FA on" : " · 2FA off");
+        if (status) status.innerText = `Signed in as ${currentUser.display_name || currentUser.username || currentUser.email}` + (currentUser.totp_enabled ? " · 2FA on" : " · 2FA off");
         if (twofa) twofa.classList.remove("hidden");
         if (logoutBtn) logoutBtn.classList.remove("hidden");
         if (form) form.classList.add("hidden");
@@ -978,7 +1157,7 @@
           const hist = await authFetch("/api/history");
           const payload = await hist.json();
           if (payload.authenticated) renderHistoryRecords(payload.records || []);
-        } catch (e) {}
+        } catch (e) { }
       }
     }
 
@@ -991,7 +1170,7 @@
           btn.classList.toggle("opacity-40", !data[name]);
           btn.title = data[name] ? `Continue with ${name}` : `${name} OAuth is not configured on this server`;
         });
-      } catch (e) {}
+      } catch (e) { }
     }
     let activeView = "video";
     let rpgStoryboard = null;
@@ -1196,7 +1375,7 @@
       const durationEl = document.getElementById("video-duration");
       const resolutionEl = document.getElementById("video-resolution");
       const audioEl = document.getElementById("video-audio");
-      
+
       const ratio = (ratioEl && ratioEl.value) || (model.pills && model.pills.find(p => p.includes(":"))) || "16:9";
       const duration = parseInt((durationEl && durationEl.value) || "5", 10);
       const resolution = ((resolutionEl && resolutionEl.value) || (model.pills && model.pills.find(p => p.toLowerCase().includes("p") || p.toLowerCase().includes("k"))) || "720p").toLowerCase();
@@ -1260,7 +1439,7 @@ print("Response:", res.json())`;
         const imageArgList = [];
         if (importedAssets && importedAssets.length > 0) {
           importedAssets.forEach(a => {
-            const assetUrl = a.url 
+            const assetUrl = a.url
               ? (window.location.origin + a.url)
               : (a.local_path || "data:image/jpeg;base64,<BASE64_DATA>");
             imageArgList.push(assetUrl);
@@ -1307,7 +1486,7 @@ print("Generated image URL:", response.data[0].url if response.data else "None")
         if (importedAssets && importedAssets.length > 0) {
           importedAssets.forEach(a => {
             const isVid = a.type === "video";
-            const assetUrl = a.url 
+            const assetUrl = a.url
               ? (window.location.origin + a.url)
               : (a.local_path || `data:${isVid ? 'video/mp4' : 'image/jpeg'};base64,<BASE64_DATA>`);
             contentList.push({
@@ -1491,27 +1670,27 @@ print("Task submitted:", task.id)`;
         else tplBtn.classList.add("hidden");
       }
 
-    function renderDropzones(model) {
-      model = model || (modelCatalogData[activeVideoModel] || {});
-      const dropzoneEl = document.getElementById("dynamic-dropzones");
-      if (!dropzoneEl) return;
+      function renderDropzones(model) {
+        model = model || (modelCatalogData[activeVideoModel] || {});
+        const dropzoneEl = document.getElementById("dynamic-dropzones");
+        if (!dropzoneEl) return;
 
-      if (model.category === "image") {
-        dropzoneEl.innerHTML = `
+        if (model.category === "image") {
+          dropzoneEl.innerHTML = `
           <div id="dropzone-image" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors relative group" title="Click to import reference images or folder, or drag & drop">
             <svg class="w-4 h-4 text-purple-400 mb-1 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
             <span class="text-[9px] text-slate-400 leading-none group-hover:text-slate-200">Reference</span>
           </div>
         `;
-        selectedVideoMode = "image_generation";
-        if (typeof updateDropzoneRefBadge === "function") updateDropzoneRefBadge();
-        const tray = document.getElementById("imported-assets-tray");
-        if (tray && importedAssets.length > 0) tray.classList.remove("hidden");
-        return;
-      }
+          selectedVideoMode = "image_generation";
+          if (typeof updateDropzoneRefBadge === "function") updateDropzoneRefBadge();
+          const tray = document.getElementById("imported-assets-tray");
+          if (tray && importedAssets.length > 0) tray.classList.remove("hidden");
+          return;
+        }
 
-      if (selectedVideoMode === "first_last_frame") {
-        const firstHtml = firstFrameData ? `
+        if (selectedVideoMode === "first_last_frame") {
+          const firstHtml = firstFrameData ? `
           <div id="dropzone-first" class="w-16 h-16 rounded-xl border border-cyan-500/40 bg-[#11131C] relative overflow-hidden group cursor-pointer" title="Click to replace first frame">
             <img src="${firstFrameData.url}" class="w-full h-full object-cover rounded-xl" />
             <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -1526,7 +1705,7 @@ print("Task submitted:", task.id)`;
           </div>
         `;
 
-        const lastHtml = lastFrameData ? `
+          const lastHtml = lastFrameData ? `
           <div id="dropzone-last" class="w-16 h-16 rounded-xl border border-cyan-500/40 bg-[#11131C] relative overflow-hidden group cursor-pointer" title="Click to replace last frame">
             <img src="${lastFrameData.url}" class="w-full h-full object-cover rounded-xl" />
             <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -1541,7 +1720,7 @@ print("Task submitted:", task.id)`;
           </div>
         `;
 
-        dropzoneEl.innerHTML = `
+          dropzoneEl.innerHTML = `
           <div class="flex items-center gap-1.5">
             ${firstHtml}
             <span class="text-slate-500 font-mono text-sm px-0.5 select-none">⇌</span>
@@ -1549,86 +1728,86 @@ print("Task submitted:", task.id)`;
           </div>
         `;
 
-        const rmFirst = document.getElementById("btn-remove-first-frame");
-        if (rmFirst) {
-          rmFirst.onclick = (e) => {
-            e.stopPropagation();
-            firstFrameData = null;
-            const inp = document.getElementById("video-first-frame");
-            if (inp) inp.value = "";
-            renderDropzones(model);
-          };
-        }
-        const rmLast = document.getElementById("btn-remove-last-frame");
-        if (rmLast) {
-          rmLast.onclick = (e) => {
-            e.stopPropagation();
-            lastFrameData = null;
-            const inp = document.getElementById("video-last-frame");
-            if (inp) inp.value = "";
-            renderDropzones(model);
-          };
-        }
+          const rmFirst = document.getElementById("btn-remove-first-frame");
+          if (rmFirst) {
+            rmFirst.onclick = (e) => {
+              e.stopPropagation();
+              firstFrameData = null;
+              const inp = document.getElementById("video-first-frame");
+              if (inp) inp.value = "";
+              renderDropzones(model);
+            };
+          }
+          const rmLast = document.getElementById("btn-remove-last-frame");
+          if (rmLast) {
+            rmLast.onclick = (e) => {
+              e.stopPropagation();
+              lastFrameData = null;
+              const inp = document.getElementById("video-last-frame");
+              if (inp) inp.value = "";
+              renderDropzones(model);
+            };
+          }
 
-        const tray = document.getElementById("imported-assets-tray");
-        if (tray) tray.classList.add("hidden");
-      } else {
-        // ref_to_video mode
-        dropzoneEl.innerHTML = `
+          const tray = document.getElementById("imported-assets-tray");
+          if (tray) tray.classList.add("hidden");
+        } else {
+          // ref_to_video mode
+          dropzoneEl.innerHTML = `
           <div id="dropzone-ref" class="w-16 h-16 rounded-xl border border-dashed border-white/20 bg-white/[0.02] hover:bg-white/[0.06] flex flex-col items-center justify-center text-center p-1 cursor-pointer transition-colors relative group" title="Click to import files or folder, or drag & drop">
             <span class="text-base text-slate-400 font-light group-hover:text-cyan-400 transition-colors">+</span>
             <span class="text-[9px] text-slate-400 leading-none mt-1 group-hover:text-slate-200">Reference</span>
           </div>
         `;
-        selectedVideoMode = "ref_to_video";
-        if (typeof updateDropzoneRefBadge === "function") updateDropzoneRefBadge();
-        const tray = document.getElementById("imported-assets-tray");
-        if (tray && importedAssets.length > 0) tray.classList.remove("hidden");
-      }
-    }
-
-    function setGenerationMode(newMode, model) {
-      selectedVideoMode = newMode;
-      model = model || (modelCatalogData[activeVideoModel] || {});
-      const promptInput = document.getElementById("video-prompt-input");
-
-      if (selectedVideoMode === "first_last_frame") {
-        if (promptInput) {
-          promptInput.placeholder = model.first_last_placeholder || "Enter the content screen you want to generate, or enter a creative description in combination with the image (optional).";
-        }
-      } else {
-        if (promptInput) {
-          promptInput.placeholder = model.ref_placeholder || model.placeholder || "Use @to quickly reference uploaded files, such as referring to actions in @Video 1 to generate videos of characters fighting in @Pictures 2 and @Pictures 3.";
+          selectedVideoMode = "ref_to_video";
+          if (typeof updateDropzoneRefBadge === "function") updateDropzoneRefBadge();
+          const tray = document.getElementById("imported-assets-tray");
+          if (tray && importedAssets.length > 0) tray.classList.remove("hidden");
         }
       }
 
-      const triggerLabel = document.getElementById("generation-mode-label");
-      if (triggerLabel) {
-        triggerLabel.innerText = selectedVideoMode === "first_last_frame" ? "First/last frame" : "Ref-to-video";
-      }
-      const triggerIcon = document.getElementById("generation-mode-icon");
-      if (triggerIcon) {
-        triggerIcon.innerHTML = selectedVideoMode === "first_last_frame"
-          ? `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>`
-          : `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
-      }
+      function setGenerationMode(newMode, model) {
+        selectedVideoMode = newMode;
+        model = model || (modelCatalogData[activeVideoModel] || {});
+        const promptInput = document.getElementById("video-prompt-input");
 
-      document.querySelectorAll(".generation-mode-item").forEach(item => {
-        const itemMode = item.getAttribute("data-mode");
-        const check = item.querySelector(".mode-check");
-        if (check) {
-          if (itemMode === selectedVideoMode) {
-            check.classList.remove("hidden");
-            item.classList.add("text-white", "bg-white/10");
-          } else {
-            check.classList.add("hidden");
-            item.classList.remove("text-white", "bg-white/10");
+        if (selectedVideoMode === "first_last_frame") {
+          if (promptInput) {
+            promptInput.placeholder = model.first_last_placeholder || "Enter the content screen you want to generate, or enter a creative description in combination with the image (optional).";
+          }
+        } else {
+          if (promptInput) {
+            promptInput.placeholder = model.ref_placeholder || model.placeholder || "Use @to quickly reference uploaded files, such as referring to actions in @Video 1 to generate videos of characters fighting in @Pictures 2 and @Pictures 3.";
           }
         }
-      });
 
-      renderDropzones(model);
-    }
+        const triggerLabel = document.getElementById("generation-mode-label");
+        if (triggerLabel) {
+          triggerLabel.innerText = selectedVideoMode === "first_last_frame" ? "First/last frame" : "Ref-to-video";
+        }
+        const triggerIcon = document.getElementById("generation-mode-icon");
+        if (triggerIcon) {
+          triggerIcon.innerHTML = selectedVideoMode === "first_last_frame"
+            ? `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>`
+            : `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+        }
+
+        document.querySelectorAll(".generation-mode-item").forEach(item => {
+          const itemMode = item.getAttribute("data-mode");
+          const check = item.querySelector(".mode-check");
+          if (check) {
+            if (itemMode === selectedVideoMode) {
+              check.classList.remove("hidden");
+              item.classList.add("text-white", "bg-white/10");
+            } else {
+              check.classList.add("hidden");
+              item.classList.remove("text-white", "bg-white/10");
+            }
+          }
+        });
+
+        renderDropzones(model);
+      }
 
       // Initialize selectedVideoMode for this model if needed
       if (model.category === "image") {
@@ -1666,9 +1845,9 @@ print("Task submitted:", task.id)`;
               <button id="btn-generation-mode-trigger" type="button" class="${selClass} flex items-center gap-1.5" title="Select Generation Mode">
                 <span id="generation-mode-icon" class="text-slate-300">
                   ${isFirstLast
-                    ? `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>`
-                    : `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`
-                  }
+              ? `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>`
+              : `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`
+            }
                 </span>
                 <span id="generation-mode-label">${isFirstLast ? 'First/last frame' : 'Ref-to-video'}</span>
                 <svg class="w-3 h-3 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
@@ -2141,15 +2320,21 @@ print("Task submitted:", task.id)`;
     document.getElementById("account-modal").addEventListener("click", (e) => {
       if (e.target.id === "account-modal") closeAccountModal();
     });
+    function applyAccountMode() {
+      const isReg = accountMode === "register";
+      document.getElementById("account-name-wrap").classList.toggle("hidden", !isReg);
+      document.getElementById("account-submit").innerText = isReg ? "Create account" : "Sign in";
+      document.getElementById("account-toggle-mode").innerText = isReg ? "Have an account? Sign in" : "Create an account";
+      document.getElementById("account-password").setAttribute("autocomplete", isReg ? "new-password" : "current-password");
+      document.getElementById("account-2fa-login-wrap").classList.add("hidden");
+    }
     document.getElementById("account-toggle-mode").onclick = () => {
       accountMode = accountMode === "login" ? "register" : "login";
-      document.getElementById("account-name-wrap").classList.toggle("hidden", accountMode !== "register");
-      document.getElementById("account-submit").innerText = accountMode === "register" ? "Create account" : "Sign in";
-      document.getElementById("account-toggle-mode").innerText = accountMode === "register" ? "Have an account? Sign in" : "Create an account";
-      document.getElementById("account-2fa-login-wrap").classList.add("hidden");
+      applyAccountMode();
       setAccountError("");
       renderAccountChrome();
     };
+    applyAccountMode();
     document.querySelectorAll(".oauth-btn").forEach((btn) => {
       btn.onclick = () => {
         const name = btn.getAttribute("data-oauth");
@@ -2375,9 +2560,9 @@ print("Task submitted:", task.id)`;
       list.innerHTML = importedAssets.map((asset) => `
         <div class="flex items-center gap-2 px-2.5 py-1.5 bg-[#141724] border border-white/10 rounded-xl hover:border-cyan-500/40 transition-all group shrink-0">
           ${asset.type === 'image'
-            ? `<img src="${asset.url}" class="w-7 h-7 rounded-lg object-cover border border-white/10 shrink-0 bg-black/40" />`
-            : `<div class="w-7 h-7 rounded-lg bg-purple-900/40 border border-purple-500/30 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5 text-purple-300" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>`
-          }
+          ? `<img src="${asset.url}" class="w-7 h-7 rounded-lg object-cover border border-white/10 shrink-0 bg-black/40" />`
+          : `<div class="w-7 h-7 rounded-lg bg-purple-900/40 border border-purple-500/30 flex items-center justify-center shrink-0"><svg class="w-3.5 h-3.5 text-purple-300" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>`
+        }
           <button 
             type="button" 
             class="insert-token-btn font-mono text-[11px] font-bold px-2 py-0.5 rounded-md ${asset.type === 'image' ? 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-500/30' : 'bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 border border-purple-500/30'} cursor-pointer transition-colors" 
@@ -2434,7 +2619,7 @@ print("Task submitted:", task.id)`;
 
     async function uploadReferenceFiles(fileList) {
       if (!fileList || !fileList.length) return;
-      const mediaFiles = Array.from(fileList).filter(f => 
+      const mediaFiles = Array.from(fileList).filter(f =>
         f.type.startsWith("image/") || f.type.startsWith("video/") || /\.(png|jpe?g|webp|gif|bmp|mp4|mov|webm|avi|mkv)$/i.test(f.name)
       );
       if (!mediaFiles.length) {
@@ -2762,8 +2947,8 @@ print("Task submitted:", task.id)`;
         return;
       }
 
-      const matching = importedAssets.filter(a => 
-        a.token.toLowerCase().includes(ctx.query) || 
+      const matching = importedAssets.filter(a =>
+        a.token.toLowerCase().includes(ctx.query) ||
         a.filename.toLowerCase().includes(ctx.query)
       );
 
@@ -2784,9 +2969,9 @@ print("Task submitted:", task.id)`;
           ${matching.map((a, idx) => `
             <div class="mention-item flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors ${idx === mentionSelectedIndex ? 'bg-white/10 text-white' : 'hover:bg-white/5 text-slate-200'}" data-index="${idx}" data-token="${a.token}">
               ${a.type === 'image'
-                ? `<img src="${a.url}" class="w-6 h-6 rounded object-cover border border-white/10 shrink-0 bg-black/40" />`
-                : `<div class="w-6 h-6 rounded bg-purple-900/40 border border-purple-500/30 flex items-center justify-center shrink-0"><svg class="w-3 h-3 text-purple-300" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>`
-              }
+          ? `<img src="${a.url}" class="w-6 h-6 rounded object-cover border border-white/10 shrink-0 bg-black/40" />`
+          : `<div class="w-6 h-6 rounded bg-purple-900/40 border border-purple-500/30 flex items-center justify-center shrink-0"><svg class="w-3 h-3 text-purple-300" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>`
+        }
               <span class="font-mono font-bold text-xs ${a.type === 'image' ? 'text-cyan-400' : 'text-purple-400'}">${a.token}</span>
               <span class="text-xs text-slate-400 truncate flex-1">${a.filename}</span>
             </div>
@@ -3694,4 +3879,5 @@ print("Task submitted:", task.id)`;
     document.getElementById("btn-got-it").onclick = () => modalInfo.classList.add("hidden");
   </script>
 </body>
+
 </html>
