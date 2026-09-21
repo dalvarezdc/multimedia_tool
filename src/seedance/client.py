@@ -109,7 +109,7 @@ class SeedanceClient:
                     "image_url": {"url": self._prepare_image_reference(first_frame_image)},
                     "role": "first_frame"
                 })
-            if last_frame_image:
+            if last_frame_image and first_frame_image:
                 content_payload.append({
                     "type": "image_url",
                     "image_url": {"url": self._prepare_image_reference(last_frame_image)},
@@ -125,7 +125,7 @@ class SeedanceClient:
                 content_payload.append({
                     "type": "image_url",
                     "image_url": {"url": self._prepare_image_reference(character_reference_image)},
-                    "role": "character_ip"
+                    "role": "reference_image"
                 })
             logger.info(f"Configured IP Effects mode with preset '{effect}'.")
 
@@ -138,17 +138,18 @@ class SeedanceClient:
                         continue
                     asset_type = asset.get("type", "image")
                     prepared_url = self._prepare_image_reference(asset_path)
+                    role = "reference_video" if asset_type == "video" else "reference_image"
                     content_payload.append({
                         "type": "video_url" if asset_type == "video" else "image_url",
                         ("video_url" if asset_type == "video" else "image_url"): {"url": prepared_url},
-                        "role": "reference"
+                        "role": role
                     })
                 logger.info(f"Configured Ref-to-Video with {len(reference_assets)} uploaded reference assets.")
             elif character_reference_image:
                 content_payload.append({
                     "type": "image_url",
                     "image_url": {"url": self._prepare_image_reference(character_reference_image)},
-                    "role": "reference"
+                    "role": "reference_image"
                 })
                 logger.info("Configured Ref-to-Video mode with character reference image.")
 

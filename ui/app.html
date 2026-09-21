@@ -2080,6 +2080,16 @@ print("Task submitted:", task.id)`;
       badge.innerText = res ? `${ratio} · ${res} · ${duration}s` : `${ratio} · ${duration}s`;
     }
 
+    function formatApiError(msg) {
+      if (!msg) return "Generation failed";
+      if (typeof msg !== "string") return JSON.stringify(msg);
+      const msgMatch = msg.match(/['"]message['"]:\s*['"]([^'"]+)['"]/);
+      if (msgMatch && msgMatch[1]) {
+        return msgMatch[1];
+      }
+      return msg;
+    }
+
     async function pollCutscene(chapterId, model) {
       for (let i = 0; i < 80; i++) {
         const res = await fetch(`/api/cutscenes/status/${chapterId}`);
@@ -2100,7 +2110,7 @@ print("Task submitted:", task.id)`;
           return;
         }
         if (data.status === "failed") {
-          throw new Error(data.error || "Generation failed");
+          throw new Error(formatApiError(data.error) || "Generation failed");
         }
         document.getElementById("player-status-caption").innerText = `Generating with ${modelLabel(model)}...`;
         await new Promise(r => setTimeout(r, 2500));
@@ -2178,7 +2188,7 @@ print("Task submitted:", task.id)`;
           alert("Error: " + (err.detail || "Generation failed"));
         }
       } catch (err) {
-        alert(err.message || "Generation request failed.");
+        alert(formatApiError(err.message) || "Generation request failed.");
       } finally {
         btnGenVideo.innerText = genBtnLabel;
         btnGenVideo.disabled = false;

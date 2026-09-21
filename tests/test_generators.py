@@ -55,3 +55,66 @@ def test_grok_model_id_passthrough(monkeypatch):
     assert isinstance(client, GrokVideoClient)
     assert client.model_id == "grok-imagine-video-1.5"
 
+
+def test_seedance_content_roles(monkeypatch, tmp_path):
+    monkeypatch.setenv("ARK_API_KEY", "mock_ark_key")
+    client = SeedanceClient()
+
+    captured_kwargs = {}
+
+    class MockTasks:
+        def create(self, **kwargs):
+            nonlocal captured_kwargs
+            captured_kwargs = kwargs
+            return {"id": "mock_task_123"}
+
+        def get(self, task_id):
+            return {
+                "status": "succeeded",
+                "content": {"video_url": "https://example.com/mock.mp4"}
+            }
+
+    client.client.content_generation.tasks = MockTasks()
+    monkeypatch.setattr(client, "_download_file", lambda url, dest: None)
+
+    # 1. Test ref-to-video mode with image and video assets
+    img_file = tmp_path / "img.png"
+    img_file.write_bytes(b"dummy_png")
+    vid_file = tmp_path / "vid.mp4"
+    vid_file.write_bytes(b"dummy_mp4")
+
+    client.generate_video(
+        prompt="A battle in space",
+        output_path=str(tmp_path / "out.mp4"),
+        generation_mode="ref-to-video",
+        reference_assets=[
+            {"type": "image", "local_path": str(img_file)},
+            {"type": "video", "local_path": str(vid_file)},
+        ],
+        character_reference_image=str(img_file)
+    )
+
+    content = captured_kwargs["content"]
+    # Image asset should have role: reference_image
+    img_entry = next(c for c in content if c.get("type") == "image_url")
+    assert img_entry["role"] == "reference_image"
+
+    # Video asset should have role: reference_video
+    vid_entry = next(c for c in content if c.get("type") == "video_url")
+    assert vid_entry["role"] == "reference_video"
+
+    # 2. Test first_last_frame mode
+    client.generate_video(
+        prompt="Keyframed morph",
+        output_path=str(tmp_path / "out2.mp4"),
+        generation_mode="first_last_frame",
+        first_frame_image=str(img_file),
+        last_frame_image=str(img_file),
+    )
+    content2 = captured_kwargs["content"]
+    roles2 = [c.get("role") for c in content2 if "role" in c]
+    assert "first_frame" in roles2
+    assert "last_frame" in roles2
+    assert "reference" not in roles2
+
+
