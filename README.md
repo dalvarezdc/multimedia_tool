@@ -2,6 +2,8 @@
 
 An autonomous, multi-agent video production engine that generates explainer videos by marrying **16-bit retro pixel-art platformer roadmaps** with **watermark-free AI video cutscenes** powered by ByteDance's **Seedance API** via **BytePlus ModelArk**.
 
+![Multimedia Studio](docs/images/studio.png)
+
 ![Studio inputs fold into one generation hub](docs/diagrams/system-overview.svg)
 
 ---
