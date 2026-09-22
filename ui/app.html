@@ -973,6 +973,8 @@
           <button id="btn-rpg-generate-world" class="btn-primary">Generate world</button>
           <button id="btn-rpg-improve-world" class="btn-quiet">Improve</button>
           <button id="btn-rpg-export-mp4" class="btn-quiet">Record</button>
+          <button id="btn-rpg-estimate-cost" class="btn-quiet" title="Estimate optional media cost">Budget</button>
+          <span id="rpg-cost-summary" class="text-[11px] text-emerald-400">Playable world: $0 media</span>
           <div class="flex ml-auto rounded-lg bg-white/[0.04] p-0.5 text-[12px]">
             <button id="btn-rpg-mode-play" class="px-3 py-1.5 rounded-md bg-white text-black">Walk</button>
             <button id="btn-rpg-mode-director"
@@ -5927,11 +5929,6 @@ print("Task submitted:", task.id)`;
     requestAnimationFrame(renderRpgLoop);
 
     async function planRpgWorld(improve) {
-      if (!localApiKey) {
-        switchView("settings");
-        alert("BytePlus ARK_API_KEY is required for the Director LLM.");
-        return;
-      }
       const topic = document.getElementById("rpg-topic-input").value.trim();
       if (!improve && !topic) {
         alert("Enter a topic first.");
@@ -5946,12 +5943,14 @@ print("Task submitted:", task.id)`;
       btn.disabled = true;
       btn.innerText = improve ? "Improving…" : "Planning…";
       try {
+        const usesGrokDirector = activeDirectorModel.toLowerCase().startsWith("grok-");
         const body = {
           topic: topic,
           purpose: "rpg",
           chapter_count: rpgChapterCount,
           director_model: activeDirectorModel,
-          api_key: localApiKey,
+          director_provider: usesGrokDirector ? "xai" : "byteplus",
+          api_key: usesGrokDirector ? localXaiKey : localApiKey,
           global_context: { domain_notes: topic, tone: "educational retro rpg" }
         };
         if (improve) {
@@ -5983,6 +5982,34 @@ print("Task submitted:", task.id)`;
 
     document.getElementById("btn-rpg-generate-world").onclick = () => planRpgWorld(false);
     document.getElementById("btn-rpg-improve-world").onclick = () => planRpgWorld(true);
+
+    async function showRpgBudget() {
+      const summary = document.getElementById("rpg-cost-summary");
+      try {
+        const res = await fetch("/api/rpg/cost-estimate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chapter_count: rpgChapterCount,
+            video_model: activeVideoModel,
+            video_duration: 5,
+            video_resolution: rpgResolution,
+            cutscene_count: rpgChapterCount,
+            image_count: 0
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Budget estimate failed");
+        const video = data.items.find(item => item.kind === "cutscene_videos");
+        summary.innerText = `World $0 · ${rpgChapterCount} optional cutscenes: ${video.estimate}`;
+        summary.title = data.guidance;
+      } catch (err) {
+        summary.innerText = "Budget unavailable";
+        summary.title = err.message || "Budget estimate failed";
+      }
+    }
+    document.getElementById("btn-rpg-estimate-cost").onclick = showRpgBudget;
+    showRpgBudget();
 
     document.getElementById("btn-rpg-toggle-play").onclick = () => {
       rpgDirectorPlaying = !rpgDirectorPlaying;

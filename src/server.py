@@ -33,6 +33,7 @@ from src.models_registry import (
     DEFAULT_AUDIO_MODEL,
     get_all_models_grouped,
     calculate_model_cost,
+    estimate_rpg_cost,
 )
 from src.inventory import inventory_manager
 from src.auth import AuthStore, build_auth_router, current_user, load_or_create_secret, persist_generation
@@ -141,6 +142,7 @@ class PlanRequest(BaseModel):
     chapter_count: int = Field(default=4, ge=2, le=8)
     api_key: Optional[str] = None
     director_model: Optional[str] = None
+    director_provider: Optional[str] = None
     purpose: str = "storyboard"
     storyboard: Optional[Dict[str, Any]] = None
     instruction: Optional[str] = None
@@ -179,6 +181,16 @@ class ImageGenerateRequest(BaseModel):
 class MasterRenderRequest(BaseModel):
     storyboard: Dict[str, Any]
     output_filename: str = "master_video.mp4"
+
+class RpgCostRequest(BaseModel):
+    chapter_count: int = Field(default=4, ge=1, le=20)
+    video_model: Optional[str] = None
+    video_duration: int = Field(default=5, ge=1, le=30)
+    video_resolution: str = "720p"
+    cutscene_count: int = Field(default=0, ge=0, le=20)
+    image_model: Optional[str] = None
+    image_count: int = Field(default=0, ge=0, le=100)
+    reference_asset_count: int = Field(default=0, ge=0, le=20)
 
 def create_app():
     if FastAPI is None:
@@ -493,6 +505,11 @@ def create_app():
             "clips": clips
         }
 
+    @app.post("/api/rpg/cost-estimate")
+    def estimate_rpg_budget(req: RpgCostRequest):
+        """Returns a line-item budget without calling a model or starting generation."""
+        return estimate_rpg_cost(**req.model_dump())
+
     # =========================================================================
     # 2. MODELARK CATALOG & LIVE INVENTORY API
     # =========================================================================
@@ -543,19 +560,31 @@ def create_app():
     @app.post("/api/plan")
     def plan_storyboard(req: PlanRequest):
         """Invokes Director LLM to generate an initial roadmap from topic and context."""
-        api_key = req.api_key or os.getenv("ARK_API_KEY")
+        model_id = req.director_model or os.getenv("ARK_LLM_MODEL", DEFAULT_DIRECTOR_MODEL)
+        provider = (req.director_provider or ("xai" if model_id.lower().startswith("grok-") else "byteplus")).lower()
+        key_env = "XAI_API_KEY" if provider in ("xai", "grok") else "ARK_API_KEY"
+        api_key = req.api_key or os.getenv(key_env)
         if not api_key:
-            raise HTTPException(
-                status_code=400,
-                detail="ARK_API_KEY is required to generate a storyboard. Please set it in API Keys or in .env."
+            if req.storyboard:
+                raise HTTPException(status_code=400, detail=f"{key_env} is required to improve a storyboard.")
+            if not req.topic.strip():
+                raise HTTPException(status_code=400, detail="Provide a topic, or an existing storyboard to improve.")
+            storyboard = DirectorPlanner.plan_locally(
+                req.topic, req.global_context, req.character_profile, req.chapter_count, req.purpose
             )
+            store["storyboard"] = storyboard
+            return {
+                "status": "success",
+                "storyboard": storyboard,
+                "director_model": "local-rules",
+                "director_mode": "local_deterministic",
+                "note": storyboard["_director_note"],
+            }
         if not req.storyboard and not req.topic.strip():
             raise HTTPException(status_code=400, detail="Provide a topic, or an existing storyboard to improve.")
 
-        model_id = req.director_model or os.getenv("ARK_LLM_MODEL", DEFAULT_DIRECTOR_MODEL)
-
         try:
-            planner = DirectorPlanner(api_key=api_key, model_id=model_id)
+            planner = DirectorPlanner(api_key=api_key, model_id=model_id, provider=provider)
             if req.storyboard:
                 storyboard = planner.improve_storyboard(
                     req.storyboard,

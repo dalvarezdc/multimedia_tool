@@ -98,6 +98,32 @@ def test_plan_storyboard_defaults_and_str_response(monkeypatch):
     assert data["ok"] is True
 
 
+def test_grok_director_uses_xai_chat_completions(monkeypatch):
+    monkeypatch.setenv("XAI_API_KEY", "mock_xai")
+    captured = {}
+
+    class FakeResponse:
+        ok = True
+        status_code = 200
+        text = ""
+
+        def json(self):
+            return {"choices": [{"message": {"content": '{"theme":"grok_world","chapters":[]}'}}]}
+
+    def fake_post(url, **kwargs):
+        captured["url"] = url
+        captured["json"] = kwargs["json"]
+        return FakeResponse()
+
+    monkeypatch.setattr("src.director.planner.requests.post", fake_post)
+    planner = DirectorPlanner(model_id="grok-4-fast")
+    result = planner.plan_storyboard("A clockwork kingdom", purpose="rpg")
+    assert result["theme"] == "grok_world"
+    assert planner.provider == "xai"
+    assert captured["url"].endswith("/chat/completions")
+    assert captured["json"]["response_format"] == {"type": "json_object"}
+
+
 def test_improve_storyboard_with_and_without_instruction(monkeypatch):
     planner = _planner(monkeypatch, _Resp(text='{"improved": true, "chapters": []}'))
     captured = []
@@ -197,4 +223,3 @@ def test_improve_storyboard_heuristic_fallback(monkeypatch):
     assert improved["_director_mode"] == "heuristic_fallback"
     assert len(improved["chapters"][0]["title"].split()) <= 3
     assert improved["chapters"][0]["platform"]["x"] == 350
-

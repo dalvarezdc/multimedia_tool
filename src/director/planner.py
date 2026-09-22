@@ -5,12 +5,15 @@ into structured milestone roadmaps, platform coordinates, and visual cutscene pr
 with full support for global domain context and character consistency.
 """
 
-import os
 import json
 import logging
+import os
 import re
-from typing import Dict, Any, Optional
+
+import requests
 from arkruntime import Ark
+
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -28,20 +31,49 @@ class DirectorPlanner:
         self,
         api_key: Optional[str] = None,
         base_url: str = "https://ark.ap-southeast.bytepluses.com/api/v3",
-        model_id: Optional[str] = None
+        model_id: Optional[str] = None,
+        provider: Optional[str] = None,
     ):
-        self.api_key = api_key or os.getenv("ARK_API_KEY")
-        if not self.api_key:
-            raise ValueError("ARK_API_KEY must be provided or set in environment variables.")
-
-        self.base_url = os.getenv("ARK_BASE_URL", base_url)
         self.model_id = model_id or os.getenv("ARK_LLM_MODEL") or "seed-2-0-lite-260228"
+        self.provider = (provider or self._infer_provider(self.model_id)).lower()
+        env_key = "XAI_API_KEY" if self.provider in ("xai", "grok") else "ARK_API_KEY"
+        self.api_key = api_key or os.getenv(env_key)
+        if not self.api_key:
+            raise ValueError(f"{env_key} must be provided or set in environment variables.")
+
+        self.base_url = (
+            os.getenv("XAI_BASE_URL", "https://api.x.ai/v1")
+            if env_key == "XAI_API_KEY"
+            else os.getenv("ARK_BASE_URL", base_url)
+        ).rstrip("/")
         self.active_model_used = self.model_id
 
-        self.client = Ark(
-            base_url=self.base_url,
-            api_key=self.api_key,
+        self.client = None if env_key == "XAI_API_KEY" else Ark(base_url=self.base_url, api_key=self.api_key)
+
+    @staticmethod
+    def _infer_provider(model_id: str) -> str:
+        return "xai" if (model_id or "").lower().startswith("grok-") else "byteplus"
+
+    @classmethod
+    def plan_locally(
+        cls,
+        topic_or_transcript: str,
+        global_context: Optional[Dict[str, str]] = None,
+        character_profile: Optional[Dict[str, Any]] = None,
+        chapter_count: int = 4,
+        purpose: str = "rpg",
+    ) -> Dict[str, Any]:
+        """Create a deterministic playable world without credentials or an API call."""
+        planner = cls.__new__(cls)
+        storyboard = planner._generate_heuristic_storyboard(
+            topic_or_transcript, global_context, character_profile, chapter_count, purpose
         )
+        storyboard["_director_mode"] = "local_deterministic"
+        storyboard["_director_note"] = (
+            "No paid LLM was called. The world was generated locally and can be "
+            "upgraded with a cloud director later."
+        )
+        return storyboard
 
     def plan_storyboard(
         self,
@@ -192,6 +224,28 @@ class DirectorPlanner:
 
     def _call_remote(self, model_id: str, prompt: str) -> str:
         """Attempts completion via chat.completions, then responses.create."""
+        if self.provider in ("xai", "grok"):
+            response = requests.post(
+                f"{self.base_url}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model_id,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "response_format": {"type": "json_object"},
+                    "temperature": 0.4,
+                },
+                timeout=90,
+            )
+            if not response.ok:
+                raise RuntimeError(f"xAI API error ({response.status_code}): {response.text}")
+            try:
+                return response.json()["choices"][0]["message"]["content"]
+            except (KeyError, IndexError, TypeError) as exc:
+                raise RuntimeError("xAI response did not contain a chat completion") from exc
+
         last_err = None
         if hasattr(self.client, "chat") and hasattr(self.client.chat, "completions"):
             try:
@@ -228,7 +282,9 @@ class DirectorPlanner:
 
     def _complete_json(self, user_prompt: str) -> Dict[str, Any]:
         """Runs prompt through primary model with fallback candidate models on 404/NotFound."""
-        candidates = [self.model_id] + [m for m in self.FALLBACK_MODELS if m != self.model_id]
+        candidates = [self.model_id]
+        if self.provider not in ("xai", "grok"):
+            candidates += [m for m in self.FALLBACK_MODELS if m != self.model_id]
         last_exc: Optional[Exception] = None
 
         for model in candidates:

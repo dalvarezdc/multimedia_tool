@@ -55,6 +55,7 @@ def test_studio_app_route(client):
     assert "Video Studio" in response.text
     assert "RPG Studio" in response.text
     assert "Ref-to-video" in response.text
+    assert "btn-rpg-estimate-cost" in response.text
 
 def test_console_routes(client):
     for route in ["/", "/video", "/rpg", "/api-keys", "/docs", "/settings", "/usage"]:
@@ -114,15 +115,34 @@ def test_post_settings(client, monkeypatch):
     assert os.getenv("XAI_API_KEY") == "new_xai_key_value"
     assert os.getenv("ARK_BASE_URL") == "https://ark.custom.endpoint/api/v3"
 
-def test_plan_missing_key_returns_400(client, monkeypatch):
+def test_plan_missing_key_uses_free_local_director(client, monkeypatch):
     monkeypatch.delenv("ARK_API_KEY", raising=False)
     payload = {
         "topic": "Testing without key",
         "chapter_count": 3
     }
     response = client.post("/api/plan", json=payload)
-    assert response.status_code == 400
-    assert "ARK_API_KEY is required" in response.json()["detail"]
+    assert response.status_code == 200
+    data = response.json()
+    assert data["director_mode"] == "local_deterministic"
+    assert len(data["storyboard"]["chapters"]) == 3
+
+
+def test_rpg_cost_estimate_separates_free_runtime_and_paid_media(client):
+    response = client.post("/api/rpg/cost-estimate", json={
+        "chapter_count": 4,
+        "video_model": "grok-imagine-video-1.5",
+        "video_duration": 5,
+        "video_resolution": "720p",
+        "cutscene_count": 2,
+        "image_model": "grok-imagine-image",
+        "image_count": 4,
+    })
+    assert response.status_code == 200
+    items = {item["kind"]: item for item in response.json()["items"]}
+    assert items["world_runtime"]["estimate"] == "USD 0.0000"
+    assert items["chapter_images"]["estimate"] == "USD 0.0800"
+    assert items["cutscene_videos"]["estimate"] == "USD 1.4000"
 
 def test_cutscene_generate_modes(client, monkeypatch):
     monkeypatch.setenv("ARK_API_KEY", "test_mock_key")
@@ -1054,8 +1074,6 @@ def test_audio_upload_and_auto_analysis_ui_integration(client):
     assert 'id="btn-apply-analyzed-lyrics"' in html
     assert 'id="btn-download-sheet-music"' in html
     assert 'id="breakdown-sheet-expires"' in html
-
-
 
 
 

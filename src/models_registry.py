@@ -517,6 +517,17 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         headline="GLM 5.2 Storyboard Planning",
         icon_type="llm"
     ),
+    "grok-4-fast": ModelInfo(
+        id="grok-4-fast",
+        display_name="Grok 4 Fast",
+        category="director_llm",
+        description="xAI reasoning model available as an alternative RPG world director.",
+        recommended_for="Fast narrative design and structured world planning with an xAI key.",
+        ui_layout_type="generic",
+        headline="Plan RPG Worlds with Grok",
+        icon_type="llm",
+        provider="grok",
+    ),
 
     # -------------------------------------------------------------------------
     # 4. 3D ASSET & ITEM GENERATION
@@ -835,3 +846,32 @@ def calculate_model_cost(
     multiplier = 0.5 if draft_mode else 1.0
     cost = rate_per_sec * dur * multiplier * clips
     return f"USD {cost:.4f}"
+
+
+def estimate_rpg_cost(
+    chapter_count: int = 4,
+    video_model: Optional[str] = None,
+    video_duration: int = 5,
+    video_resolution: str = "720p",
+    cutscene_count: int = 0,
+    image_model: Optional[str] = None,
+    image_count: int = 0,
+    reference_asset_count: int = 0,
+) -> Dict[str, Any]:
+    """Build a transparent RPG budget before any paid generation is started."""
+    chapters = max(1, int(chapter_count or 1))
+    cutscenes = max(0, min(int(cutscene_count or 0), chapters))
+    images = max(0, int(image_count or 0))
+    video_id = video_model or DEFAULT_VIDEO_MODEL
+    image_id = image_model or DEFAULT_IMAGE_MODEL
+    return {
+        "currency": "USD",
+        "chapter_count": chapters,
+        "items": [
+            {"kind": "world_runtime", "quantity": chapters, "estimate": "USD 0.0000", "note": "Canvas layout, movement, dialogue, and local export logic are deterministic."},
+            {"kind": "director_llm", "quantity": 1, "estimate": "Provider token pricing", "note": "Usually a small text-only charge; exact cost depends on prompt and response tokens."},
+            {"kind": "chapter_images", "model": image_id, "quantity": images, "estimate": calculate_model_cost(image_id, clip_count=images, resolution="2K") if images else "USD 0.0000"},
+            {"kind": "cutscene_videos", "model": video_id, "quantity": cutscenes, "estimate": calculate_model_cost(video_id, duration=video_duration, resolution=video_resolution, clip_count=cutscenes, reference_asset_count=reference_asset_count) if cutscenes else "USD 0.0000"},
+        ],
+        "guidance": "Build and play the complete RPG world for near-zero cost; generate paid media only for approved chapters.",
+    }

@@ -55,7 +55,7 @@ def test_model_catalog_completeness():
 def test_categories_grouping():
     grouped = get_all_models_grouped()
     assert len(grouped["video"]) == 8
-    assert len(grouped["director_llm"]) == 14
+    assert len(grouped["director_llm"]) == 15
     assert len(grouped["image"]) == 7
     assert len(grouped["3d"]) == 2
     assert len(grouped["vision_embedding"]) == 1
@@ -205,4 +205,3 @@ def test_calculate_model_cost_video_and_image():
     # Fallback / Generic models
     assert "USD" in calculate_model_cost("unknown-video-model", duration=5, resolution="720p")
     assert "USD" in calculate_model_cost("generic-image-model", clip_count=1)
-
