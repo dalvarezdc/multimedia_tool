@@ -202,6 +202,8 @@
           class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">Guide</button>
         <button data-view="usage"
           class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">Activity</button>
+        <a href="/observability"
+          class="block w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">Middleware</a>
       </nav>
     </div>
     <button id="sidebar-open-keys"
@@ -1108,9 +1110,11 @@
                 class="font-mono text-slate-400">/api/settings</code> and localStorage.</p>
           </div>
           <div class="panel p-5 space-y-2">
-            <h3 class="text-sm font-medium text-white">5. Activity</h3>
-            <p class="leading-relaxed text-xs">In-memory log for this server process: finished video jobs and RPG worlds
-              that were planned or improved. It resets when the server restarts.</p>
+            <h3 class="text-sm font-medium text-white">5. Activity and middleware</h3>
+            <p class="leading-relaxed text-xs">Activity is the in-memory job list for this server process. The
+              middleware keeps a durable log of API requests, warnings, LLM token usage, and estimated cost. Open
+              Middleware in the sidebar, or go to <code class="font-mono">/observability</code>, while
+              <code class="font-mono">make dev</code> is running.</p>
           </div>
         </div>
       </section>
@@ -1352,6 +1356,14 @@
       <!-- VIEW 6: USAGE RECORDS & METRICS                                            -->
       <!-- ========================================================================== -->
       <section id="view-usage" class="content-view space-y-6 max-w-4xl mx-auto hidden">
+        <div class="panel p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-medium text-slate-200">Middleware</h3>
+            <p class="text-[12px] text-slate-500 mt-1">Live requests, logs, LLM tokens, and cost for this running
+              server. <span class="font-mono">make dev</span> prints the same address when it starts.</p>
+          </div>
+          <a href="/observability" class="btn-primary text-center">Open live view</a>
+        </div>
         <div class="grid grid-cols-3 gap-3">
           <div class="panel p-4">
             <span class="label">Total</span>

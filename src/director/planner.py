@@ -14,6 +14,7 @@ import requests
 from arkruntime import Ark
 
 from typing import Any, Dict, Optional
+from src.observability import track_llm
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,7 @@ class DirectorPlanner:
             else os.getenv("ARK_BASE_URL", base_url)
         ).rstrip("/")
         self.active_model_used = self.model_id
+        self.last_usage: Dict[str, Any] = {}
 
         self.client = None if env_key == "XAI_API_KEY" else Ark(base_url=self.base_url, api_key=self.api_key)
 
@@ -242,7 +244,9 @@ class DirectorPlanner:
             if not response.ok:
                 raise RuntimeError(f"xAI API error ({response.status_code}): {response.text}")
             try:
-                return response.json()["choices"][0]["message"]["content"]
+                data = response.json()
+                self.last_usage = data.get("usage") or {}
+                return data["choices"][0]["message"]["content"]
             except (KeyError, IndexError, TypeError) as exc:
                 raise RuntimeError("xAI response did not contain a chat completion") from exc
 
@@ -253,6 +257,12 @@ class DirectorPlanner:
                     model=model_id,
                     messages=[{"role": "user", "content": prompt}],
                 )
+                usage = getattr(resp, "usage", None)
+                if usage:
+                    self.last_usage = {
+                        "prompt_tokens": getattr(usage, "prompt_tokens", None),
+                        "completion_tokens": getattr(usage, "completion_tokens", None),
+                    }
                 if hasattr(resp, "choices") and resp.choices:
                     choice = resp.choices[0]
                     if hasattr(choice, "message") and hasattr(choice.message, "content"):
@@ -269,6 +279,7 @@ class DirectorPlanner:
                     model=model_id,
                     input=prompt,
                 )
+                self._remember_usage(getattr(resp, "usage", None))
                 if hasattr(resp, "output") and resp.output:
                     return resp.output[0].text
                 return str(resp)
@@ -280,6 +291,17 @@ class DirectorPlanner:
             raise last_err
         raise RuntimeError("No suitable LLM completion method available on Ark client.")
 
+    def _remember_usage(self, usage: Any) -> None:
+        if not usage:
+            return
+        if isinstance(usage, dict):
+            self.last_usage = usage
+            return
+        self.last_usage = {
+            "prompt_tokens": getattr(usage, "prompt_tokens", None) or getattr(usage, "input_tokens", None),
+            "completion_tokens": getattr(usage, "completion_tokens", None) or getattr(usage, "output_tokens", None),
+        }
+
     def _complete_json(self, user_prompt: str) -> Dict[str, Any]:
         """Runs prompt through primary model with fallback candidate models on 404/NotFound."""
         candidates = [self.model_id]
@@ -290,7 +312,14 @@ class DirectorPlanner:
         for model in candidates:
             try:
                 logger.info(f"Attempting Director LLM call with model {model}...")
-                raw_output = self._call_remote(model, user_prompt)
+                with track_llm(
+                    "director.complete",
+                    provider=self.provider,
+                    model=model,
+                    metadata={"prompt_chars": len(user_prompt)},
+                ) as observation:
+                    raw_output = self._call_remote(model, user_prompt)
+                    observation["usage"] = self.last_usage
                 parsed = _parse_json_object(raw_output)
                 self.active_model_used = model
                 return parsed

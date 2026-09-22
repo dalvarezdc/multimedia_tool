@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Observability middleware — RetroArk</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090A0F;
+      --surface: #11131C;
+      --line: rgba(255, 255, 255, 0.08);
+      --text: #e8eaf2;
+      --muted: #8b93a7;
+      --cyan: #00E5FF;
+      --gold: #FFD700;
+      --rose: #fb7185;
+      --amber: #fbbf24;
+      --green: #34d399;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.45 "Plus Jakarta Sans", "Segoe UI", sans-serif;
+    }
+    header, main { width: min(1100px, calc(100% - 32px)); margin: 0 auto; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-end;
+      padding: 28px 0 18px;
+    }
+    h1 { margin: 0; font-size: 22px; letter-spacing: -0.03em; }
+    .sub { color: var(--muted); margin: 6px 0 0; font-size: 13px; }
+    .links { display: flex; gap: 8px; flex-wrap: wrap; }
+    a.chip, button.chip {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 6px 12px;
+      text-decoration: none;
+      font: inherit;
+      cursor: pointer;
+    }
+    button.chip.active { border-color: var(--cyan); color: var(--cyan); }
+    .live { display: inline-flex; align-items: center; gap: 6px; color: var(--green); font-size: 12px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); }
+    .cards { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+    .card, .event, details {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+    .card { padding: 12px 14px; }
+    .card span { display: block; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .card strong { display: block; margin-top: 6px; font-size: 20px; font-variant-numeric: tabular-nums; }
+    .toolbar { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin: 16px 0; flex-wrap: wrap; }
+    #events { display: flex; flex-direction: column; gap: 8px; padding-bottom: 32px; }
+    .event { padding: 12px 14px; }
+    .event header, .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .event header { color: var(--muted); font-size: 12px; }
+    .name { margin: 6px 0; font-family: ui-monospace, "JetBrains Mono", monospace; font-size: 13px; word-break: break-word; }
+    .meta { color: var(--muted); font-size: 12px; }
+    .status { border-radius: 999px; padding: 1px 8px; }
+    .status.ok { color: var(--green); background: rgba(52, 211, 153, 0.12); }
+    .status.error { color: var(--rose); background: rgba(251, 113, 133, 0.12); }
+    .status.warning, .status.client_error, .status.qa_warning { color: var(--amber); background: rgba(251, 191, 36, 0.12); }
+    .kind { color: var(--cyan); }
+    button.linkish {
+      background: none; border: 0; color: var(--gold); font: inherit; cursor: pointer; padding: 0;
+    }
+    pre {
+      margin: 8px 0 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #c5cad8;
+      font: 12px/1.45 ui-monospace, "JetBrains Mono", monospace;
+    }
+    details { padding: 12px 14px; margin-bottom: 16px; }
+    summary { cursor: pointer; color: var(--muted); }
+    .empty, .error-banner { color: var(--muted); padding: 28px 8px; text-align: center; }
+    .error-banner { color: var(--rose); }
+    @media (max-width: 800px) {
+      .cards { grid-template-columns: repeat(2, 1fr); }
+      header { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="live"><span class="dot"></span> <span id="live-label">Middleware live</span></div>
+      <h1>Observability middleware</h1>
+      <p class="sub">Requests, warnings, LLM tokens, media jobs, and estimated cost for this server. Health checks are not stored.</p>
+    </div>
+    <div class="links">
+      <a class="chip" href="/">Studio</a>
+      <a class="chip" href="/metrics">Metrics</a>
+      <a class="chip" href="/api/observability/llm">LLM JSON</a>
+    </div>
+  </header>
+  <main>
+    <section class="cards" id="cards"></section>
+    <div class="toolbar">
+      <div class="links" id="filters"></div>
+      <div class="sub" id="updated">Waiting for the first read…</div>
+    </div>
+    <details>
+      <summary>Prometheus text</summary>
+      <pre id="metrics-text">Loading…</pre>
+    </details>
+    <section id="events"></section>
+  </main>
+  <script>
+    const filters = ["all", "http", "llm", "media_generation", "workflow", "log"];
+    const labels = {
+      all: "All",
+      http: "HTTP",
+      llm: "LLM",
+      media_generation: "Media",
+      workflow: "Workflow",
+      log: "Logs"
+    };
+    let activeKind = "all";
+    let activeTrace = "";
+
+    function text(value) {
+      return value == null || value === "" ? "—" : String(value);
+    }
+
+    function formatTime(epoch) {
+      if (!epoch) return "—";
+      return new Date(epoch * 1000).toLocaleTimeString();
+    }
+
+    function formatMs(ms) {
+      if (ms == null) return "—";
+      if (ms < 1000) return Math.round(ms) + " ms";
+      return (ms / 1000).toFixed(2) + " s";
+    }
+
+    function formatCost(value) {
+      const amount = Number(value || 0);
+      if (!amount) return "—";
+      return "$" + amount.toFixed(4);
+    }
+
+    function card(label, value) {
+      const node = document.createElement("div");
+      node.className = "card";
+      const span = document.createElement("span");
+      span.textContent = label;
+      const strong = document.createElement("strong");
+      strong.textContent = text(value);
+      node.append(span, strong);
+      return node;
+    }
+
+    function renderSummary(summary) {
+      const root = document.getElementById("cards");
+      root.replaceChildren(
+        card("Events", summary.events || 0),
+        card("Errors", summary.errors || 0),
+        card("Avg latency", formatMs(summary.avg_duration_ms)),
+        card("Input tokens", summary.input_tokens || 0),
+        card("Output tokens", summary.output_tokens || 0),
+        card("Est. cost", formatCost(summary.cost_usd))
+      );
+    }
+
+    function renderFilters() {
+      const root = document.getElementById("filters");
+      root.replaceChildren();
+      filters.forEach((kind) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "chip" + (kind === activeKind && !activeTrace ? " active" : "");
+        button.textContent = labels[kind];
+        button.onclick = () => {
+          activeKind = kind;
+          activeTrace = "";
+          load();
+        };
+        root.appendChild(button);
+      });
+      if (activeTrace) {
+        const clear = document.createElement("button");
+        clear.type = "button";
+        clear.className = "chip active";
+        clear.textContent = "Trace " + activeTrace.slice(0, 8) + " ×";
+        clear.onclick = () => {
+          activeTrace = "";
+          load();
+        };
+        root.appendChild(clear);
+      }
+    }
+
+    function renderEvents(events) {
+      const root = document.getElementById("events");
+      const visible = events.filter((event) => activeKind === "all" || event.kind === activeKind);
+      if (!visible.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = activeKind === "llm"
+          ? "No LLM calls yet. Plan a world or generate lyrics while this server is running."
+          : "No middleware events yet. Use the studio and this list will fill in.";
+        root.replaceChildren(empty);
+        return;
+      }
+      root.replaceChildren();
+      visible.forEach((event) => {
+        const article = document.createElement("article");
+        article.className = "event";
+        const head = document.createElement("header");
+        const when = document.createElement("span");
+        when.textContent = formatTime(event.created_at);
+        const kind = document.createElement("span");
+        kind.className = "kind";
+        kind.textContent = event.kind;
+        const status = document.createElement("span");
+        status.className = "status " + (event.status || "");
+        status.textContent = event.status || "ok";
+        const duration = document.createElement("span");
+        duration.textContent = formatMs(event.duration_ms);
+        head.append(when, kind, status, duration);
+
+        const name = document.createElement("div");
+        name.className = "name";
+        name.textContent = event.name || "—";
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        const model = [event.provider, event.model].filter(Boolean).join(" · ");
+        if (model) {
+          const modelNode = document.createElement("span");
+          modelNode.textContent = model;
+          meta.appendChild(modelNode);
+        }
+        const tokens = (event.input_tokens || 0) + (event.output_tokens || 0);
+        if (tokens) {
+          const tokenNode = document.createElement("span");
+          tokenNode.textContent = "in " + (event.input_tokens || 0) + " / out " + (event.output_tokens || 0);
+          meta.appendChild(tokenNode);
+        }
+        if (event.cost_usd) {
+          const costNode = document.createElement("span");
+          costNode.textContent = formatCost(event.cost_usd);
+          meta.appendChild(costNode);
+        }
+        if (event.trace_id) {
+          const trace = document.createElement("button");
+          trace.type = "button";
+          trace.className = "linkish";
+          trace.textContent = "trace " + event.trace_id.slice(0, 8);
+          trace.onclick = () => {
+            activeTrace = event.trace_id;
+            activeKind = "all";
+            load();
+          };
+          meta.appendChild(trace);
+        }
+
+        article.append(head, name, meta);
+        const metadata = event.metadata || {};
+        if (Object.keys(metadata).length) {
+          const pre = document.createElement("pre");
+          pre.textContent = JSON.stringify(metadata, null, 2);
+          article.appendChild(pre);
+        }
+        root.appendChild(article);
+      });
+    }
+
+    async function load() {
+      renderFilters();
+      const params = new URLSearchParams({ limit: "200" });
+      if (activeTrace) params.set("trace_id", activeTrace);
+      try {
+        const [summaryRes, activityRes, metricsRes] = await Promise.all([
+          fetch("/api/observability/summary"),
+          fetch("/api/observability/activity?" + params.toString()),
+          fetch("/metrics")
+        ]);
+        if (!summaryRes.ok || !activityRes.ok) throw new Error("middleware returned " + summaryRes.status);
+        renderSummary(await summaryRes.json());
+        renderEvents((await activityRes.json()).events || []);
+        document.getElementById("metrics-text").textContent = metricsRes.ok ? await metricsRes.text() : "Metrics are unavailable.";
+        document.getElementById("updated").textContent = "Updated " + new Date().toLocaleTimeString();
+        document.getElementById("live-label").textContent = "Middleware live";
+      } catch (err) {
+        const root = document.getElementById("events");
+        const banner = document.createElement("div");
+        banner.className = "error-banner";
+        banner.textContent = "The middleware is not responding. Start the app with make dev and reopen this page.";
+        root.replaceChildren(banner);
+        document.getElementById("live-label").textContent = "Middleware unreachable";
+      }
+    }
+
+    load();
+    setInterval(() => {
+      if (!document.hidden) load();
+    }, 2000);
+  </script>
+</body>
+</html>

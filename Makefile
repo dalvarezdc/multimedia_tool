@@ -13,7 +13,8 @@ help:
 	@echo "   MULTIMEDIA TOOL - Developer & Service Orchestration"
 	@echo "====================================================================="
 	@echo "  make install    Create .venv and install all Python (uv) & Node deps"
-	@echo "  make dev        Launch Web Studio & FastAPI API (http://localhost:8000)"
+	@echo "  make dev        Launch the studio (http://localhost:8000)"
+	@echo "                  and the observability middleware (/observability)"
 	@echo "  make serve      Alias for 'make dev'"
 	@echo "  make remotion   Start Remotion player development server"
 	@echo "  make cli        Run demo pipeline with BytePlus Seedance (watermark-free)"
@@ -42,7 +43,9 @@ dev: serve
 
 serve:
 	@echo "--> Launching Multimedia Web Studio at http://localhost:8000 ..."
-	$(PYTHON) -m src.server
+	@echo "--> Observability middleware: http://localhost:8000/observability"
+	@echo "--> Metrics: http://localhost:8000/metrics"
+	MULTIMEDIA_DEV_BANNER=1 OBSERVABILITY_ENABLED=1 $(PYTHON) -m src.server
 
 # Launch Remotion Preview Player
 remotion:

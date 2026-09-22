@@ -37,6 +37,14 @@ from src.models_registry import (
 )
 from src.inventory import inventory_manager
 from src.auth import AuthStore, build_auth_router, current_user, load_or_create_secret, persist_generation
+from src.observability import (
+    ObservabilityMiddleware,
+    configure_observability,
+    format_dev_banner,
+    parse_cost_usd,
+    print_dev_banner,
+    track_llm,
+)
 
 
 def _env_enabled(name: str, default: str = "1") -> bool:
@@ -66,7 +74,7 @@ try:
     from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Form, Request
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.staticfiles import StaticFiles
-    from fastapi.responses import FileResponse
+    from fastapi.responses import FileResponse, PlainTextResponse
 except ImportError:
     FastAPI = None
 
@@ -228,6 +236,9 @@ def create_app():
     os.makedirs(data_dir, exist_ok=True)
     os.makedirs(uploads_dir, exist_ok=True)
     os.makedirs(audio_uploads_dir, exist_ok=True)
+    observer = configure_observability(data_dir)
+    print_dev_banner()
+    app.add_middleware(ObservabilityMiddleware, observer=observer)
     assets_db_path = os.path.join(data_dir, "reference_assets.json")
     auth_store = AuthStore(data_dir)
     app.include_router(build_auth_router(auth_store, load_or_create_secret(data_dir)))
@@ -475,6 +486,26 @@ def create_app():
             "records": records
         }
 
+    @app.get("/api/observability/summary")
+    def observability_summary():
+        """Durable aggregate activity, latency, token, and cost totals."""
+        return observer.summary()
+
+    @app.get("/api/observability/activity")
+    def observability_activity(limit: int = 100, trace_id: Optional[str] = None, kind: Optional[str] = None):
+        """Recent request, log, workflow, provider, and LLM events."""
+        return {"events": observer.recent(limit=limit, trace_id=trace_id, kind=kind)}
+
+    @app.get("/api/observability/llm")
+    def observability_llm(limit: int = 100):
+        """LLM calls with model, latency, token, and cost fields when the provider returned them."""
+        return {"events": observer.recent(limit=limit, kind="llm")}
+
+    @app.get("/metrics", response_class=PlainTextResponse)
+    def prometheus_metrics():
+        """Prometheus-compatible application counters."""
+        return observer.prometheus()
+
     @app.get("/api/cost/estimate")
     def estimate_cost(
         model: str,
@@ -573,6 +604,17 @@ def create_app():
                 req.topic, req.global_context, req.character_profile, req.chapter_count, req.purpose
             )
             store["storyboard"] = storyboard
+            observer.record(
+                "workflow",
+                "director.plan",
+                "ok",
+                provider="local",
+                model="local-rules",
+                metadata={
+                    "director_mode": "local_deterministic",
+                    "chapters": len(storyboard.get("chapters") or []),
+                },
+            )
             return {
                 "status": "success",
                 "storyboard": storyboard,
@@ -612,6 +654,22 @@ def create_app():
                 "status": "succeeded",
                 "watermark_free": False
             })
+            usage = getattr(planner, "last_usage", None) or {}
+            if not isinstance(usage, dict):
+                usage = {}
+            observer.record(
+                "workflow",
+                "director.plan",
+                "ok",
+                provider=provider,
+                model=active_model,
+                input_tokens=usage.get("input_tokens") or usage.get("prompt_tokens"),
+                output_tokens=usage.get("output_tokens") or usage.get("completion_tokens"),
+                metadata={
+                    "director_mode": director_mode,
+                    "chapters": len(storyboard.get("chapters") or []),
+                },
+            )
             return {
                 "status": "success",
                 "storyboard": storyboard,
@@ -621,6 +679,14 @@ def create_app():
             }
         except Exception as e:
             logger.error(f"Planning failed: {e}")
+            observer.record(
+                "workflow",
+                "director.plan",
+                "error",
+                provider=provider,
+                model=model_id,
+                metadata={"error_type": type(e).__name__},
+            )
             raise HTTPException(status_code=500, detail=str(e))
 
     @app.get("/api/storyboard")
@@ -772,6 +838,8 @@ def create_app():
         task_id = str(cid)
         img_path = os.path.join(img_dir, f"img_{task_id}.png")
         start_ts = time.time()
+        trace_id = request.state.trace_id
+        run_id = request.state.run_id
 
         task_entry = {
             "status": "generating",
@@ -879,6 +947,13 @@ def create_app():
                     "status": "succeeded",
                     "watermark_free": True
                 })
+                observer.record(
+                    "media_generation", "image.generate", "ok", total_elapsed * 1000,
+                    provider=image_provider, model=image_model_id,
+                    cost_usd=parse_cost_usd(est_cost),
+                    metadata={"task_id": task_id, "estimated_cost": est_cost},
+                    trace_id=trace_id, run_id=run_id,
+                )
                 persist_generation(auth_store, history_user_id, {
                     "id": f"img-{task_id}",
                     "title": (req.prompt or "Generated image")[:80],
@@ -901,6 +976,12 @@ def create_app():
                 }
                 store["tasks"][cid] = err_entry
                 store["tasks"][task_id] = err_entry
+                observer.record(
+                    "media_generation", "image.generate", "error",
+                    (time.time() - start_ts) * 1000, provider=image_provider, model=image_model_id,
+                    metadata={"task_id": task_id, "error_type": type(e).__name__},
+                    trace_id=trace_id, run_id=run_id,
+                )
 
         background_tasks.add_task(_worker)
         return {
@@ -961,6 +1042,8 @@ def create_app():
             "grok-imagine-video-1.5" if provider == "grok" else "dreamina-seedance-2-5-260628"
         )
         start_ts = time.time()
+        trace_id = request.state.trace_id
+        run_id = request.state.run_id
 
         task_entry = {
             "status": "generating",
@@ -1107,6 +1190,14 @@ def create_app():
                     "status": "succeeded" if passed else "qa_warning",
                     "watermark_free": True
                 })
+                observer.record(
+                    "media_generation", "video.generate", "ok" if passed else "qa_warning",
+                    total_elapsed * 1000, provider=provider, model=video_model_id,
+                    cost_usd=parse_cost_usd(est_cost),
+                    metadata={"chapter_id": req.chapter_id, "estimated_cost": est_cost,
+                              "qa_reason": reason},
+                    trace_id=trace_id, run_id=run_id,
+                )
                 persist_generation(auth_store, history_user_id, {
                     "id": f"gen-{req.chapter_id}",
                     "title": (req.prompt or "Generated clip")[:80],
@@ -1126,6 +1217,12 @@ def create_app():
                     "elapsed_seconds": int(time.time() - start_ts),
                     "error": str(exc)
                 }
+                observer.record(
+                    "media_generation", "video.generate", "error",
+                    (time.time() - start_ts) * 1000, provider=provider, model=video_model_id,
+                    metadata={"chapter_id": req.chapter_id, "error_type": type(exc).__name__},
+                    trace_id=trace_id, run_id=run_id,
+                )
 
         store["tasks"][req.chapter_id] = {
             "status": "processing",
@@ -1264,6 +1361,17 @@ def create_app():
                 "history_recorded": False,
                 "choices": result.get("choices", [])
             }
+            audio_model = result.get("model") or resolved_model or "mureka-9.5"
+            est_cost = calculate_model_cost(audio_model, clip_count=req.n, mode=mode)
+            observer.record(
+                "media_generation",
+                "audio.generate",
+                "ok",
+                provider="mureka",
+                model=audio_model,
+                cost_usd=parse_cost_usd(est_cost),
+                metadata={"mode": mode, "task_id": task_id, "estimated_cost": est_cost},
+            )
             return {
                 "id": task_id,
                 "task_id": task_id,
@@ -1280,6 +1388,14 @@ def create_app():
             raise HTTPException(status_code=400, detail=str(exc))
         except Exception as exc:
             logger.error(f"Failed to initiate Mureka audio task: {exc}", exc_info=True)
+            observer.record(
+                "media_generation",
+                "audio.generate",
+                "error",
+                provider="mureka",
+                model=resolved_model,
+                metadata={"mode": mode, "error_type": type(exc).__name__},
+            )
             raise HTTPException(status_code=500, detail="Mureka audio request failed.")
 
     @app.get("/api/audio/status/{task_id}")
@@ -1373,7 +1489,13 @@ def create_app():
             raise HTTPException(status_code=400, detail="MUREKA_API_KEY is not configured.")
         try:
             client = get_audio_generator(api_key=key)
-            return client.generate_lyrics(req.prompt)
+            with track_llm(
+                "mureka.lyrics",
+                provider="mureka",
+                model="mureka",
+                metadata={"prompt_chars": len(req.prompt or "")},
+            ):
+                return client.generate_lyrics(req.prompt)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
         except Exception as exc:
@@ -1543,7 +1665,19 @@ def create_app():
     # =========================================================================
     # 5. PAGES ROUTING: UNIFIED CONSOLE & SERVICES
     # In Docker, nginx serves ui/ and proxies /api, /uploads, /renders here.
+    # The middleware page is served here for `make dev` and by nginx in Docker.
     # =========================================================================
+    @app.get("/observability")
+    def serve_observability():
+        """Live request, log, LLM, and metrics view for the running server."""
+        page = os.path.join(ui_dir, "observability.html")
+        if os.path.exists(page):
+            return FileResponse(page)
+        return PlainTextResponse(
+            format_dev_banner() + "\nThe HTML view is not installed in this process.\n",
+            status_code=404,
+        )
+
     serve_ui = _env_enabled("SERVE_UI", "1")
     if serve_ui:
         @app.get("/")
@@ -1586,4 +1720,6 @@ def create_app():
 
 if __name__ == "__main__":
     import uvicorn
+    os.environ.setdefault("MULTIMEDIA_DEV_BANNER", "1")
+    os.environ.setdefault("OBSERVABILITY_ENABLED", "1")
     uvicorn.run("src.server:create_app", factory=True, host="0.0.0.0", port=8000, reload=True)
