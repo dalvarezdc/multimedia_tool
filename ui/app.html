@@ -187,7 +187,9 @@
       </div>
       <nav class="px-2 pt-2 space-y-0.5 text-[13px]">
         <button data-view="video"
-          class="sidebar-link active w-full text-left px-3 py-2 rounded-lg text-slate-200">Multimedia Studio</button>
+          class="sidebar-link active w-full text-left px-3 py-2 rounded-lg text-slate-200">Vision Studio</button>
+        <button data-view="audio"
+          class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">Audio Studio</button>
         <button data-view="rpg"
           class="sidebar-link w-full text-left px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">RPG
           Studio</button>
@@ -216,9 +218,9 @@
     <header
       class="h-14 border-b border-white/[0.06] px-6 flex items-center justify-between shrink-0 bg-[#090A0F]/80 backdrop-blur-md z-30">
       <div class="flex items-center gap-3">
-        <h1 id="breadcrumb-title" class="text-[15px] font-medium text-slate-100 hidden">Multimedia Studio</h1>
+        <h1 id="breadcrumb-title" class="text-[15px] font-medium text-slate-100 hidden">Vision Studio</h1>
 
-        <div class="flex items-center gap-2 bg-surface/80 border border-white/10 rounded-xl px-3 py-1.5 shadow-sm">
+        <div id="header-model-pill" class="flex items-center gap-2 bg-surface/80 border border-white/10 rounded-xl px-3 py-1.5 shadow-sm">
           <span id="header-model-icon" class="text-purple-400 flex items-center">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path
@@ -494,7 +496,457 @@
       </section>
 
       <!-- ========================================================================== -->
-      <!-- VIEW 2: RPG STUDIO (SERVICE 2 - PLAYABLE & EXPORTABLE RPG ENGINE)           -->
+      <!-- VIEW 2: AUDIO STUDIO (MUREKA AI MUSIC & SOUNDTRACK ENGINE)                 -->
+      <!-- ========================================================================== -->
+      <section id="view-audio" class="content-view max-w-5xl mx-auto space-y-6 pt-2 hidden">
+        <!-- Audio Headline -->
+        <div class="text-center pt-2 pb-1">
+          <h2 id="audio-dynamic-headline" class="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            Experience music generation and let melodies flow
+          </h2>
+        </div>
+
+        <!-- Audio Composer Card (Inspired by Vision Studio composer) -->
+        <div
+          class="glass-card rounded-2xl p-4 sm:p-5 border border-white/10 shadow-2xl relative transition-all duration-300 space-y-3.5">
+          <!-- Top Row: Song Title (Small Prompt - max 100 chars) + Reference Audio Slot -->
+          <div class="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+            <!-- Audio Reference Dropzone Slot & Upload Analysis Trigger -->
+            <div id="audio-dropzone-slot" class="flex items-center gap-2 shrink-0">
+              <button id="btn-audio-ref-slot" type="button"
+                class="h-10 px-3 rounded-xl border border-dashed border-white/20 hover:border-cyan-400/60 bg-white/[0.02] hover:bg-cyan-500/[0.05] flex items-center gap-2 text-slate-400 hover:text-cyan-300 transition-all cursor-pointer group"
+                title="Attach reference audio or vocal sample">
+                <span class="text-sm group-hover:scale-110 transition-transform">🎵</span>
+                <span id="audio-ref-slot-label" class="text-xs font-medium tracking-tight">Ref / Voice</span>
+              </button>
+
+              <button id="btn-toggle-audio-upload-panel" type="button"
+                class="h-10 px-3 rounded-xl border border-cyan-500/40 hover:border-cyan-400 bg-cyan-950/40 hover:bg-cyan-900/50 flex items-center gap-2 text-cyan-300 hover:text-white transition-all cursor-pointer group shadow-sm"
+                title="Upload song (.mp3, .m4a, .wav <= 10MB) to auto-recognize lyrics, auto-describe style, and auto-transcribe sheet music">
+                <span class="text-sm group-hover:scale-110 transition-transform">🎙️</span>
+                <span class="text-xs font-semibold tracking-tight">Upload & Analyze Song</span>
+              </button>
+            </div>
+
+            <!-- Song Title Input (Small Prompt - max 100 chars) -->
+            <div class="flex-1 flex items-center justify-between gap-2 bg-white/[0.03] hover:bg-white/[0.05] focus-within:bg-white/[0.06] border border-white/10 focus-within:border-cyan-500/50 rounded-xl px-3.5 py-2 transition-all">
+              <div class="flex items-center gap-2 flex-1 min-w-0">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-cyan-400/90 shrink-0">Title</span>
+                <input id="audio-title-input" type="text" maxlength="100"
+                  class="w-full bg-transparent border-0 text-white placeholder:text-slate-500 text-xs sm:text-sm focus:ring-0 p-0 leading-tight outline-none"
+                  placeholder="Song Title (small, e.g. Midnight Horizon, Neon Rain...)" />
+              </div>
+              <span id="audio-title-counter" class="text-[10px] font-mono text-slate-500 shrink-0 select-none">0 / 100</span>
+            </div>
+          </div>
+
+          <!-- Audio Ref Attached Chip Tray (if reference selected) -->
+          <div id="audio-ref-tray" class="hidden py-1.5 px-3 rounded-lg bg-cyan-950/40 border border-cyan-800/30 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="text-[10px] font-semibold text-cyan-300 uppercase tracking-wider">Audio Reference:</span>
+              <span id="audio-ref-filename" class="text-[11px] font-mono text-cyan-200 truncate max-w-xs"></span>
+            </div>
+            <button id="btn-clear-audio-ref" type="button" class="text-[10px] text-slate-400 hover:text-rose-400 transition-colors cursor-pointer ml-2">Remove</button>
+          </div>
+
+          <!-- Prompt 2: Style Prompt (Max 1,024 characters) -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between text-xs">
+              <label for="audio-prompt-input" class="font-medium text-slate-200 flex items-center gap-1.5">
+                <span class="text-sm">🎛️</span>
+                <span>Style Prompt</span>
+                <span class="text-[11px] font-normal text-slate-400 hidden sm:inline">(genre, mood, tempo, instruments, vocal timbre)</span>
+              </label>
+              <span id="audio-style-counter" class="text-[10px] font-mono text-slate-500 select-none">0 / 1,024</span>
+            </div>
+            <div class="relative bg-white/[0.02] hover:bg-white/[0.04] focus-within:bg-white/[0.05] border border-white/10 focus-within:border-cyan-500/50 rounded-xl p-2.5 sm:p-3 transition-all">
+              <textarea id="audio-prompt-input" rows="2" maxlength="1024"
+                class="w-full bg-transparent border-0 text-slate-100 placeholder:text-slate-500 text-xs sm:text-sm focus:ring-0 resize-none leading-relaxed p-0 outline-none"
+                placeholder="Describe your musical style, instruments, and mood (e.g., 'An energetic retro synthwave track with soaring analog lead melodies, gated 80s drums, and driving bassline')."></textarea>
+            </div>
+            <!-- Quick Style Pills -->
+            <div id="audio-style-pills" class="flex flex-wrap items-center gap-1.5 pt-0.5">
+              <span class="text-[10px] font-medium text-slate-500 uppercase tracking-wider mr-0.5">Presets:</span>
+              <button type="button" class="audio-style-pill px-2 py-0.5 rounded-full bg-white/[0.04] hover:bg-white/10 text-slate-300 text-[11px] border border-white/5 cursor-pointer transition-colors" data-style="pop">Pop</button>
+              <button type="button" class="audio-style-pill px-2 py-0.5 rounded-full bg-white/[0.04] hover:bg-white/10 text-slate-300 text-[11px] border border-white/5 cursor-pointer transition-colors" data-style="rock">Rock</button>
+              <button type="button" class="audio-style-pill px-2 py-0.5 rounded-full bg-white/[0.04] hover:bg-white/10 text-slate-300 text-[11px] border border-white/5 cursor-pointer transition-colors" data-style="synthwave">Synthwave</button>
+              <button type="button" class="audio-style-pill px-2 py-0.5 rounded-full bg-white/[0.04] hover:bg-white/10 text-slate-300 text-[11px] border border-white/5 cursor-pointer transition-colors" data-style="edm">EDM</button>
+              <button type="button" class="audio-style-pill px-2 py-0.5 rounded-full bg-white/[0.04] hover:bg-white/10 text-slate-300 text-[11px] border border-white/5 cursor-pointer transition-colors" data-style="lo-fi">Lo-Fi</button>
+              <button type="button" class="audio-style-pill px-2 py-0.5 rounded-full bg-white/[0.04] hover:bg-white/10 text-slate-300 text-[11px] border border-white/5 cursor-pointer transition-colors" data-style="ambient">Ambient</button>
+              <button type="button" class="audio-style-pill px-2 py-0.5 rounded-full bg-white/[0.04] hover:bg-white/10 text-slate-300 text-[11px] border border-white/5 cursor-pointer transition-colors" data-style="orchestral">Orchestral</button>
+              <button type="button" class="audio-style-pill px-2 py-0.5 rounded-full bg-white/[0.04] hover:bg-white/10 text-slate-300 text-[11px] border border-white/5 cursor-pointer transition-colors" data-style="jazz">Jazz</button>
+              <button type="button" class="audio-style-pill px-2 py-0.5 rounded-full bg-white/[0.04] hover:bg-white/10 text-slate-300 text-[11px] border border-white/5 cursor-pointer transition-colors" data-style="8-bit">8-Bit</button>
+            </div>
+          </div>
+
+          <!-- Prompt 3: Lyrics Prompt (Max 5,000 characters) -->
+          <div id="audio-lyrics-wrap" class="space-y-1.5 pt-1">
+            <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <label for="audio-lyrics-input" class="font-medium text-slate-200 flex items-center gap-1.5">
+                <span class="text-sm">✍️</span>
+                <span>Lyrics Prompt</span>
+                <span class="text-[11px] font-normal text-slate-400 hidden sm:inline">(verses, chorus & section tags)</span>
+              </label>
+              <!-- Structure Tag Insert Buttons & AI Generate -->
+              <div class="flex items-center gap-1.5">
+                <div class="flex items-center gap-1">
+                  <span class="text-[10px] text-slate-500 uppercase tracking-wider hidden md:inline">Insert:</span>
+                  <button type="button" class="audio-tag-btn px-1.5 py-0.5 rounded bg-white/[0.05] hover:bg-cyan-500/20 text-[10px] text-slate-300 hover:text-cyan-300 border border-white/5 cursor-pointer transition-colors" data-tag="[Intro]">[Intro]</button>
+                  <button type="button" class="audio-tag-btn px-1.5 py-0.5 rounded bg-white/[0.05] hover:bg-cyan-500/20 text-[10px] text-slate-300 hover:text-cyan-300 border border-white/5 cursor-pointer transition-colors" data-tag="[Verse]">[Verse]</button>
+                  <button type="button" class="audio-tag-btn px-1.5 py-0.5 rounded bg-white/[0.05] hover:bg-cyan-500/20 text-[10px] text-slate-300 hover:text-cyan-300 border border-white/5 cursor-pointer transition-colors" data-tag="[Chorus]">[Chorus]</button>
+                  <button type="button" class="audio-tag-btn px-1.5 py-0.5 rounded bg-white/[0.05] hover:bg-cyan-500/20 text-[10px] text-slate-300 hover:text-cyan-300 border border-white/5 cursor-pointer transition-colors" data-tag="[Bridge]">[Bridge]</button>
+                  <button type="button" class="audio-tag-btn px-1.5 py-0.5 rounded bg-white/[0.05] hover:bg-cyan-500/20 text-[10px] text-slate-300 hover:text-cyan-300 border border-white/5 cursor-pointer transition-colors" data-tag="[Outro]">[Outro]</button>
+                </div>
+                <button id="btn-ai-generate-lyrics" type="button" class="ml-1 text-[11px] font-medium text-cyan-400 hover:text-cyan-300 bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-800/40 px-2.5 py-0.5 rounded-lg transition-colors cursor-pointer">✨ AI Lyrics</button>
+                <span id="audio-lyrics-counter" class="text-[10px] font-mono text-slate-500 select-none ml-1">0 / 5,000</span>
+              </div>
+            </div>
+            <div class="relative bg-white/[0.02] hover:bg-white/[0.04] focus-within:bg-white/[0.05] border border-white/10 focus-within:border-cyan-500/50 rounded-xl p-2.5 sm:p-3 transition-all">
+              <textarea id="audio-lyrics-input" rows="4" maxlength="5000"
+                class="w-full bg-transparent border-0 text-slate-100 placeholder:text-slate-500 text-xs sm:text-sm focus:ring-0 leading-relaxed p-0 outline-none font-mono"
+                placeholder="[Verse 1]&#10;In the neon city lights, shadows learn to fly...&#10;&#10;[Chorus]&#10;Running through the midnight rain, nothing is the same...&#10;&#10;[Outro]&#10;Fading into the dawn..."></textarea>
+            </div>
+          </div>
+
+          <!-- Optional Extension Configuration Row -->
+          <div id="audio-extend-wrap" class="hidden pt-2 border-t border-white/[0.06] flex flex-wrap items-center gap-3">
+            <div class="flex-1 min-w-[200px]">
+              <label class="block text-[11px] font-medium text-slate-300 mb-1">Original Song ID to Extend:</label>
+              <input id="audio-extend-song-id" type="text" class="w-full bg-black/40 border border-white/10 rounded-lg text-slate-100 placeholder:text-slate-500 text-xs px-3 py-1.5 focus:outline-none focus:border-cyan-500/50" placeholder="e.g. 1184323214249127936">
+            </div>
+            <div class="w-32">
+              <label class="block text-[11px] font-medium text-slate-300 mb-1">Extend at (sec):</label>
+              <input id="audio-extend-at-sec" type="number" value="30" min="5" max="300" class="w-full bg-black/40 border border-white/10 rounded-lg text-slate-100 text-xs px-3 py-1.5 focus:outline-none focus:border-cyan-500/50">
+            </div>
+          </div>
+
+          <!-- Inside Card Bottom Bar -->
+          <div class="mt-2 pt-3 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3 text-xs">
+            <!-- Left Controls: Mode & Model & Vocal Gender -->
+            <div class="flex flex-wrap items-center gap-2">
+              <!-- Mode Selector Pill -->
+              <div class="relative">
+                <select id="audio-select-mode"
+                  class="bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg px-2.5 py-1 text-xs focus:ring-0 cursor-pointer transition-colors">
+                  <option value="song_generate">✍️ Lyrics to Song</option>
+                  <option value="easy_generate">🎵 Prompt to Song</option>
+                  <option value="soundtrack">🎬 Soundtrack / BGM</option>
+                  <option value="instrumental">🎼 Instrumental</option>
+                  <option value="extend">⏩ Extend Song</option>
+                </select>
+              </div>
+
+              <!-- Model Selector Pill -->
+              <div class="relative">
+                <select id="audio-select-model"
+                  class="bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg px-2.5 py-1 text-xs focus:ring-0 cursor-pointer transition-colors">
+                  <option value="mureka-9.5">Mureka 9.5 (Flagship)</option>
+                  <option value="mureka-9">Mureka 9.0</option>
+                  <option value="mureka-8">Mureka 8.0 (Extension)</option>
+                  <option value="mureka-7.6">Mureka 7.6</option>
+                  <option value="mureka-soundtrack">Mureka Soundtrack</option>
+                  <option value="mureka-instrumental">Mureka Instrumental</option>
+                </select>
+              </div>
+
+              <!-- Vocal Gender Pill -->
+              <div class="relative">
+                <select id="audio-select-gender"
+                  class="bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 rounded-lg px-2.5 py-1 text-xs focus:ring-0 cursor-pointer transition-colors">
+                  <option value="">Any Vocal</option>
+                  <option value="female">Female Vocal</option>
+                  <option value="male">Male Vocal</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Right Controls: Status Capsule, Cost & Submit Button -->
+            <div class="flex items-center gap-2.5 ml-auto shrink-0">
+              <!-- Live generation status indicator capsule -->
+              <div id="audio-status-capsule"
+                class="hidden items-center gap-2 px-3 py-1 rounded-full bg-surface-2/95 border border-cyan-500/30 text-xs shadow-lg">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-400"></span>
+                </span>
+                <span id="audio-stage-label" class="text-slate-200 font-medium tracking-wide">Composing…</span>
+                <span id="audio-elapsed-badge" class="text-[10px] text-cyan-300 font-mono bg-cyan-950/60 border border-cyan-800/40 px-1.5 py-0.5 rounded">0s</span>
+              </div>
+
+              <span id="audio-cost-label" class="text-xs text-slate-400 font-mono">10 credits (~$0.10)</span>
+              <button id="btn-generate-audio-action" type="button"
+                class="w-9 h-9 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white flex items-center justify-center font-bold text-lg shadow-glow-cyan transition-all transform active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Generate Music">
+                ↑
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden input for file upload -->
+        <input type="file" id="audio-ref-file-input" accept="audio/*,video/*,image/*" class="hidden" />
+
+        <!-- Audio Upload & Auto-Analysis Panel -->
+        <div id="audio-upload-panel" class="hidden glass-card rounded-2xl p-4 sm:p-5 border border-cyan-500/40 shadow-2xl relative transition-all duration-300 space-y-4">
+          <div class="flex items-center justify-between pb-2 border-b border-white/10">
+            <div class="flex items-center gap-2.5">
+              <span class="text-xl">🎙️</span>
+              <div>
+                <h3 class="text-sm font-bold text-white tracking-wide flex items-center gap-2">
+                  <span>Upload & Auto-Analyze Song</span>
+                  <span class="text-[10px] font-mono text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-2 py-0.5 rounded">Mureka Audio Engine</span>
+                </h3>
+                <p class="text-[11px] text-slate-400 mt-0.5">Upload a single song file (.mp3, .m4a, or .wav up to 10MB) to automatically recognize lyrics, extract style & instruments, and transcribe sheet music scores.</p>
+              </div>
+            </div>
+            <button id="btn-close-audio-upload-panel" type="button" class="text-slate-400 hover:text-white text-xs px-2.5 py-1 rounded-lg hover:bg-white/5 border border-white/5 transition-colors cursor-pointer">✕ Close</button>
+          </div>
+
+          <!-- Drag and drop zone -->
+          <div id="audio-file-dropzone" class="border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 rounded-xl p-6 sm:p-8 bg-cyan-950/10 hover:bg-cyan-950/25 transition-all text-center cursor-pointer group flex flex-col items-center justify-center gap-2">
+            <input type="file" id="audio-upload-file-input" accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/wav" class="hidden" />
+            <div class="w-12 h-12 rounded-full bg-cyan-500/10 group-hover:bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-2xl transition-transform group-hover:scale-110">
+              🎵
+            </div>
+            <div class="text-xs sm:text-sm font-semibold text-slate-200">
+              <span class="text-cyan-400 group-hover:underline">Choose an audio file</span> or drag & drop here
+            </div>
+            <div id="audio-selected-file-info" class="text-[11px] text-slate-400 font-mono">
+              Accepted: MP3, M4A, WAV (Max 10MB)
+            </div>
+          </div>
+
+          <!-- Analysis Options Checkboxes -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+            <label class="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-cyan-500/30 cursor-pointer transition-colors">
+              <input type="checkbox" id="chk-auto-recognize" checked class="mt-0.5 rounded text-cyan-500 focus:ring-cyan-500 border-white/20 bg-black/40 cursor-pointer">
+              <div class="text-xs">
+                <span class="font-medium text-slate-200 block">Recognize Lyrics</span>
+                <span class="text-[10px] text-slate-400 block">Extract verses, chorus & timestamped lyrics</span>
+              </div>
+            </label>
+            <label class="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-cyan-500/30 cursor-pointer transition-colors">
+              <input type="checkbox" id="chk-auto-describe" checked class="mt-0.5 rounded text-cyan-500 focus:ring-cyan-500 border-white/20 bg-black/40 cursor-pointer">
+              <div class="text-xs">
+                <span class="font-medium text-slate-200 block">Describe Style</span>
+                <span class="text-[10px] text-slate-400 block">Detect genre, instruments & style summary</span>
+              </div>
+            </label>
+            <label class="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-cyan-500/30 cursor-pointer transition-colors">
+              <input type="checkbox" id="chk-auto-transcribe" checked class="mt-0.5 rounded text-cyan-500 focus:ring-cyan-500 border-white/20 bg-black/40 cursor-pointer">
+              <div class="text-xs">
+                <span class="font-medium text-slate-200 block">Transcribe Sheet Music</span>
+                <span class="text-[10px] text-slate-400 block">Generate sheet music XML & PDF (.ZIP)</span>
+              </div>
+            </label>
+          </div>
+
+          <!-- Action button and status -->
+          <div class="flex items-center justify-between gap-3 pt-1">
+            <div id="audio-upload-status" class="text-xs text-slate-400 flex items-center gap-2">
+              <span class="text-[11px] text-slate-500">Ready to upload</span>
+            </div>
+            <button id="btn-submit-audio-upload" type="button" disabled
+              class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2 cursor-pointer">
+              <span>Upload & Analyze</span>
+              <span id="audio-upload-spinner" class="hidden">⏳</span>
+            </button>
+          </div>
+
+          <!-- Analyzed Song Breakdown Card -->
+          <div id="audio-analysis-breakdown" class="hidden border-t border-white/10 pt-4 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3 bg-white/[0.02] p-3 rounded-xl border border-white/10">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-cyan-950/60 border border-cyan-800/40 flex items-center justify-center text-cyan-300 font-bold text-base">
+                  🎧
+                </div>
+                <div>
+                  <div id="breakdown-filename" class="text-xs font-bold text-white truncate max-w-xs sm:max-w-md">Song.mp3</div>
+                  <div id="breakdown-meta" class="text-[10px] font-mono text-slate-400">Duration: -- | Mureka File ID: --</div>
+                </div>
+              </div>
+              <audio id="breakdown-audio-player" controls class="h-8 max-w-[240px] rounded-lg"></audio>
+            </div>
+
+            <!-- 3-Column Breakdown: Style, Lyrics, Sheet Music -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <!-- Style & Tags Card -->
+              <div class="glass-card p-3.5 rounded-xl border border-white/10 space-y-2.5 flex flex-col justify-between">
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <span>🎛️</span> Style & Genres
+                    </span>
+                    <span id="breakdown-describe-status" class="text-[10px] font-mono text-slate-400"></span>
+                  </div>
+                  <p id="breakdown-description-text" class="text-xs text-slate-300 leading-relaxed italic bg-black/20 p-2.5 rounded-lg border border-white/5 min-h-[60px]">
+                    No style description available.
+                  </p>
+                  <div>
+                    <span class="text-[10px] font-medium text-slate-500 uppercase tracking-wider block mb-1">Detected Genres & Tags (Click to add):</span>
+                    <div id="breakdown-tags-container" class="flex flex-wrap gap-1">
+                      <!-- Dynamic genre and tag badges -->
+                    </div>
+                  </div>
+                </div>
+                <button id="btn-apply-analyzed-style" type="button" class="w-full mt-2 py-1.5 px-3 rounded-lg bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-700/50 text-cyan-300 text-xs font-medium transition-colors cursor-pointer flex items-center justify-center gap-1.5">
+                  <span>Apply to Style Prompt</span>
+                </button>
+              </div>
+
+              <!-- Recognized Lyrics Card -->
+              <div class="glass-card p-3.5 rounded-xl border border-white/10 space-y-2.5 flex flex-col justify-between">
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <span>✍️</span> Recognized Lyrics
+                    </span>
+                    <span id="breakdown-lyrics-status" class="text-[10px] font-mono text-slate-400"></span>
+                  </div>
+                  <pre id="breakdown-lyrics-text" class="text-xs font-mono text-slate-300 leading-relaxed bg-black/20 p-2.5 rounded-lg border border-white/5 overflow-y-auto max-h-[140px] whitespace-pre-wrap">No lyrics recognized.</pre>
+                </div>
+                <button id="btn-apply-analyzed-lyrics" type="button" class="w-full mt-2 py-1.5 px-3 rounded-lg bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-700/50 text-cyan-300 text-xs font-medium transition-colors cursor-pointer flex items-center justify-center gap-1.5">
+                  <span>Apply to Lyrics Prompt</span>
+                </button>
+              </div>
+
+              <!-- Sheet Music & Scores Card -->
+              <div class="glass-card p-3.5 rounded-xl border border-white/10 space-y-2.5 flex flex-col justify-between">
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <span>🎼</span> Sheet Music
+                    </span>
+                    <span id="breakdown-transcribe-status" class="text-[10px] font-mono text-slate-400"></span>
+                  </div>
+                  <div class="bg-black/20 p-3 rounded-lg border border-white/5 space-y-1.5 text-xs text-slate-300">
+                    <div class="flex items-center gap-2">
+                      <span class="text-base">📄</span>
+                      <span class="font-medium text-slate-200">Scores: MusicXML & PDF</span>
+                    </div>
+                    <p class="text-[10px] text-slate-400 leading-normal">Full musical notation transcribed from uploaded audio for digital notation editors & print.</p>
+                    <div id="breakdown-sheet-expires" class="text-[10px] font-mono text-amber-400/90 pt-1"></div>
+                  </div>
+                </div>
+                <a id="btn-download-sheet-music" href="#" target="_blank" class="w-full mt-2 py-1.5 px-3 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-semibold transition-all flex items-center justify-center gap-1.5 pointer-events-none opacity-50">
+                  <span>📥 Download Sheet Music (.ZIP)</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inspirations Gallery Drawer -->
+        <div class="flex items-center justify-between text-xs px-1 text-slate-400">
+          <button id="btn-toggle-audio-examples" type="button"
+            class="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer py-1">
+            <span>Try an audio inspiration</span>
+            <span id="audio-example-chevron" class="text-[11px] transform transition-transform">▲</span>
+          </button>
+        </div>
+
+        <div id="audio-examples-drawer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 transition-all duration-300">
+          <div class="audio-example-card glass-card p-3 rounded-xl border border-white/5 hover:border-cyan-500/30 hover:bg-white/[0.03] transition-all cursor-pointer group"
+            data-prompt="An energetic retro synthwave track with soaring analog lead melodies, gated 80s drums, and driving bassline" data-styles="edm,ambient" data-mode="easy_generate">
+            <div class="text-xs font-semibold text-slate-200 group-hover:text-cyan-300 transition-colors">Cyberpunk Synthwave</div>
+            <p class="text-[11px] text-slate-400 line-clamp-2 mt-1">Driving 80s analog bass, soaring synth leads, and retro neon vibes.</p>
+            <div class="flex items-center gap-1 mt-2 text-[10px] text-cyan-400 font-mono">
+              <span>Use prompt →</span>
+            </div>
+          </div>
+          <div class="audio-example-card glass-card p-3 rounded-xl border border-white/5 hover:border-cyan-500/30 hover:bg-white/[0.03] transition-all cursor-pointer group"
+            data-prompt="Upbeat chiptune platformer soundtrack with nostalgic 16-bit square wave melodies and energetic adventure rhythm" data-styles="8-bit,pop" data-mode="easy_generate">
+            <div class="text-xs font-semibold text-slate-200 group-hover:text-cyan-300 transition-colors">8-Bit Hermes Quest</div>
+            <p class="text-[11px] text-slate-400 line-clamp-2 mt-1">Nostalgic 16-bit square waves and platformer adventure rhythm.</p>
+            <div class="flex items-center gap-1 mt-2 text-[10px] text-cyan-400 font-mono">
+              <span>Use prompt →</span>
+            </div>
+          </div>
+          <div class="audio-example-card glass-card p-3 rounded-xl border border-white/5 hover:border-cyan-500/30 hover:bg-white/[0.03] transition-all cursor-pointer group"
+            data-prompt="Chill lo-fi hip-hop beat with warm Rhodes piano chords, vinyl crackle, and soft midnight rain ambiance" data-styles="lo-fi,ambient" data-mode="easy_generate">
+            <div class="text-xs font-semibold text-slate-200 group-hover:text-cyan-300 transition-colors">Lo-Fi Midnight Rain</div>
+            <p class="text-[11px] text-slate-400 line-clamp-2 mt-1">Warm Rhodes chords, vinyl crackle, and soft rainfall ambiance.</p>
+            <div class="flex items-center gap-1 mt-2 text-[10px] text-cyan-400 font-mono">
+              <span>Use prompt →</span>
+            </div>
+          </div>
+          <div class="audio-example-card glass-card p-3 rounded-xl border border-white/5 hover:border-cyan-500/30 hover:bg-white/[0.03] transition-all cursor-pointer group"
+            data-prompt="Epic cinematic orchestral soundtrack with thunderous brass, fast staccato violins, and choral crescendo" data-styles="ambient,rock" data-mode="soundtrack">
+            <div class="text-xs font-semibold text-slate-200 group-hover:text-cyan-300 transition-colors">Orchestral Boss Battle</div>
+            <p class="text-[11px] text-slate-400 line-clamp-2 mt-1">Thunderous brass and cinematic choral crescendo for epic moments.</p>
+            <div class="flex items-center gap-1 mt-2 text-[10px] text-cyan-400 font-mono">
+              <span>Use prompt →</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Output Result Panel: Audio Player & Track Library -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
+          <!-- Main Player -->
+          <div class="lg:col-span-8 panel overflow-hidden rounded-2xl p-5 space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-white/5">
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-semibold text-white" id="main-audio-title">Ready for audio generation</span>
+                <span id="main-audio-model-badge" class="text-[10px] font-mono text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-2 py-0.5 rounded">Mureka 9.5</span>
+              </div>
+              <span id="main-audio-duration" class="text-xs font-mono text-slate-400">0:00</span>
+            </div>
+
+            <!-- Waveform / Track visualization container -->
+            <div class="relative bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center min-h-[120px]">
+              <div id="audio-wave-visualizer" class="flex items-center justify-center gap-1.5 w-full h-12 opacity-60">
+                <span class="w-1.5 h-3 bg-cyan-400 rounded-full animate-pulse"></span>
+                <span class="w-1.5 h-6 bg-cyan-400 rounded-full animate-pulse delay-75"></span>
+                <span class="w-1.5 h-10 bg-cyan-400 rounded-full animate-pulse delay-150"></span>
+                <span class="w-1.5 h-7 bg-cyan-400 rounded-full animate-pulse delay-100"></span>
+                <span class="w-1.5 h-11 bg-cyan-400 rounded-full animate-pulse delay-200"></span>
+                <span class="w-1.5 h-5 bg-cyan-400 rounded-full animate-pulse delay-75"></span>
+                <span class="w-1.5 h-8 bg-cyan-400 rounded-full animate-pulse delay-150"></span>
+                <span class="w-1.5 h-4 bg-cyan-400 rounded-full animate-pulse"></span>
+              </div>
+              <audio id="main-audio-player" class="w-full mt-3 rounded-lg accent-cyan-400" controls></audio>
+            </div>
+
+            <!-- Track actions & Downloads -->
+            <div class="flex items-center justify-between text-xs pt-1">
+              <button id="btn-toggle-lyrics-view" type="button" class="btn-quiet text-xs items-center gap-1.5 hidden">
+                <span>📜 View Lyrics</span>
+              </button>
+              <div class="flex items-center gap-2 ml-auto">
+                <button id="btn-audio-extend-current" type="button" class="btn-quiet text-xs hidden">
+                  <span>⏩ Extend This Track</span>
+                </button>
+                <a id="btn-download-audio-mp3" href="#" download class="btn-primary text-xs hidden">
+                  Download MP3
+                </a>
+              </div>
+            </div>
+
+            <!-- Timestamped Lyrics Drawer -->
+            <div id="audio-lyrics-drawer" class="hidden p-4 rounded-xl bg-black/30 border border-white/5 max-h-48 overflow-y-auto space-y-2 text-xs">
+              <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Synchronized Lyrics</div>
+              <div id="audio-lyrics-content" class="space-y-1.5 text-slate-300 font-sans leading-relaxed">
+              </div>
+            </div>
+          </div>
+
+          <!-- Generation History / Library -->
+          <div class="lg:col-span-4 panel p-4 rounded-2xl space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-white/5">
+              <span class="text-xs font-medium text-slate-200">Recent Tracks</span>
+              <span id="audio-history-caption" class="text-[10px] text-slate-500">Mureka Library</span>
+            </div>
+            <div id="recent-audio-list" class="space-y-2 text-[12px] max-h-[340px] overflow-y-auto pr-1">
+              <div id="recent-audio-empty" class="text-slate-500 py-6 text-center text-xs">
+                No songs generated yet.<br/>Type a prompt above to compose.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================================== -->
+      <!-- VIEW 3: RPG STUDIO (SERVICE 2 - PLAYABLE & EXPORTABLE RPG ENGINE)           -->
       <!-- ========================================================================== -->
       <section id="view-rpg" class="content-view space-y-4 max-w-6xl mx-auto hidden">
         <div class="flex flex-wrap items-center gap-2">
@@ -652,8 +1104,21 @@
             </div>
             <input id="keys-page-input-xai" type="password" placeholder="XAI_API_KEY" class="field font-mono" />
           </div>
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="label mb-0" for="keys-page-input-mureka">Mureka API key (Audio Studio)</label>
+              <span id="keys-page-mureka-badge" class="text-[11px] text-slate-500">Not set</span>
+            </div>
+            <input id="keys-page-input-mureka" type="password" placeholder="MUREKA_API_KEY" class="field font-mono" />
+          </div>
+          <div>
+            <label class="label" for="keys-page-input-mureka-url">Mureka API URL</label>
+            <input id="keys-page-input-mureka-url" type="text" value="https://api.mureka.ai/v1"
+              class="field font-mono" />
+          </div>
           <div class="flex items-center gap-2 pt-1">
-            <button id="btn-test-connection" type="button" class="btn-quiet">Test connection</button>
+            <button id="btn-test-connection" type="button" class="btn-quiet">Test BytePlus</button>
+            <button id="btn-test-mureka-connection" type="button" class="btn-quiet">Test Mureka</button>
             <button id="btn-save-keys-page" type="button" class="btn-primary">Save keys</button>
           </div>
           <div id="keys-feedback-msg" class="text-[12px] hidden"></div>
@@ -661,6 +1126,17 @@
 
         <div class="panel p-6 space-y-4">
           <h2 class="text-sm font-medium text-slate-200">Defaults</h2>
+          <div>
+            <label class="label" for="pref-audio-model">Audio model</label>
+            <select id="pref-audio-model" class="field">
+              <option value="mureka-9.5">Mureka 9.5 (Flagship Music)</option>
+              <option value="mureka-9">Mureka 9.0</option>
+              <option value="mureka-8">Mureka 8.0 (Extension)</option>
+              <option value="mureka-7.6">Mureka 7.6</option>
+              <option value="mureka-soundtrack">Mureka Soundtrack & BGM</option>
+              <option value="mureka-instrumental">Mureka Instrumental</option>
+            </select>
+          </div>
           <div>
             <label class="label" for="pref-video-model">Video model</label>
             <select id="pref-video-model" class="field">
@@ -919,12 +1395,12 @@
     <div class="panel max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto space-y-4">
       <div class="flex items-center justify-between pb-3 border-b border-white/10">
         <div class="flex items-center gap-2.5">
-          <div
+          <div id="api-modal-badge"
             class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-bold text-xs">
             API</div>
           <div>
-            <h2 class="text-sm font-bold text-slate-100">BytePlus ModelArk API Reference</h2>
-            <p class="text-[11px] text-slate-400 font-mono">Region: ap-southeast-1 • ModelArk/1330310</p>
+            <h2 id="api-modal-title" class="text-sm font-bold text-slate-100">BytePlus ModelArk API Reference</h2>
+            <p id="api-modal-subtitle" class="text-[11px] text-slate-400 font-mono">Region: ap-southeast-1 • ModelArk/1330310</p>
           </div>
         </div>
         <button id="btn-close-modal-api"
@@ -934,10 +1410,10 @@
       <div class="space-y-3 text-xs">
         <div>
           <div class="flex items-center justify-between text-slate-400 mb-1">
-            <span>HTTP POST Endpoint</span>
+            <span id="api-modal-endpoint-label">HTTP POST Endpoint</span>
             <span class="font-mono text-emerald-400">200 OK</span>
           </div>
-          <div
+          <div id="api-modal-endpoint"
             class="bg-black/60 p-2.5 rounded-lg font-mono text-slate-300 select-all border border-white/5 text-[11px]">
             POST https://ark.ap-southeast.bytepluses.com/api/v3/contents/generations/tasks
           </div>
@@ -955,7 +1431,7 @@
 
         <div>
           <div class="flex items-center justify-between text-slate-400 mb-1">
-            <span>Python Ark SDK</span>
+            <span id="api-modal-sdk-label">Python Ark SDK</span>
             <button id="btn-copy-python" class="text-electric hover:underline text-[11px] cursor-pointer">Copy
               Python</button>
           </div>
@@ -964,9 +1440,9 @@
         </div>
 
         <div class="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
-          <a href="https://ai.byteplus.com/ark/region:ap-southeast-1/docs/ModelArk/1330310" target="_blank"
+          <a id="api-modal-doc-link" href="https://ai.byteplus.com/ark/region:ap-southeast-1/docs/ModelArk/1330310" target="_blank"
             rel="noopener" class="text-electric hover:underline flex items-center gap-1">
-            <span>Official ModelArk 1330310 Documentation</span>
+            <span id="api-modal-doc-text">Official ModelArk 1330310 Documentation</span>
             <span>↗</span>
           </a>
           <button id="btn-close-api-footer"
@@ -1067,13 +1543,25 @@
     // --- State & Settings Store ---
     let localApiKey = localStorage.getItem("ARK_API_KEY") || "";
     let localXaiKey = localStorage.getItem("XAI_API_KEY") || "";
+    let localMurekaKey = "";
+    let serverHasMurekaKey = false;
+    try { localStorage.removeItem("MUREKA_API_KEY"); } catch (e) { /* private mode */ }
     let localBaseUrl = localStorage.getItem("ARK_BASE_URL") || "https://ark.ap-southeast.bytepluses.com/api/v3";
+    let localMurekaUrl = localStorage.getItem("MUREKA_API_URL") || "https://api.mureka.ai/v1";
     let activeVideoModel = localStorage.getItem("ARK_SEEDANCE_MODEL") || "dreamina-seedance-2-5-260628";
     let activeDirectorModel = localStorage.getItem("ARK_LLM_MODEL") || "seed-2-0-lite-260228";
+    let activeAudioModel = localStorage.getItem("DEFAULT_AUDIO_MODEL") || "mureka-9.5";
     let localProvider = localStorage.getItem("DEFAULT_VIDEO_PROVIDER") || "seedance";
     let rpgChapterCount = parseInt(localStorage.getItem("RPG_CHAPTER_COUNT") || "4", 10);
     let rpgResolution = localStorage.getItem("RPG_CANVAS_RESOLUTION") || "1080p";
     let selectedVideoMode = "ref_to_video";
+    let selectedAudioMode = "easy_generate";
+    let selectedAudioStyles = [];
+    let activeAudioTaskId = null;
+    let currentSongId = null;
+    let audioPollInterval = null;
+    let audioElapsedInterval = null;
+    let audioRefFile = null;
     let firstFrameData = null;
     let lastFrameData = null;
     let currentUser = null;
@@ -1189,10 +1677,127 @@
     const contentViews = document.querySelectorAll(".content-view");
     const breadcrumbTitle = document.getElementById("breadcrumb-title");
     const breadcrumbCategory = document.getElementById("breadcrumb-category");
+    const modelSelect = document.getElementById("video-select-model");
+    const VIDEO_ICON_SVG = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h10a2 2 0 0 1 2 2v2.586l3.293-3.293A1 1 0 0 1 21 6v12a1 1 0 0 1-1.707.707L16 15.414V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" /></svg>`;
+    const AUDIO_ICON_SVG = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>`;
+    let modelCatalogData = {};
+    let cachedCatalog = null;
+
+    function renderAudioModelDropdown() {
+      const headerIcon = document.getElementById("header-model-icon");
+      if (headerIcon) {
+        headerIcon.innerHTML = AUDIO_ICON_SVG;
+        headerIcon.className = "text-cyan-400 flex items-center";
+      }
+      if (!modelSelect) return;
+      modelSelect.innerHTML = "";
+      const aGroup = document.createElement("optgroup");
+      aGroup.label = "Audio & Music Models";
+      const defaultAudioModels = [
+        { id: "mureka-9.5", display_name: "Mureka 9.5 (Flagship Music)", is_live: true },
+        { id: "mureka-9", display_name: "Mureka 9.0", is_live: true },
+        { id: "mureka-8", display_name: "Mureka 8.0 (Extension Specialist)", is_live: true },
+        { id: "mureka-7.6", display_name: "Mureka 7.6", is_live: true },
+        { id: "mureka-soundtrack", display_name: "Mureka Soundtrack & BGM", is_live: true },
+        { id: "mureka-instrumental", display_name: "Mureka Instrumental", is_live: true }
+      ];
+      const audioModels = (cachedCatalog && cachedCatalog.audio && cachedCatalog.audio.length)
+        ? cachedCatalog.audio
+        : defaultAudioModels;
+
+      audioModels.forEach(m => {
+        modelCatalogData[m.id] = m;
+        const opt = document.createElement("option");
+        opt.value = m.id;
+        const livePrefix = m.is_live ? "● " : "";
+        const liveSuffix = m.is_live ? " (Live)" : "";
+        opt.innerText = `${livePrefix}${m.display_name}${liveSuffix}`;
+        if (m.id === activeAudioModel) opt.selected = true;
+        aGroup.appendChild(opt);
+      });
+      modelSelect.appendChild(aGroup);
+      if (activeAudioModel) modelSelect.value = activeAudioModel;
+    }
+
+    function renderVideoModelDropdown() {
+      const headerIcon = document.getElementById("header-model-icon");
+      if (headerIcon) {
+        headerIcon.innerHTML = VIDEO_ICON_SVG;
+        headerIcon.className = "text-purple-400 flex items-center";
+      }
+      if (!modelSelect) return;
+      modelSelect.innerHTML = "";
+
+      const defaultVideoModels = [
+        { id: "dreamina-seedance-2-5-260628", display_name: "Dreamina-Seedance-2.5 260628", is_live: true },
+        { id: "dreamina-seedance-2-0-fast-260128", display_name: "Dreamina-Seedance-2.0-fast 260128", is_live: true },
+        { id: "bytedance-seedance-1-5-pro-251215", display_name: "ByteDance-Seedance-1.5-pro 251215", is_live: true },
+        { id: "grok-imagine-video", display_name: "Grok Imagine Video", is_live: true }
+      ];
+      const defaultImageModels = [
+        { id: "dola-seedream-5-0-pro-260628", display_name: "Dola-Seedream-5.0-pro 260628", is_live: true },
+        { id: "bytedance-seedream-4-5-251128", display_name: "ByteDance-Seedream-4.5 251128", is_live: true },
+        { id: "grok-imagine-image", display_name: "Grok Imagine Image", is_live: true }
+      ];
+
+      const videoModels = (cachedCatalog && cachedCatalog.video && cachedCatalog.video.length)
+        ? cachedCatalog.video
+        : defaultVideoModels;
+      const imageModels = (cachedCatalog && cachedCatalog.image && cachedCatalog.image.length)
+        ? cachedCatalog.image
+        : defaultImageModels;
+
+      if (videoModels.length) {
+        const vGroup = document.createElement("optgroup");
+        vGroup.label = "Video Generation Models";
+        videoModels.forEach(m => {
+          modelCatalogData[m.id] = m;
+          const opt = document.createElement("option");
+          opt.value = m.id;
+          const livePrefix = m.is_live ? "● " : "";
+          const liveSuffix = m.is_live ? " (Live)" : "";
+          opt.innerText = `${livePrefix}${m.display_name}${liveSuffix}`;
+          if (m.id === activeVideoModel) opt.selected = true;
+          vGroup.appendChild(opt);
+        });
+        modelSelect.appendChild(vGroup);
+      }
+
+      if (imageModels.length) {
+        const iGroup = document.createElement("optgroup");
+        iGroup.label = "Image Generation Models";
+        imageModels.forEach(m => {
+          modelCatalogData[m.id] = m;
+          const opt = document.createElement("option");
+          opt.value = m.id;
+          const livePrefix = m.is_live ? "● " : "";
+          const liveSuffix = m.is_live ? " (Live)" : "";
+          opt.innerText = `${livePrefix}${m.display_name}${liveSuffix}`;
+          if (m.id === activeVideoModel) opt.selected = true;
+          iGroup.appendChild(opt);
+        });
+        modelSelect.appendChild(iGroup);
+      }
+
+      if (!modelCatalogData[activeVideoModel]) {
+        const firstVid = (videoModels[0] && videoModels[0].id) || "dreamina-seedance-2-5-260628";
+        activeVideoModel = firstVid;
+      }
+      modelSelect.value = activeVideoModel;
+    }
+
+    function updateTopBarForView(viewName) {
+      if (viewName === "audio") {
+        renderAudioModelDropdown();
+      } else {
+        renderVideoModelDropdown();
+      }
+    }
 
     const viewMeta = {
-      video: { title: "Multimedia Studio", cat: "Service" },
-      multimedia: { title: "Multimedia Studio", cat: "Service" },
+      video: { title: "Vision Studio", cat: "Service" },
+      multimedia: { title: "Vision Studio", cat: "Service" },
+      audio: { title: "Audio Studio", cat: "Service" },
       rpg: { title: "RPG Studio", cat: "Service" },
       "api-keys": { title: "Settings", cat: "Settings" },
       docs: { title: "Guide", cat: "Guide" },
@@ -1231,8 +1836,10 @@
       breadcrumbTitle.innerHTML = meta.title;
       breadcrumbCategory.innerText = meta.cat;
 
+      if (viewName === "audio") initAudioStudioOnce();
       if (viewName === "usage") loadUsageMetrics();
       if (viewName === "settings") fillSettingsForm();
+      if (typeof updateTopBarForView === "function") updateTopBarForView(viewName);
     }
 
     sidebarLinks.forEach(btn => {
@@ -1289,6 +1896,17 @@
             keysXaiBadge.className = "text-[11px] text-emerald-400";
             keysXaiBadge.innerText = data.xai_key_masked || "Ready";
           }
+
+          serverHasMurekaKey = Boolean(data.has_mureka_key);
+          const hasMureka = serverHasMurekaKey;
+          const keysMurekaBadge = document.getElementById("keys-page-mureka-badge");
+          if (hasMureka && keysMurekaBadge) {
+            keysMurekaBadge.className = "text-[11px] text-emerald-400";
+            keysMurekaBadge.innerText = data.mureka_key_masked || "Ready";
+          } else if (keysMurekaBadge) {
+            keysMurekaBadge.className = "text-[11px] text-slate-500";
+            keysMurekaBadge.innerText = "Not set";
+          }
         }
       } catch (e) {
         console.warn("Could not reach /api/settings", e);
@@ -1303,33 +1921,57 @@
     const inputArkKey = document.getElementById("keys-page-input-ark");
     const inputBaseUrl = document.getElementById("keys-page-input-base");
     const inputXaiKey = document.getElementById("keys-page-input-xai");
+    const inputMurekaKey = document.getElementById("keys-page-input-mureka");
+    const inputMurekaUrl = document.getElementById("keys-page-input-mureka-url");
     const btnSaveKeysPage = document.getElementById("btn-save-keys-page");
     const btnTestConn = document.getElementById("btn-test-connection");
+    const btnTestMureka = document.getElementById("btn-test-mureka-connection");
     const keysFeedback = document.getElementById("keys-feedback-msg");
 
     if (inputArkKey) inputArkKey.value = localApiKey;
     if (inputBaseUrl) inputBaseUrl.value = localBaseUrl;
     if (inputXaiKey) inputXaiKey.value = localXaiKey;
+    if (inputMurekaKey) inputMurekaKey.value = localMurekaKey;
+    if (inputMurekaUrl) inputMurekaUrl.value = localMurekaUrl;
 
     if (btnSaveKeysPage) btnSaveKeysPage.onclick = async () => {
       localApiKey = inputArkKey.value.trim();
       localBaseUrl = inputBaseUrl.value.trim();
       localXaiKey = inputXaiKey.value.trim();
-
-      localStorage.setItem("ARK_API_KEY", localApiKey);
-      localStorage.setItem("ARK_BASE_URL", localBaseUrl);
-      localStorage.setItem("XAI_API_KEY", localXaiKey);
+      localMurekaKey = inputMurekaKey ? inputMurekaKey.value.trim() : "";
+      localMurekaUrl = inputMurekaUrl ? inputMurekaUrl.value.trim() : "https://api.mureka.ai/v1";
 
       try {
-        await fetch("/api/settings", {
+        const saveRes = await fetch("/api/settings", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ark_api_key: localApiKey,
             ark_base_url: localBaseUrl,
-            xai_api_key: localXaiKey
+            xai_api_key: localXaiKey,
+            mureka_api_key: localMurekaKey,
+            mureka_api_url: localMurekaUrl
           })
         });
+        const saveBody = await saveRes.json().catch(() => ({}));
+        if (!saveRes.ok) {
+          const detail = saveBody.detail;
+          const message = typeof detail === "string" ? detail : "Could not save settings.";
+          keysFeedback.className = "text-xs font-mono text-rose-400 block";
+          keysFeedback.innerText = message;
+          refreshKeyStatus();
+          return;
+        }
+        localStorage.setItem("ARK_API_KEY", localApiKey);
+        localStorage.setItem("ARK_BASE_URL", localBaseUrl);
+        localStorage.setItem("XAI_API_KEY", localXaiKey);
+        localStorage.removeItem("MUREKA_API_KEY");
+        localStorage.setItem("MUREKA_API_URL", localMurekaUrl);
+        if (localMurekaKey) {
+          serverHasMurekaKey = true;
+          localMurekaKey = "";
+          if (inputMurekaKey) inputMurekaKey.value = "";
+        }
         keysFeedback.className = "text-xs font-mono text-emerald-400 block";
         keysFeedback.innerText = "✓ Credentials saved successfully!";
       } catch (err) {
@@ -1357,13 +1999,33 @@
         keysFeedback.className = "text-xs font-mono text-rose-400 block";
         keysFeedback.innerText = "Connection test failed: " + err.message;
       } finally {
-        btnTestConn.innerText = "⚡ Test API Connection";
+        btnTestConn.innerText = "Test BytePlus";
+      }
+    };
+
+    if (btnTestMureka) btnTestMureka.onclick = async () => {
+      btnTestMureka.innerText = "Testing...";
+      try {
+        const res = await fetch("/api/settings/test-connection", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mureka_api_key: inputMurekaKey ? inputMurekaKey.value.trim() : localMurekaKey,
+            provider: "mureka"
+          })
+        });
+        const data = await res.json();
+        keysFeedback.className = `text-xs font-mono block ${data.status === 'success' ? 'text-emerald-400' : 'text-amber-400'}`;
+        keysFeedback.innerText = data.message;
+      } catch (err) {
+        keysFeedback.className = "text-xs font-mono text-rose-400 block";
+        keysFeedback.innerText = "Mureka connection test failed: " + err.message;
+      } finally {
+        btnTestMureka.innerText = "Test Mureka";
       }
     };
 
     // --- Service 1: Dynamic ModelArk AI Studio Handlers ---
-    let modelCatalogData = {};
-    const modelSelect = document.getElementById("video-select-model");
     const headerBadgeModel = document.getElementById("header-badge-model");
     const videoPlayer = document.getElementById("main-video-player");
     const btnVideoPlay = document.getElementById("btn-video-play");
@@ -1377,7 +2039,175 @@
     }
 
     function updateApiModal(modelId) {
+      const isAudio = (activeView === "audio") || (modelId && (modelId.startsWith("mureka") || modelId.includes("soundtrack") || modelId.includes("instrumental")));
+      if (isAudio) {
+        renderAudioApiModal(modelId);
+      } else {
+        renderVisionApiModal(modelId);
+      }
+    }
+
+    function renderAudioApiModal(modelId) {
+      const currentAudioModel = modelId || activeAudioModel || "mureka-9.5";
+      const titleInput = document.getElementById("audio-title-input");
+      const title = (titleInput && titleInput.value.trim()) || "Neon Horizon";
+      const promptInput = document.getElementById("audio-prompt-input");
+      const stylePrompt = (promptInput && promptInput.value.trim()) || "Energetic retro synthwave track with soaring lead melodies and driving 80s bassline";
+      const lyricsInput = document.getElementById("audio-lyrics-input");
+      const lyricsPrompt = (lyricsInput && lyricsInput.value.trim()) || "[verse]\nDriving through the neon night\nChasing the electric light\n[chorus]\nEchoes in the dark, we ignite\nUntil the morning breaks";
+      const extendSongIdEl = document.getElementById("audio-extend-song-id");
+      const extendSongId = (extendSongIdEl && extendSongIdEl.value.trim()) || "song_demo_12345";
+      const extendAtSecEl = document.getElementById("audio-extend-at-sec");
+      const extendAtSec = parseFloat((extendAtSecEl && extendAtSecEl.value) || "60");
+
+      let endpointUrl = "https://api.mureka.ai/v1/song/generate";
+      let payload = {};
+
+      if (selectedAudioMode === "easy_generate") {
+        endpointUrl = "https://api.mureka.ai/v1/song/easy-generate";
+        payload = {
+          model: currentAudioModel,
+          prompt: stylePrompt,
+          title: title
+        };
+      } else if (selectedAudioMode === "soundtrack") {
+        endpointUrl = "https://api.mureka.ai/v1/soundtrack/generate";
+        payload = {
+          model: currentAudioModel,
+          prompt: stylePrompt,
+          title: title
+        };
+      } else if (selectedAudioMode === "extend") {
+        endpointUrl = "https://api.mureka.ai/v1/song/extend";
+        payload = {
+          model: currentAudioModel,
+          song_id: extendSongId,
+          extend_at: extendAtSec,
+          prompt: stylePrompt,
+          lyrics: lyricsPrompt
+        };
+      } else if (selectedAudioMode === "instrumental") {
+        endpointUrl = "https://api.mureka.ai/v1/instrumental/generate";
+        payload = {
+          model: currentAudioModel,
+          prompt: stylePrompt,
+          title: title
+        };
+      } else {
+        // song_generate (Lyrics to Song)
+        endpointUrl = "https://api.mureka.ai/v1/song/generate";
+        payload = {
+          model: currentAudioModel,
+          title: title,
+          prompt: stylePrompt,
+          lyrics: lyricsPrompt
+        };
+      }
+
+      // Update Modal Header & Labels
+      const badgeEl = document.getElementById("api-modal-badge");
+      if (badgeEl) {
+        badgeEl.innerText = "AUDIO";
+        badgeEl.className = "w-auto px-2 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center font-mono font-bold text-xs";
+      }
+      const titleEl = document.getElementById("api-modal-title");
+      if (titleEl) titleEl.innerText = "Mureka AI Music & Audio API Reference";
+      const subEl = document.getElementById("api-modal-subtitle");
+      if (subEl) subEl.innerText = `Model: ${currentAudioModel} • Cloud Endpoint: api.mureka.ai`;
+      const epLabel = document.getElementById("api-modal-endpoint-label");
+      if (epLabel) epLabel.innerText = "HTTP POST Audio Generation Endpoint";
+      const epEl = document.getElementById("api-modal-endpoint");
+      if (epEl) epEl.innerText = `POST ${endpointUrl}`;
+      const sdkLabel = document.getElementById("api-modal-sdk-label");
+      if (sdkLabel) sdkLabel.innerText = "Python Requests & Polling";
+      const docLink = document.getElementById("api-modal-doc-link");
+      if (docLink) docLink.href = "https://platform.mureka.ai/docs/";
+      const docText = document.getElementById("api-modal-doc-text");
+      if (docText) docText.innerText = "Official Mureka Platform Documentation";
+
+      // cURL snippet
+      const curlCode = `curl -X POST "${endpointUrl}" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer $MUREKA_API_KEY" \\
+  -d '${JSON.stringify(payload, null, 2)}'`;
+
+      // Python snippet
+      const pyPayloadStr = JSON.stringify(payload, null, 4).replace(/\n/g, "\n    ");
+      const pythonCode = `import os, time, requests
+
+api_key = os.environ.get("MUREKA_API_KEY", "YOUR_MUREKA_API_KEY")
+headers = {
+    "Authorization": f"Bearer {api_key}",
+    "Content-Type": "application/json"
+}
+
+# 1. Submit audio generation task
+url = "${endpointUrl}"
+payload = ${pyPayloadStr}
+
+res = requests.post(url, headers=headers, json=payload)
+data = res.json()
+task_id = data.get("task_id") or data.get("id")
+print(f"Task submitted: {task_id}")
+
+# 2. Poll generation status until completed
+query_url = f"https://api.mureka.ai/v1/song/query/{task_id}"
+while True:
+    q = requests.get(query_url, headers=headers).json()
+    status = q.get("status")
+    if status in ("success", "completed"):
+        print("Audio ready:", q.get("audio_url"))
+        break
+    elif status in ("failed", "error"):
+        print("Generation failed:", q)
+        break
+    time.sleep(3)`;
+
+      const curlEl = document.getElementById("api-curl-code");
+      const pyEl = document.getElementById("api-python-code");
+      if (curlEl) curlEl.innerText = curlCode;
+      if (pyEl) pyEl.innerText = pythonCode;
+    }
+
+    function renderVisionApiModal(modelId) {
       const model = modelCatalogData[modelId] || {};
+      const isGrok = (modelId && modelId.includes("grok")) || model.provider === "grok";
+
+      // Reset Modal Header & Labels to Vision Studio styles
+      const badgeEl = document.getElementById("api-modal-badge");
+      if (badgeEl) {
+        badgeEl.innerText = isGrok ? "GROK" : "API";
+        badgeEl.className = isGrok
+          ? "w-auto px-2 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-mono font-bold text-xs"
+          : "w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-bold text-xs";
+      }
+      const titleEl = document.getElementById("api-modal-title");
+      if (titleEl) {
+        titleEl.innerText = isGrok ? "xAI Grok Vision & Generation API Reference" : "BytePlus ModelArk API Reference";
+      }
+      const subEl = document.getElementById("api-modal-subtitle");
+      if (subEl) {
+        subEl.innerText = isGrok
+          ? `Model: ${modelId} • api.x.ai`
+          : "Region: ap-southeast-1 • ModelArk/1330310";
+      }
+      const epLabel = document.getElementById("api-modal-endpoint-label");
+      if (epLabel) epLabel.innerText = "HTTP POST Endpoint";
+      const sdkLabel = document.getElementById("api-modal-sdk-label");
+      if (sdkLabel) {
+        sdkLabel.innerText = isGrok ? "Python Requests" : "Python Ark SDK";
+      }
+      const docLink = document.getElementById("api-modal-doc-link");
+      if (docLink) {
+        docLink.href = isGrok
+          ? "https://docs.x.ai/"
+          : "https://ai.byteplus.com/ark/region:ap-southeast-1/docs/ModelArk/1330310";
+      }
+      const docText = document.getElementById("api-modal-doc-text");
+      if (docText) {
+        docText.innerText = isGrok ? "Official xAI API Documentation" : "Official ModelArk 1330310 Documentation";
+      }
+
       const promptInput = document.getElementById("video-prompt-input");
       const prompt = (promptInput && promptInput.value.trim()) || "Cinematic cutscene";
       const ratioEl = document.getElementById("video-aspect-ratio");
@@ -1392,8 +2222,10 @@
 
       let curlCode = "";
       let pythonCode = "";
+      let endpointText = "POST https://ark.ap-southeast.bytepluses.com/api/v3/contents/generations/tasks";
 
-      if (modelId && modelId.includes("grok")) {
+      if (modelId && modelId.includes("grok") && !modelId.includes("image")) {
+        endpointText = "POST https://api.x.ai/v1/videos/generations";
         const grokPayload = {
           model: modelId,
           prompt: prompt,
@@ -1422,6 +2254,7 @@ payload = {
 res = requests.post(url, headers=headers, json=payload)
 print("Response:", res.json())`;
       } else if (model.provider === "grok" && model.category === "image") {
+        endpointText = "POST https://api.x.ai/v1/images/generations";
         const grokImgPayload = {
           model: modelId,
           prompt: prompt,
@@ -1445,6 +2278,7 @@ payload = {
 res = requests.post(url, headers=headers, json=payload)
 print("Response:", res.json())`;
       } else if (model.category === "image" || (modelId && modelId.toLowerCase().includes("seedream"))) {
+        endpointText = "POST https://ark.ap-southeast.bytepluses.com/api/v3/images/generations";
         const imageArgList = [];
         if (importedAssets && importedAssets.length > 0) {
           importedAssets.forEach(a => {
@@ -1491,6 +2325,7 @@ response = client.images.generate(
 )
 print("Generated image URL:", response.data[0].url if response.data else "None")`;
       } else {
+        endpointText = "POST https://ark.ap-southeast.bytepluses.com/api/v3/contents/generations/tasks";
         const contentList = [];
         if (importedAssets && importedAssets.length > 0) {
           importedAssets.forEach(a => {
@@ -1548,6 +2383,8 @@ task = client.content_generation.tasks.create(
 print("Task submitted:", task.id)`;
       }
 
+      const epEl = document.getElementById("api-modal-endpoint");
+      if (epEl) epEl.innerText = endpointText;
       const curlEl = document.getElementById("api-curl-code");
       const pyEl = document.getElementById("api-python-code");
       if (curlEl) curlEl.innerText = curlCode;
@@ -2061,6 +2898,7 @@ print("Task submitted:", task.id)`;
         if (m.category === "video") catBadge = `<span class="text-cyan-400">Video</span>`;
         else if (m.category === "image") catBadge = `<span class="text-purple-400">Image</span>`;
         else if (m.category === "director_llm") catBadge = `<span class="text-amber-400">Director LLM</span>`;
+        else if (m.category === "audio") catBadge = `<span class="text-emerald-400">Audio & Music</span>`;
         else catBadge = `<span class="text-slate-400">${m.category}</span>`;
 
         const caps = [];
@@ -2102,6 +2940,12 @@ print("Task submitted:", task.id)`;
             localStorage.setItem("ARK_SEEDANCE_MODEL", mid);
             updateStudioForModel(mid);
             switchView("video");
+          } else if (cat === "audio") {
+            activeAudioModel = mid;
+            localStorage.setItem("DEFAULT_AUDIO_MODEL", mid);
+            switchView("audio");
+            const compSel = document.getElementById("audio-select-model");
+            if (compSel) compSel.value = mid;
           } else if (cat === "director_llm") {
             const dirSel = document.getElementById("pref-director-model");
             if (dirSel) dirSel.value = mid;
@@ -2136,52 +2980,17 @@ print("Task submitted:", task.id)`;
         if (!res.ok) return;
         const data = await res.json();
         const catalog = data.catalog || {};
+        cachedCatalog = catalog;
 
-        modelSelect.innerHTML = "";
-        modelCatalogData = {};
+        // Index all models into modelCatalogData
+        (catalog.video || []).forEach(m => { modelCatalogData[m.id] = m; });
+        (catalog.image || []).forEach(m => { modelCatalogData[m.id] = m; });
+        (catalog.audio || []).forEach(m => { modelCatalogData[m.id] = m; });
 
-        const videoModels = catalog.video || [];
-        const imageModels = catalog.image || [];
-
-        // 1. Video Models Group
-        if (videoModels.length) {
-          const vGroup = document.createElement("optgroup");
-          vGroup.label = "Video Generation Models";
-          videoModels.forEach(m => {
-            modelCatalogData[m.id] = m;
-            const opt = document.createElement("option");
-            opt.value = m.id;
-            const livePrefix = m.is_live ? "● " : "";
-            const liveSuffix = m.is_live ? " (Live)" : "";
-            opt.innerText = `${livePrefix}${m.display_name}${liveSuffix}`;
-            if (m.id === activeVideoModel) opt.selected = true;
-            vGroup.appendChild(opt);
-          });
-          modelSelect.appendChild(vGroup);
+        updateTopBarForView(activeView);
+        if (activeView !== "audio") {
+          updateStudioForModel(activeVideoModel);
         }
-
-        // 2. Image Models Group (SeeDream)
-        if (imageModels.length) {
-          const iGroup = document.createElement("optgroup");
-          iGroup.label = "Image Generation Models";
-          imageModels.forEach(m => {
-            modelCatalogData[m.id] = m;
-            const opt = document.createElement("option");
-            opt.value = m.id;
-            const livePrefix = m.is_live ? "● " : "";
-            const liveSuffix = m.is_live ? " (Live)" : "";
-            opt.innerText = `${livePrefix}${m.display_name}${liveSuffix}`;
-            if (m.id === activeVideoModel) opt.selected = true;
-            iGroup.appendChild(opt);
-          });
-          modelSelect.appendChild(iGroup);
-        }
-
-        if (!modelCatalogData[activeVideoModel]) {
-          activeVideoModel = Object.keys(modelCatalogData)[0] || "dreamina-seedance-2-5-260628";
-        }
-        modelSelect.value = activeVideoModel;
-        updateStudioForModel(activeVideoModel);
 
         // Render Inventory in Settings
         renderInventorySettings(data);
@@ -2214,9 +3023,21 @@ print("Task submitted:", task.id)`;
     loadModelsCatalog();
 
     modelSelect.onchange = () => {
-      activeVideoModel = modelSelect.value;
-      localStorage.setItem("ARK_SEEDANCE_MODEL", activeVideoModel);
-      updateStudioForModel(activeVideoModel);
+      if (activeView === "audio") {
+        activeAudioModel = modelSelect.value;
+        localStorage.setItem("DEFAULT_AUDIO_MODEL", activeAudioModel);
+        const composerSel = document.getElementById("audio-select-model");
+        if (composerSel) composerSel.value = activeAudioModel;
+        const prefSel = document.getElementById("pref-audio-model");
+        if (prefSel) prefSel.value = activeAudioModel;
+        const mainBadge = document.getElementById("main-audio-model-badge");
+        if (mainBadge) mainBadge.innerText = activeAudioModel;
+        if (typeof updateAudioCost === "function") updateAudioCost();
+      } else {
+        activeVideoModel = modelSelect.value;
+        localStorage.setItem("ARK_SEEDANCE_MODEL", activeVideoModel);
+        updateStudioForModel(activeVideoModel);
+      }
     };
 
     // --- Model Inventory Refresh & Custom Endpoint Handlers ---
@@ -2323,7 +3144,8 @@ print("Task submitted:", task.id)`;
     const modalPromptManual = document.getElementById("modal-prompt-manual");
 
     document.getElementById("header-btn-api-modal").onclick = () => {
-      updateApiModal(modelSelect.value);
+      const currentModel = activeView === "audio" ? (activeAudioModel || (modelSelect && modelSelect.value)) : (modelSelect && modelSelect.value);
+      updateApiModal(currentModel);
       modalApiRef.classList.remove("hidden");
     };
     document.getElementById("btn-close-modal-api").onclick = () => modalApiRef.classList.add("hidden");
@@ -3393,6 +4215,1004 @@ print("Task submitted:", task.id)`;
       }
     };
 
+    // =========================================================================
+    // --- Service: Audio Studio (Mureka AI Music & Audio Engine) ---
+    // =========================================================================
+    let audioStudioInitialized = false;
+
+    function initAudioStudioOnce() {
+      if (audioStudioInitialized) return;
+      audioStudioInitialized = true;
+      initAudioStudio();
+    }
+
+    function initAudioStudio() {
+      const modeSelect = document.getElementById("audio-select-mode");
+      const modelSelectEl = document.getElementById("audio-select-model");
+      const genderSelect = document.getElementById("audio-select-gender");
+      const titleInput = document.getElementById("audio-title-input");
+      const titleCounter = document.getElementById("audio-title-counter");
+      const promptInput = document.getElementById("audio-prompt-input");
+      const styleCounter = document.getElementById("audio-style-counter");
+      const lyricsWrap = document.getElementById("audio-lyrics-wrap");
+      const lyricsInput = document.getElementById("audio-lyrics-input");
+      const lyricsCounter = document.getElementById("audio-lyrics-counter");
+      const dynamicHeadline = document.getElementById("audio-dynamic-headline");
+      const costLabel = document.getElementById("audio-cost-label");
+      const extendWrap = document.getElementById("audio-extend-wrap");
+      const extendSongId = document.getElementById("audio-extend-song-id");
+      const extendAtSec = document.getElementById("audio-extend-at-sec");
+      const btnAiLyrics = document.getElementById("btn-ai-generate-lyrics");
+      const tagButtons = document.querySelectorAll(".audio-tag-btn");
+      const stylePills = document.querySelectorAll(".audio-style-pill");
+      const inspireCards = document.querySelectorAll(".audio-example-card");
+      const btnToggleInspire = document.getElementById("btn-toggle-audio-examples");
+      const inspireDrawer = document.getElementById("audio-examples-drawer");
+      const inspireChevron = document.getElementById("audio-example-chevron");
+      const btnGenerate = document.getElementById("btn-generate-audio-action");
+      const statusCapsule = document.getElementById("audio-status-capsule");
+      const stageLabel = document.getElementById("audio-stage-label");
+      const elapsedBadge = document.getElementById("audio-elapsed-badge");
+
+      // Player elements
+      const mainAudioPlayer = document.getElementById("main-audio-player");
+      const mainAudioTitle = document.getElementById("main-audio-title");
+      const mainAudioDuration = document.getElementById("main-audio-duration");
+      const mainAudioModelBadge = document.getElementById("main-audio-model-badge");
+      const btnToggleLyrics = document.getElementById("btn-toggle-lyrics-view");
+      const btnAudioExtendCurrent = document.getElementById("btn-audio-extend-current");
+      const btnDownloadMp3 = document.getElementById("btn-download-audio-mp3");
+      const lyricsDrawer = document.getElementById("audio-lyrics-drawer");
+      const lyricsContent = document.getElementById("audio-lyrics-content");
+      const recentAudioList = document.getElementById("recent-audio-list");
+      const recentAudioEmpty = document.getElementById("recent-audio-empty");
+      let audioAccessToken = "";
+
+      function safeHttpsUrl(url) {
+        if (!url || typeof url !== "string") return "";
+        try {
+          const parsed = new URL(url);
+          if (parsed.protocol === "https:") return parsed.href;
+        } catch (e) { /* untrusted track URL */ }
+        return "";
+      }
+
+      function escapeHtml(value) {
+        return String(value == null ? "" : value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function safeUploadPath(url) {
+        if (!url || typeof url !== "string") return "";
+        if (!url.startsWith("/uploads/audio/") || url.includes("..") || url.includes("\\") || url.includes("://")) {
+          return "";
+        }
+        return url;
+      }
+
+      function lyricLineText(line) {
+        if (line && typeof line === "object") return line.text || "";
+        return line == null ? "" : String(line);
+      }
+
+      // Dropzone elements
+      const btnRefSlot = document.getElementById("btn-audio-ref-slot");
+      const refFileInput = document.getElementById("audio-ref-file-input");
+      const refTray = document.getElementById("audio-ref-tray");
+      const refFilename = document.getElementById("audio-ref-filename");
+      const btnClearRef = document.getElementById("btn-clear-audio-ref");
+
+      // Set default model
+      if (modelSelectEl && activeAudioModel) {
+        modelSelectEl.value = activeAudioModel;
+      }
+      if (modelSelectEl) {
+        modelSelectEl.onchange = () => {
+          activeAudioModel = modelSelectEl.value;
+          localStorage.setItem("DEFAULT_AUDIO_MODEL", activeAudioModel);
+          if (activeView === "audio" && modelSelect) {
+            modelSelect.value = activeAudioModel;
+          }
+          const prefSel = document.getElementById("pref-audio-model");
+          if (prefSel) prefSel.value = activeAudioModel;
+          const mainBadge = document.getElementById("main-audio-model-badge");
+          if (mainBadge) mainBadge.innerText = activeAudioModel;
+          updateAudioCost();
+          if (activeView === "audio" && modalApiRef && !modalApiRef.classList.contains("hidden")) {
+            updateApiModal(activeAudioModel);
+          }
+        };
+      }
+
+      function updateAudioCost() {
+        costLabel.innerText = "10 credits (~$0.10)";
+      }
+
+      // Real-time character counters for all 3 prompts
+      function updateCharCounters() {
+        if (titleInput && titleCounter) {
+          const len = titleInput.value.length;
+          titleCounter.innerText = `${len} / 100`;
+          titleCounter.className = len >= 100
+            ? "text-[10px] font-mono text-rose-400 font-semibold shrink-0 select-none"
+            : (len >= 90 ? "text-[10px] font-mono text-amber-400 shrink-0 select-none" : "text-[10px] font-mono text-slate-500 shrink-0 select-none");
+        }
+        if (promptInput && styleCounter) {
+          const len = promptInput.value.length;
+          styleCounter.innerText = `${len.toLocaleString()} / 1,024`;
+          styleCounter.className = len >= 1024
+            ? "text-[10px] font-mono text-rose-400 font-semibold select-none"
+            : (len >= 920 ? "text-[10px] font-mono text-amber-400 select-none" : "text-[10px] font-mono text-slate-500 select-none");
+        }
+        if (lyricsInput && lyricsCounter) {
+          const len = lyricsInput.value.length;
+          lyricsCounter.innerText = `${len.toLocaleString()} / 5,000`;
+          lyricsCounter.className = len >= 5000
+            ? "text-[10px] font-mono text-rose-400 font-semibold select-none ml-1"
+            : (len >= 4500 ? "text-[10px] font-mono text-amber-400 select-none ml-1" : "text-[10px] font-mono text-slate-500 select-none ml-1");
+        }
+        if (activeView === "audio" && modalApiRef && !modalApiRef.classList.contains("hidden")) {
+          updateApiModal(activeAudioModel);
+        }
+      }
+
+      if (titleInput) titleInput.addEventListener("input", updateCharCounters);
+      if (promptInput) promptInput.addEventListener("input", updateCharCounters);
+      if (lyricsInput) lyricsInput.addEventListener("input", updateCharCounters);
+      updateCharCounters();
+
+      // Structure tag insert buttons ([Intro], [Verse], [Chorus], [Bridge], [Outro])
+      tagButtons.forEach(btn => {
+        btn.onclick = () => {
+          if (!lyricsInput) return;
+          const tag = btn.getAttribute("data-tag");
+          const start = lyricsInput.selectionStart ?? lyricsInput.value.length;
+          const end = lyricsInput.selectionEnd ?? lyricsInput.value.length;
+          const val = lyricsInput.value;
+          const prefix = start > 0 && val[start - 1] !== "\n" ? "\n\n" : (start > 0 && val[start - 1] === "\n" && val[start - 2] !== "\n" ? "\n" : "");
+          const suffix = "\n";
+          const insertText = `${prefix}${tag}${suffix}`;
+          lyricsInput.value = val.substring(0, start) + insertText + val.substring(end);
+          lyricsInput.selectionStart = lyricsInput.selectionEnd = start + insertText.length;
+          lyricsInput.focus();
+          updateCharCounters();
+        };
+      });
+
+      // Mode changes
+      function updateModeUi(mode) {
+        selectedAudioMode = mode;
+        if (mode === "soundtrack") {
+          dynamicHeadline.innerText = "Generate immersive cinematic soundtracks & background music";
+          promptInput.placeholder = "Describe soundtrack mood, tempo, instruments (e.g., 'Epic cinematic orchestral score with pounding war drums, soaring brass, and emotional string crescendo').";
+          if (lyricsWrap) lyricsWrap.classList.add("hidden");
+          if (extendWrap) extendWrap.classList.add("hidden");
+          if (modelSelectEl) {
+            const hasOption = modelSelectEl.querySelector('option[value="mureka-soundtrack"]');
+            if (hasOption) modelSelectEl.value = "mureka-soundtrack";
+          }
+        } else if (mode === "instrumental") {
+          dynamicHeadline.innerText = "Compose pure instrumental arrangements & backing tracks";
+          promptInput.placeholder = "Describe the arrangement, instrumentation, vibe (e.g., 'Chill lo-fi study instrumental with jazz Rhodes piano and mellow drums').";
+          if (lyricsWrap) lyricsWrap.classList.add("hidden");
+          if (extendWrap) extendWrap.classList.add("hidden");
+          if (modelSelectEl) {
+            const hasOpt = modelSelectEl.querySelector('option[value="mureka-instrumental"]');
+            if (hasOpt) modelSelectEl.value = "mureka-instrumental";
+          }
+        } else if (mode === "extend") {
+          dynamicHeadline.innerText = "Extend existing tracks seamlessly";
+          promptInput.placeholder = "Musical direction or transition notes for the extended section.";
+          if (lyricsWrap) lyricsWrap.classList.remove("hidden");
+          if (extendWrap) extendWrap.classList.remove("hidden");
+          if (modelSelectEl) {
+            const hasOpt = modelSelectEl.querySelector('option[value="mureka-8"]');
+            if (hasOpt) modelSelectEl.value = "mureka-8";
+          }
+        } else if (mode === "easy_generate") {
+          dynamicHeadline.innerText = "Experience music generation and let melodies flow";
+          promptInput.placeholder = "Describe your song theme, mood, tempo, or instruments (e.g., 'An energetic retro synthwave track with soaring lead melodies and driving 80s bassline').";
+          if (lyricsWrap) lyricsWrap.classList.remove("hidden");
+          if (extendWrap) extendWrap.classList.add("hidden");
+          if (modelSelectEl && (modelSelectEl.value === "mureka-soundtrack" || modelSelectEl.value === "mureka-instrumental")) {
+            modelSelectEl.value = "mureka-9.5";
+          }
+        } else { // default: song_generate (Lyrics to Song)
+          dynamicHeadline.innerText = "Craft custom songs with title, style & lyrics";
+          promptInput.placeholder = "Describe musical style, genre, instruments, vocal timbre (e.g., 'Upbeat 90s pop rock, energetic female vocals, crisp electric guitars, punchy drums').";
+          if (lyricsWrap) lyricsWrap.classList.remove("hidden");
+          if (extendWrap) extendWrap.classList.add("hidden");
+          if (modelSelectEl && (modelSelectEl.value === "mureka-soundtrack" || modelSelectEl.value === "mureka-instrumental")) {
+            modelSelectEl.value = "mureka-9.5";
+          }
+        }
+        if (modelSelectEl) {
+          activeAudioModel = modelSelectEl.value;
+          localStorage.setItem("DEFAULT_AUDIO_MODEL", activeAudioModel);
+          if (activeView === "audio" && modelSelect) {
+            modelSelect.value = activeAudioModel;
+          }
+          const mainBadge = document.getElementById("main-audio-model-badge");
+          if (mainBadge) mainBadge.innerText = activeAudioModel;
+        }
+        updateAudioCost();
+        if (activeView === "audio" && modalApiRef && !modalApiRef.classList.contains("hidden")) {
+          updateApiModal(activeAudioModel);
+        }
+      }
+
+      if (modeSelect) {
+        modeSelect.onchange = (e) => updateModeUi(e.target.value);
+      }
+
+      // Style pills
+      stylePills.forEach(pill => {
+        pill.onclick = () => {
+          const style = pill.getAttribute("data-style");
+          const idx = selectedAudioStyles.indexOf(style);
+          if (idx >= 0) {
+            selectedAudioStyles.splice(idx, 1);
+            pill.classList.remove("bg-cyan-500/20", "text-cyan-300", "border-cyan-400/40");
+            pill.classList.add("bg-white/[0.04]", "text-slate-300", "border-white/5");
+          } else {
+            selectedAudioStyles.push(style);
+            pill.classList.add("bg-cyan-500/20", "text-cyan-300", "border-cyan-400/40");
+            pill.classList.remove("bg-white/[0.04]", "text-slate-300", "border-white/5");
+            // If style prompt doesn't already contain the style word, subtly append it
+            if (promptInput && !promptInput.value.toLowerCase().includes(style.toLowerCase())) {
+              const cur = promptInput.value.trim();
+              promptInput.value = cur ? `${cur}, ${style}` : style;
+            }
+          }
+          updateCharCounters();
+        };
+      });
+
+      // Inspiration cards
+      inspireCards.forEach(card => {
+        card.onclick = () => {
+          const prompt = card.getAttribute("data-prompt") || "";
+          const styles = (card.getAttribute("data-styles") || "").split(",").map(s => s.trim()).filter(Boolean);
+          const mode = card.getAttribute("data-mode") || "song_generate";
+          const cardTitle = card.querySelector(".text-xs") ? card.querySelector(".text-xs").innerText.trim() : "";
+
+          if (titleInput && cardTitle) titleInput.value = cardTitle;
+          if (promptInput) promptInput.value = prompt;
+          if (modeSelect) {
+            modeSelect.value = mode;
+            updateModeUi(mode);
+          }
+
+          // reset styles
+          selectedAudioStyles = [];
+          stylePills.forEach(pill => {
+            const pStyle = pill.getAttribute("data-style");
+            if (styles.includes(pStyle)) {
+              selectedAudioStyles.push(pStyle);
+              pill.classList.add("bg-cyan-500/20", "text-cyan-300", "border-cyan-400/40");
+              pill.classList.remove("bg-white/[0.04]", "text-slate-300", "border-white/5");
+            } else {
+              pill.classList.remove("bg-cyan-500/20", "text-cyan-300", "border-cyan-400/40");
+              pill.classList.add("bg-white/[0.04]", "text-slate-300", "border-white/5");
+            }
+          });
+
+          updateCharCounters();
+          promptInput.focus();
+        };
+      });
+
+      // Toggle inspiration drawer
+      if (btnToggleInspire && inspireDrawer) {
+        btnToggleInspire.onclick = () => {
+          const isHidden = inspireDrawer.classList.contains("hidden");
+          if (isHidden) {
+            inspireDrawer.classList.remove("hidden");
+            if (inspireChevron) inspireChevron.style.transform = "rotate(0deg)";
+          } else {
+            inspireDrawer.classList.add("hidden");
+            if (inspireChevron) inspireChevron.style.transform = "rotate(180deg)";
+          }
+        };
+      }
+
+      // Dropzone
+      if (btnRefSlot && refFileInput) {
+        btnRefSlot.onclick = () => refFileInput.click();
+        refFileInput.onchange = (e) => {
+          if (e.target.files && e.target.files[0]) {
+            audioRefFile = e.target.files[0];
+            if (refFilename) refFilename.innerText = audioRefFile.name;
+            if (refTray) refTray.classList.remove("hidden");
+          }
+        };
+      }
+      if (btnClearRef) {
+        btnClearRef.onclick = () => {
+          audioRefFile = null;
+          if (refFileInput) refFileInput.value = "";
+          if (refTray) refTray.classList.add("hidden");
+        };
+      }
+
+      // =========================================================================
+      // Song Upload & Auto-Analyze (Lyrics, Style, Sheet Music) Logic
+      // =========================================================================
+      const btnToggleUploadPanel = document.getElementById("btn-toggle-audio-upload-panel");
+      const btnCloseUploadPanel = document.getElementById("btn-close-audio-upload-panel");
+      const uploadPanel = document.getElementById("audio-upload-panel");
+      const fileDropzone = document.getElementById("audio-file-dropzone");
+      const uploadFileInput = document.getElementById("audio-upload-file-input");
+      const selectedFileInfo = document.getElementById("audio-selected-file-info");
+      const chkRecognize = document.getElementById("chk-auto-recognize");
+      const chkDescribe = document.getElementById("chk-auto-describe");
+      const chkTranscribe = document.getElementById("chk-auto-transcribe");
+      const btnSubmitUpload = document.getElementById("btn-submit-audio-upload");
+      const uploadSpinner = document.getElementById("audio-upload-spinner");
+      const uploadStatus = document.getElementById("audio-upload-status");
+
+      // Breakdown elements
+      const analysisBreakdown = document.getElementById("audio-analysis-breakdown");
+      const breakdownFilename = document.getElementById("breakdown-filename");
+      const breakdownMeta = document.getElementById("breakdown-meta");
+      const breakdownAudioPlayer = document.getElementById("breakdown-audio-player");
+      const breakdownDescribeStatus = document.getElementById("breakdown-describe-status");
+      const breakdownDescText = document.getElementById("breakdown-description-text");
+      const breakdownTagsContainer = document.getElementById("breakdown-tags-container");
+      const btnApplyStyle = document.getElementById("btn-apply-analyzed-style");
+      const breakdownLyricsStatus = document.getElementById("breakdown-lyrics-status");
+      const breakdownLyricsText = document.getElementById("breakdown-lyrics-text");
+      const btnApplyLyrics = document.getElementById("btn-apply-analyzed-lyrics");
+      const breakdownTranscribeStatus = document.getElementById("breakdown-transcribe-status");
+      const breakdownSheetExpires = document.getElementById("breakdown-sheet-expires");
+      const btnDownloadSheet = document.getElementById("btn-download-sheet-music");
+
+      let selectedUploadAudioFile = null;
+      let latestAnalysisData = null;
+
+      // Toggle panel visibility
+      if (btnToggleUploadPanel && uploadPanel) {
+        btnToggleUploadPanel.onclick = () => {
+          uploadPanel.classList.toggle("hidden");
+          if (!uploadPanel.classList.contains("hidden")) {
+            uploadPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        };
+      }
+      if (btnCloseUploadPanel && uploadPanel) {
+        btnCloseUploadPanel.onclick = () => uploadPanel.classList.add("hidden");
+      }
+
+      function handleSongFileSelected(file) {
+        if (!file) return;
+        const validExts = [".mp3", ".m4a", ".wav"];
+        const lowerName = file.name.toLowerCase();
+        const isValid = validExts.some(ext => lowerName.endsWith(ext));
+        if (!isValid) {
+          alert("Unsupported audio format. Please choose an MP3, M4A, or WAV file.");
+          return;
+        }
+
+        const maxBytes = 10 * 1024 * 1024; // 10MB
+        if (file.size > maxBytes) {
+          alert(`File size (${(file.size / (1024 * 1024)).toFixed(2)} MB) exceeds the maximum allowed 10MB limit for Mureka audio analysis.`);
+          return;
+        }
+
+        selectedUploadAudioFile = file;
+        if (selectedFileInfo) {
+          selectedFileInfo.innerHTML = `<span class="text-cyan-300 font-semibold">${escapeHtml(file.name)}</span> <span class="text-slate-400">(${(file.size / (1024 * 1024)).toFixed(2)} MB)</span>`;
+        }
+        if (btnSubmitUpload) {
+          btnSubmitUpload.disabled = false;
+        }
+        if (uploadStatus) {
+          uploadStatus.innerHTML = `<span class="text-emerald-400 font-medium">✓ File ready for upload and analysis</span>`;
+        }
+      }
+
+      // Dropzone events
+      if (fileDropzone && uploadFileInput) {
+        fileDropzone.onclick = () => uploadFileInput.click();
+        uploadFileInput.onchange = (e) => {
+          if (e.target.files && e.target.files.length > 0) {
+            handleSongFileSelected(e.target.files[0]);
+          }
+        };
+
+        fileDropzone.ondragover = (e) => {
+          e.preventDefault();
+          fileDropzone.classList.add("border-cyan-400", "bg-cyan-950/30");
+        };
+        fileDropzone.ondragleave = () => {
+          fileDropzone.classList.remove("border-cyan-400", "bg-cyan-950/30");
+        };
+        fileDropzone.ondrop = (e) => {
+          e.preventDefault();
+          fileDropzone.classList.remove("border-cyan-400", "bg-cyan-950/30");
+          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleSongFileSelected(e.dataTransfer.files[0]);
+          }
+        };
+      }
+
+      // Submit upload & auto-analysis
+      if (btnSubmitUpload) {
+        btnSubmitUpload.onclick = async () => {
+          if (!selectedUploadAudioFile) {
+            alert("Please choose an audio file first.");
+            return;
+          }
+
+          const doRecognize = chkRecognize ? chkRecognize.checked : true;
+          const doDescribe = chkDescribe ? chkDescribe.checked : true;
+          const doTranscribe = chkTranscribe ? chkTranscribe.checked : true;
+
+          btnSubmitUpload.disabled = true;
+          if (uploadSpinner) uploadSpinner.classList.remove("hidden");
+          if (uploadStatus) {
+            uploadStatus.innerHTML = `<span class="text-cyan-400 animate-pulse font-medium">Uploading to Mureka and analyzing audio (lyrics, style, score)...</span>`;
+          }
+
+          const formData = new FormData();
+          formData.append("file", selectedUploadAudioFile);
+          formData.append("auto_recognize", String(doRecognize));
+          formData.append("auto_describe", String(doDescribe));
+          formData.append("auto_transcribe", String(doTranscribe));
+          if (localMurekaKey) {
+            formData.append("api_key", localMurekaKey);
+          }
+
+          try {
+            const res = await fetch("/api/audio/upload", {
+              method: "POST",
+              body: formData
+            });
+
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({ detail: "Upload failed" }));
+              throw new Error(err.detail || `Server error (${res.status})`);
+            }
+
+            const data = await res.json();
+            latestAnalysisData = data;
+
+            // Render breakdown card
+            if (analysisBreakdown) {
+              analysisBreakdown.classList.remove("hidden");
+            }
+            if (breakdownFilename) {
+              breakdownFilename.innerText = data.filename || "Uploaded Song";
+            }
+            if (breakdownMeta) {
+              const dur = data.recognize?.duration ? `${Math.round(data.recognize.duration)}s` : "--";
+              const murekaId = data.upload_audio_id || "--";
+              breakdownMeta.innerText = `Duration: ${dur} | Mureka ID: ${murekaId}`;
+            }
+            if (breakdownAudioPlayer && data.local_url) {
+              const localSrc = safeUploadPath(data.local_url);
+              if (localSrc) breakdownAudioPlayer.src = localSrc;
+            }
+
+            // 1. Style & Genres
+            if (data.describe) {
+              if (breakdownDescribeStatus) {
+                breakdownDescribeStatus.innerText = "✓ Analyzed";
+                breakdownDescribeStatus.className = "text-[10px] font-mono text-emerald-400";
+              }
+              if (breakdownDescText) {
+                breakdownDescText.innerText = data.describe.description || "No description provided.";
+              }
+              if (breakdownTagsContainer) {
+                breakdownTagsContainer.innerHTML = "";
+                const allTags = [
+                  ...(data.describe.genres || []),
+                  ...(data.describe.tags || []),
+                  ...(data.describe.instrument || [])
+                ];
+                const uniqueTags = Array.from(new Set(allTags));
+                if (uniqueTags.length === 0) {
+                  breakdownTagsContainer.innerHTML = '<span class="text-[10px] text-slate-500">None detected</span>';
+                } else {
+                  uniqueTags.forEach(t => {
+                    const pill = document.createElement("button");
+                    pill.type = "button";
+                    pill.className = "px-2 py-0.5 rounded-full bg-white/[0.04] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 text-[10px] border border-white/5 cursor-pointer transition-colors";
+                    pill.innerText = `+ ${t}`;
+                    pill.onclick = () => {
+                      if (promptInput) {
+                        const cur = promptInput.value.trim();
+                        if (!cur.toLowerCase().includes(t.toLowerCase())) {
+                          promptInput.value = cur ? `${cur}, ${t}` : t;
+                          updateCharCounters();
+                        }
+                      }
+                    };
+                    breakdownTagsContainer.appendChild(pill);
+                  });
+                }
+              }
+            } else {
+              if (breakdownDescribeStatus) {
+                breakdownDescribeStatus.innerText = data.errors?.describe ? "✕ Failed" : "Not requested";
+                breakdownDescribeStatus.className = "text-[10px] font-mono text-slate-500";
+              }
+            }
+
+            // 2. Lyrics
+            if (data.recognize) {
+              if (breakdownLyricsStatus) {
+                breakdownLyricsStatus.innerText = "✓ Lyrics extracted";
+                breakdownLyricsStatus.className = "text-[10px] font-mono text-emerald-400";
+              }
+              if (breakdownLyricsText) {
+                breakdownLyricsText.innerText = data.recognize.formatted_lyrics || "(Instrumental or no vocals detected)";
+              }
+            } else {
+              if (breakdownLyricsStatus) {
+                breakdownLyricsStatus.innerText = data.errors?.recognize ? "✕ Failed" : "Not requested";
+                breakdownLyricsStatus.className = "text-[10px] font-mono text-slate-500";
+              }
+            }
+
+            // 3. Sheet Music
+            if (data.transcribe && data.transcribe.zip_url) {
+              if (breakdownTranscribeStatus) {
+                breakdownTranscribeStatus.innerText = "✓ Score Ready";
+                breakdownTranscribeStatus.className = "text-[10px] font-mono text-emerald-400";
+              }
+              if (btnDownloadSheet) {
+                const sheetUrl = safeHttpsUrl(data.transcribe.zip_url);
+                if (sheetUrl) {
+                  btnDownloadSheet.href = sheetUrl;
+                  btnDownloadSheet.classList.remove("pointer-events-none", "opacity-50");
+                }
+              }
+              if (breakdownSheetExpires && data.transcribe.expires_at) {
+                const expDate = new Date(data.transcribe.expires_at * 1000);
+                breakdownSheetExpires.innerText = `Expires: ${expDate.toLocaleDateString()} ${expDate.toLocaleTimeString()}`;
+              }
+            } else {
+              if (breakdownTranscribeStatus) {
+                breakdownTranscribeStatus.innerText = data.errors?.transcribe ? "✕ Failed" : "Not requested";
+                breakdownTranscribeStatus.className = "text-[10px] font-mono text-slate-500";
+              }
+              if (btnDownloadSheet) {
+                btnDownloadSheet.href = "#";
+                btnDownloadSheet.classList.add("pointer-events-none", "opacity-50");
+              }
+            }
+
+            // Auto-populate empty Composer prompt fields without overwriting user's existing work
+            if (promptInput && !promptInput.value.trim() && data.describe?.description) {
+              promptInput.value = data.describe.description;
+            }
+            if (lyricsInput && !lyricsInput.value.trim() && data.recognize?.formatted_lyrics) {
+              lyricsInput.value = data.recognize.formatted_lyrics;
+            }
+            if (titleInput && !titleInput.value.trim() && data.filename) {
+              titleInput.value = data.filename.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ").trim();
+            }
+            updateCharCounters();
+
+            // Set up explicit "Apply" buttons
+            if (btnApplyStyle) {
+              btnApplyStyle.onclick = () => {
+                const desc = data.describe?.description;
+                if (!desc) {
+                  alert("No style description was detected for this track.");
+                  return;
+                }
+                if (promptInput) {
+                  const existing = promptInput.value.trim();
+                  if (existing) {
+                    if (confirm("Replace existing Style Prompt? Click Cancel to append instead.")) {
+                      promptInput.value = desc;
+                    } else {
+                      promptInput.value = `${existing}, ${desc}`;
+                    }
+                  } else {
+                    promptInput.value = desc;
+                  }
+                  updateCharCounters();
+                  promptInput.scrollIntoView({ behavior: "smooth", block: "center" });
+                  promptInput.focus();
+                }
+              };
+            }
+
+            if (btnApplyLyrics) {
+              btnApplyLyrics.onclick = () => {
+                const lyr = data.recognize?.formatted_lyrics;
+                if (!lyr) {
+                  alert("No recognized lyrics available for this track.");
+                  return;
+                }
+                if (lyricsInput) {
+                  const existing = lyricsInput.value.trim();
+                  if (existing) {
+                    if (confirm("Replace existing Lyrics Prompt? Click Cancel to append instead.")) {
+                      lyricsInput.value = lyr;
+                    } else {
+                      lyricsInput.value = `${existing}\n\n${lyr}`;
+                    }
+                  } else {
+                    lyricsInput.value = lyr;
+                  }
+                  updateCharCounters();
+                  lyricsInput.scrollIntoView({ behavior: "smooth", block: "center" });
+                  lyricsInput.focus();
+                }
+              };
+            }
+
+            if (uploadStatus) {
+              uploadStatus.innerHTML = `<span class="text-emerald-400 font-semibold">✓ Upload and analysis completed successfully!</span>`;
+            }
+          } catch (err) {
+            console.error("Audio upload/analysis error:", err);
+            if (uploadStatus) {
+              uploadStatus.innerHTML = `<span class="text-rose-400 font-semibold">Upload failed: ${escapeHtml(err.message)}</span>`;
+            }
+            alert(`Song upload and analysis failed: ${err.message}`);
+          } finally {
+            btnSubmitUpload.disabled = false;
+            if (uploadSpinner) uploadSpinner.classList.add("hidden");
+          }
+        };
+      }
+
+      // AI Lyrics generator button
+      if (btnAiLyrics) {
+        btnAiLyrics.onclick = async () => {
+          const stylePrompt = (promptInput.value || "").trim();
+          const titlePrompt = (titleInput ? titleInput.value : "").trim();
+          const queryPrompt = stylePrompt || titlePrompt;
+          if (!queryPrompt) {
+            alert("Please enter a Style prompt or Song Title first so AI can compose matching lyrics.");
+            if (promptInput) promptInput.focus();
+            return;
+          }
+          if (!serverHasMurekaKey) {
+            alert("Please save your Mureka API key in Settings before generating lyrics.");
+            switchView("settings");
+            return;
+          }
+          btnAiLyrics.innerText = "✨ Generating…";
+          btnAiLyrics.disabled = true;
+          try {
+            const res = await fetch("/api/lyrics/generate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ prompt: queryPrompt })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (lyricsInput && data.lyrics) {
+                lyricsInput.value = data.lyrics;
+              }
+              if (titleInput && !titleInput.value && data.title) {
+                titleInput.value = data.title;
+              }
+              updateCharCounters();
+            } else {
+              const err = await res.json();
+              alert("Lyrics generation failed: " + (err.detail || "Server error"));
+            }
+          } catch (e) {
+            alert("Lyrics request failed: " + e.message);
+          } finally {
+            btnAiLyrics.innerText = "✨ AI Lyrics";
+            btnAiLyrics.disabled = false;
+          }
+        };
+      }
+
+      // Toggle Lyrics drawer
+      if (btnToggleLyrics && lyricsDrawer) {
+        btnToggleLyrics.onclick = () => {
+          lyricsDrawer.classList.toggle("hidden");
+        };
+      }
+
+      // Extend This Track button
+      if (btnAudioExtendCurrent) {
+        btnAudioExtendCurrent.onclick = () => {
+          if (!currentSongId) return;
+          if (modeSelect) {
+            modeSelect.value = "extend";
+            updateModeUi("extend");
+          }
+          if (extendSongId) {
+            extendSongId.value = currentSongId;
+          }
+          if (promptInput) {
+            promptInput.scrollIntoView({ behavior: "smooth", block: "center" });
+            promptInput.focus();
+          }
+        };
+      }
+
+      // Format duration helper
+      function formatDuration(sec) {
+        if (!sec && sec !== 0) return "0:00";
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+      }
+
+      // Audio generation & status polling
+      function setAudioUiGenerating(isGen, stage = "Composing…") {
+        if (isGen) {
+          btnGenerate.disabled = true;
+          statusCapsule.classList.remove("hidden");
+          statusCapsule.classList.add("flex");
+          stageLabel.innerText = stage;
+          let sec = 0;
+          elapsedBadge.innerText = "0s";
+          if (audioElapsedInterval) clearInterval(audioElapsedInterval);
+          audioElapsedInterval = setInterval(() => {
+            sec += 1;
+            elapsedBadge.innerText = `${sec}s`;
+          }, 1000);
+        } else {
+          btnGenerate.disabled = false;
+          statusCapsule.classList.add("hidden");
+          statusCapsule.classList.remove("flex");
+          if (audioElapsedInterval) {
+            clearInterval(audioElapsedInterval);
+            audioElapsedInterval = null;
+          }
+          if (audioPollInterval) {
+            clearInterval(audioPollInterval);
+            audioPollInterval = null;
+          }
+        }
+      }
+
+      function renderRecentTrack(item) {
+        if (recentAudioEmpty) recentAudioEmpty.classList.add("hidden");
+        const div = document.createElement("div");
+        div.className = "p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 cursor-pointer transition-all flex items-center justify-between gap-2";
+        const body = document.createElement("div");
+        body.className = "flex-1 min-w-0";
+        const titleEl = document.createElement("div");
+        titleEl.className = "font-medium text-slate-200 truncate";
+        titleEl.textContent = item.title || "Untitled";
+        const meta = document.createElement("div");
+        meta.className = "text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5";
+        const modelEl = document.createElement("span");
+        modelEl.className = "text-cyan-400 font-mono";
+        modelEl.textContent = item.model || "";
+        const dot = document.createElement("span");
+        dot.textContent = "•";
+        const durationEl = document.createElement("span");
+        durationEl.textContent = item.durationStr || "";
+        meta.append(modelEl, dot, durationEl);
+        body.append(titleEl, meta);
+        const playBtn = document.createElement("button");
+        playBtn.type = "button";
+        playBtn.className = "btn-audio-item-play w-7 h-7 rounded-full bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 flex items-center justify-center text-xs shrink-0";
+        playBtn.textContent = "▶";
+        div.append(body, playBtn);
+        div.onclick = () => {
+          loadTrackIntoPlayer(item);
+        };
+        recentAudioList.prepend(div);
+      }
+
+      function loadTrackIntoPlayer(item) {
+        currentSongId = item.id;
+        mainAudioTitle.textContent = item.title || "";
+        mainAudioModelBadge.textContent = item.model || "";
+        mainAudioDuration.textContent = item.durationStr || "";
+        const mediaUrl = safeHttpsUrl(item.url);
+        if (mediaUrl) {
+          mainAudioPlayer.src = mediaUrl;
+          mainAudioPlayer.play().catch(() => {});
+        }
+
+        if (btnDownloadMp3) {
+          if (mediaUrl) {
+            btnDownloadMp3.href = mediaUrl;
+            btnDownloadMp3.classList.remove("hidden");
+            btnDownloadMp3.classList.add("flex");
+          } else {
+            btnDownloadMp3.removeAttribute("href");
+            btnDownloadMp3.classList.add("hidden");
+            btnDownloadMp3.classList.remove("flex");
+          }
+        }
+        if (btnAudioExtendCurrent) {
+          btnAudioExtendCurrent.classList.remove("hidden");
+          btnAudioExtendCurrent.classList.add("flex");
+        }
+
+        // Render lyrics if available
+        if (item.lyricsSections && item.lyricsSections.length) {
+          lyricsContent.replaceChildren();
+          item.lyricsSections.forEach(sec => {
+            const secEl = document.createElement("div");
+            secEl.className = "py-1";
+            const heading = document.createElement("div");
+            heading.className = "text-[10px] uppercase font-bold text-cyan-400/80 mb-0.5";
+            heading.textContent = (sec && sec.section) || "Lyrics";
+            const body = document.createElement("p");
+            body.className = "text-slate-300 whitespace-pre-wrap";
+            const lines = sec && Array.isArray(sec.lines) ? sec.lines.map(lyricLineText).filter(Boolean) : [];
+            body.textContent = lines.length ? lines.join("\n") : ((sec && sec.content) || "");
+            secEl.append(heading, body);
+            lyricsContent.appendChild(secEl);
+          });
+          btnToggleLyrics.classList.remove("hidden");
+          btnToggleLyrics.classList.add("flex");
+        } else if (item.lyrics) {
+          const pre = document.createElement("pre");
+          pre.className = "whitespace-pre-wrap font-sans text-slate-300";
+          pre.textContent = String(item.lyrics);
+          lyricsContent.replaceChildren(pre);
+          btnToggleLyrics.classList.remove("hidden");
+          btnToggleLyrics.classList.add("flex");
+        } else {
+          btnToggleLyrics.classList.add("hidden");
+          lyricsDrawer.classList.add("hidden");
+        }
+      }
+
+      async function pollAudioTask(taskId, model, promptText) {
+        return new Promise((resolve, reject) => {
+          let attempts = 0;
+          const maxAttempts = 100; // ~5 minutes max
+
+          audioPollInterval = setInterval(async () => {
+            attempts++;
+            if (attempts > maxAttempts) {
+              clearInterval(audioPollInterval);
+              setAudioUiGenerating(false);
+              reject(new Error("Audio generation timed out after 5 minutes."));
+              return;
+            }
+
+            try {
+              const pollHeaders = {};
+              if (audioAccessToken) pollHeaders["X-Audio-Token"] = audioAccessToken;
+              const res = await fetch(`/api/audio/status/${encodeURIComponent(taskId)}`, { headers: pollHeaders });
+              if (!res.ok) {
+                console.warn("Poll status response not ok", res.status);
+                return;
+              }
+              const data = await res.json();
+              const status = (data.status || "").toLowerCase();
+
+              if (status === "preparing") {
+                stageLabel.innerText = "Preparing models…";
+              } else if (status === "queued") {
+                stageLabel.innerText = "Queued in pipeline…";
+              } else if (status === "running") {
+                stageLabel.innerText = "Synthesizing audio…";
+              } else if (status === "succeeded") {
+                clearInterval(audioPollInterval);
+                setAudioUiGenerating(false);
+
+                const choices = data.choices || [];
+                if (!choices.length) {
+                  reject(new Error("No audio tracks returned from Mureka."));
+                  return;
+                }
+                const firstChoice = choices[0];
+                const trackTitle = data.title || (titleInput ? titleInput.value.trim() : "") || promptText.slice(0, 42) || "Mureka Composition";
+                const trackItem = {
+                  id: taskId,
+                  url: firstChoice.url || firstChoice.flac_url || firstChoice.wav_url,
+                  title: trackTitle,
+                  model: model,
+                  duration: firstChoice.duration || 0,
+                  durationStr: formatDuration(firstChoice.duration || 0),
+                  lyricsSections: firstChoice.lyrics_sections,
+                  lyrics: lyricsInput ? lyricsInput.value : ""
+                };
+                loadTrackIntoPlayer(trackItem);
+                renderRecentTrack(trackItem);
+                loadUsageMetrics();
+                resolve(trackItem);
+              } else if (status === "failed") {
+                clearInterval(audioPollInterval);
+                setAudioUiGenerating(false);
+                reject(new Error(data.error || data.failed_reason || "Mureka generation failed."));
+              }
+            } catch (e) {
+              console.warn("Polling error:", e);
+            }
+          }, 3000);
+        });
+      }
+
+      // Generate action button handler
+      if (btnGenerate) {
+        btnGenerate.onclick = async () => {
+          const titleVal = titleInput ? titleInput.value.trim() : "";
+          const styleVal = (promptInput.value || "").trim();
+          const lyricsVal = lyricsInput ? lyricsInput.value.trim() : "";
+          const modelVal = modelSelectEl ? modelSelectEl.value : "mureka-9.5";
+          const genderVal = genderSelect ? genderSelect.value : "";
+          const modeVal = selectedAudioMode || "song_generate";
+
+          if (!serverHasMurekaKey) {
+            alert("Please save your Mureka API key in Settings before generating music.");
+            switchView("settings");
+            return;
+          }
+
+          if (modeVal === "song_generate" && !lyricsVal && !styleVal) {
+            alert("Please enter song lyrics or a style prompt for Lyrics-to-Song generation.");
+            if (lyricsInput) lyricsInput.focus();
+            return;
+          }
+
+          if (modeVal !== "song_generate" && !styleVal && !lyricsVal && !titleVal) {
+            alert("Please describe the song or soundtrack you wish to generate.");
+            promptInput.focus();
+            return;
+          }
+
+          const payload = {
+            mode: modeVal,
+            title: titleVal || undefined,
+            prompt: styleVal || lyricsVal || titleVal,
+            lyrics: lyricsVal || undefined,
+            styles: selectedAudioStyles.length ? selectedAudioStyles : undefined,
+            model: modelVal,
+            gender: genderVal || undefined
+          };
+
+          if (lyricsVal || modeVal === "song_generate" || modeVal === "extend") {
+            payload.lyrics = lyricsVal || styleVal;
+          }
+
+          if (modeVal === "extend") {
+            const sId = (extendSongId ? extendSongId.value.trim() : "") || currentSongId;
+            if (!sId) {
+              alert("Please enter the Original Song ID to extend.");
+              if (extendSongId) extendSongId.focus();
+              return;
+            }
+            payload.song_id = sId;
+            const sec = parseInt(extendAtSec ? extendAtSec.value : "30", 10) || 30;
+            payload.extend_at = sec * 1000;
+          }
+
+          setAudioUiGenerating(true, "Submitting to Mureka…");
+
+          try {
+            const res = await fetch("/api/audio/generate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+              activeAudioTaskId = data.id;
+              audioAccessToken = data.access_token || "";
+              stageLabel.innerText = "Composing track…";
+              await pollAudioTask(data.id, modelVal, titleVal || styleVal || lyricsVal);
+            } else {
+              const err = await res.json();
+              setAudioUiGenerating(false);
+              alert("Mureka Generation Error: " + (err.detail || "Submission failed"));
+            }
+          } catch (err) {
+            setAudioUiGenerating(false);
+            alert("Generation Request Failed: " + err.message);
+          }
+        };
+      }
+    }
+
     // --- Service 2: RPG Automated Generator (Playable + Exportable) ---
     const rpgCanvas = document.getElementById("rpg-canvas");
     const rpgCtx = rpgCanvas ? rpgCanvas.getContext("2d") : null;
@@ -3838,10 +5658,12 @@ print("Task submitted:", task.id)`;
     }
 
     function fillSettingsForm() {
+      const audioSel = document.getElementById("pref-audio-model");
       const videoSel = document.getElementById("pref-video-model");
       const dirSel = document.getElementById("pref-director-model");
       const customWrap = document.getElementById("pref-director-custom-wrap");
       const customInput = document.getElementById("pref-director-custom-endpoint");
+      if (audioSel && audioSel.querySelector(`option[value="${activeAudioModel}"]`)) audioSel.value = activeAudioModel;
       if (videoSel && videoSel.querySelector(`option[value="${activeVideoModel}"]`)) videoSel.value = activeVideoModel;
       if (dirSel) {
         if (dirSel.querySelector(`option[value="${activeDirectorModel}"]`)) {
@@ -3859,6 +5681,15 @@ print("Task submitted:", task.id)`;
     }
 
     document.getElementById("btn-save-pref").onclick = async () => {
+      const audioSel = document.getElementById("pref-audio-model");
+      if (audioSel) {
+        activeAudioModel = audioSel.value;
+        localStorage.setItem("DEFAULT_AUDIO_MODEL", activeAudioModel);
+        const composerAudioModel = document.getElementById("audio-select-model");
+        if (composerAudioModel) composerAudioModel.value = activeAudioModel;
+        const mainBadge = document.getElementById("main-audio-model-badge");
+        if (mainBadge) mainBadge.innerText = activeAudioModel;
+      }
       activeVideoModel = document.getElementById("pref-video-model").value;
       const dirVal = document.getElementById("pref-director-model").value;
       if (dirVal === "custom") {
@@ -3875,7 +5706,11 @@ print("Task submitted:", task.id)`;
       localStorage.setItem("RPG_CHAPTER_COUNT", String(rpgChapterCount));
       localStorage.setItem("RPG_CANVAS_RESOLUTION", rpgResolution);
       applyCanvasResolution();
-      modelSelect.value = activeVideoModel;
+      if (activeView === "audio") {
+        modelSelect.value = activeAudioModel;
+      } else {
+        modelSelect.value = activeVideoModel;
+      }
       syncModelBadge();
       const feedback = document.getElementById("pref-feedback");
       try {
@@ -3885,6 +5720,7 @@ print("Task submitted:", task.id)`;
           body: JSON.stringify({
             video_model: activeVideoModel,
             director_model: activeDirectorModel,
+            audio_model: activeAudioModel,
             provider: localProvider,
             rpg_resolution: rpgResolution,
             chapter_count: rpgChapterCount

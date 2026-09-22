@@ -359,7 +359,7 @@ def test_multimedia_route_and_ui_renaming(client):
     res = client.get("/multimedia")
     assert res.status_code == 200
     html = res.text
-    assert "Multimedia Studio" in html
+    assert "Vision Studio" in html or "Multimedia Studio" in html
     assert "Model Inventory &amp; API Sync" in html or "Model Inventory & API Sync" in html
     assert "btn-refresh-inventory" in html
     assert "inventory-table-body" in html
@@ -990,6 +990,71 @@ def test_estimate_cost_endpoint(client):
     })
     assert res_img.status_code == 200
     assert res_img.json()["cost"] == "0.180-0.360 USD"
+
+
+def test_audio_studio_top_bar_and_api_modal_integration(client):
+    """Verifies that the frontend HTML has the top-bar audio model switcher and Audio API modal renderer."""
+    res = client.get("/")
+    assert res.status_code == 200
+    html = res.text
+
+    # Top bar elements
+    assert 'id="header-model-pill"' in html
+    assert 'id="header-model-icon"' in html
+    assert 'id="video-select-model"' in html
+    assert 'id="header-btn-api-modal"' in html
+
+    # API Reference Modal dynamic targets
+    assert 'id="api-modal-badge"' in html
+    assert 'id="api-modal-title"' in html
+    assert 'id="api-modal-subtitle"' in html
+    assert 'id="api-modal-endpoint-label"' in html
+    assert 'id="api-modal-endpoint"' in html
+    assert 'id="api-modal-sdk-label"' in html
+    assert 'id="api-modal-doc-link"' in html
+    assert 'id="api-modal-doc-text"' in html
+
+    # JavaScript helper functions for view-specific top-bar & API modal
+    assert "renderAudioModelDropdown" in html
+    assert "renderVisionApiModal" in html
+    assert "renderAudioApiModal" in html
+    assert "updateTopBarForView" in html
+    assert "Mureka AI Music & Audio API Reference" in html
+    assert "https://api.mureka.ai/v1/song/generate" in html
+    assert "https://api.mureka.ai/v1/song/easy-generate" in html
+    assert "https://api.mureka.ai/v1/soundtrack/generate" in html
+    assert "https://api.mureka.ai/v1/song/extend" in html
+    assert "https://api.mureka.ai/v1/instrumental/generate" in html
+
+
+def test_audio_upload_and_auto_analysis_ui_integration(client):
+    """Verifies that the frontend HTML includes song uploader dropzone, analysis toggles, and breakdown card."""
+    res = client.get("/")
+    assert res.status_code == 200
+    html = res.text
+
+    # Uploader trigger & panel
+    assert 'id="btn-toggle-audio-upload-panel"' in html
+    assert 'id="audio-upload-panel"' in html
+    assert 'id="audio-file-dropzone"' in html
+    assert 'id="audio-upload-file-input"' in html
+    assert 'id="btn-close-audio-upload-panel"' in html
+
+    # Auto-analysis checkboxes
+    assert 'id="chk-auto-recognize"' in html
+    assert 'id="chk-auto-describe"' in html
+    assert 'id="chk-auto-transcribe"' in html
+    assert 'id="btn-submit-audio-upload"' in html
+
+    # Breakdown card & action buttons
+    assert 'id="audio-analysis-breakdown"' in html
+    assert 'id="breakdown-audio-player"' in html
+    assert 'id="breakdown-tags-container"' in html
+    assert 'id="btn-apply-analyzed-style"' in html
+    assert 'id="btn-apply-analyzed-lyrics"' in html
+    assert 'id="btn-download-sheet-music"' in html
+    assert 'id="breakdown-sheet-expires"' in html
+
 
 
 

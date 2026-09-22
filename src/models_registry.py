@@ -554,12 +554,108 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         ui_layout_type="generic",
         headline="Audit Visual Consistency with Skylark Vision",
         icon_type="vision"
+    ),
+
+    # -------------------------------------------------------------------------
+    # 6. AUDIO & MUSIC GENERATION (MUREKA FAMILY)
+    # -------------------------------------------------------------------------
+    "mureka-9.5": ModelInfo(
+        id="mureka-9.5",
+        display_name="Mureka 9.5 (Flagship Music)",
+        category="audio",
+        description="Mureka flagship music model delivering high-fidelity vocals, rich instrumentation, and diverse styles.",
+        recommended_for="Professional song generation, radio-ready vocal tracks.",
+        is_default=True,
+        ui_layout_type="audio_music",
+        headline="Experience music generation and let melodies flow",
+        icon_type="audio",
+        placeholder="Describe your song theme, mood, tempo, or instrumentation (e.g., 'An energetic retro synthwave track with soaring lead melodies and driving 80s bassline').",
+        input_slots=[{"id": "reference", "label": "Audio Ref", "icon": "plus"}],
+        sample_cost="10 credits (~$0.10)",
+        provider="mureka",
+        clip_counts=[1, 2, 3]
+    ),
+    "mureka-9": ModelInfo(
+        id="mureka-9",
+        display_name="Mureka 9.0",
+        category="audio",
+        description="High-fidelity music generation with nuanced genre blending.",
+        recommended_for="General song production and background music.",
+        ui_layout_type="audio_music",
+        headline="Experience music generation and let melodies flow",
+        icon_type="audio",
+        placeholder="Describe your song theme, mood, tempo, or instrumentation.",
+        input_slots=[{"id": "reference", "label": "Audio Ref", "icon": "plus"}],
+        sample_cost="10 credits (~$0.10)",
+        provider="mureka",
+        clip_counts=[1, 2, 3]
+    ),
+    "mureka-8": ModelInfo(
+        id="mureka-8",
+        display_name="Mureka 8.0 (Extension Specialist)",
+        category="audio",
+        description="High-coherence music model uniquely optimized for forward and backward song extensions (head/tail).",
+        recommended_for="Extending tracks, expanding intros, building long-form music.",
+        ui_layout_type="audio_music",
+        headline="Experience music generation and let melodies flow",
+        icon_type="audio",
+        placeholder="Enter lyrics and style to extend the track.",
+        input_slots=[{"id": "reference", "label": "Song Ref", "icon": "plus"}],
+        sample_cost="10 credits (~$0.10)",
+        provider="mureka",
+        clip_counts=[1, 2, 3]
+    ),
+    "mureka-7.6": ModelInfo(
+        id="mureka-7.6",
+        display_name="Mureka 7.6",
+        category="audio",
+        description="Fast, reliable music generator with strong lyrical adherence.",
+        recommended_for="Fast song generation and classic tail extension.",
+        ui_layout_type="audio_music",
+        headline="Experience music generation and let melodies flow",
+        icon_type="audio",
+        placeholder="Describe your song theme or enter lyrics.",
+        input_slots=[{"id": "reference", "label": "Audio Ref", "icon": "plus"}],
+        sample_cost="10 credits (~$0.10)",
+        provider="mureka",
+        clip_counts=[1, 2, 3]
+    ),
+    "mureka-soundtrack": ModelInfo(
+        id="mureka-soundtrack",
+        display_name="Mureka Soundtrack & BGM",
+        category="audio",
+        description="Specialized soundtrack and background music generation synced to visual scenes and timing cues.",
+        recommended_for="Game background music, cutscene scores, and ambient themes.",
+        ui_layout_type="audio_soundtrack",
+        headline="Generate cinematic soundtracks and background scores",
+        icon_type="audio",
+        placeholder="Describe the mood, emotion, and scene ambiance for your soundtrack.",
+        input_slots=[{"id": "scene_ref", "label": "Scene Ref", "icon": "plus"}],
+        sample_cost="10 credits (~$0.10)",
+        provider="mureka",
+        clip_counts=[1, 2, 3]
+    ),
+    "mureka-instrumental": ModelInfo(
+        id="mureka-instrumental",
+        display_name="Mureka Instrumental",
+        category="audio",
+        description="Pure instrumental audio generation without vocal synthesis.",
+        recommended_for="Lo-fi beats, ambient soundscapes, orchestral pieces.",
+        ui_layout_type="audio_music",
+        headline="Generate pure instrumental arrangements",
+        icon_type="audio",
+        placeholder="Describe the instrumental arrangement, instruments, and style.",
+        input_slots=[{"id": "reference", "label": "Audio Ref", "icon": "plus"}],
+        sample_cost="10 credits (~$0.10)",
+        provider="mureka",
+        clip_counts=[1, 2, 3]
     )
 }
 
 DEFAULT_VIDEO_MODEL = "dreamina-seedance-2-5-260628"
 DEFAULT_DIRECTOR_MODEL = "seed-2-0-lite-260228"
 DEFAULT_IMAGE_MODEL = "dola-seedream-5-0-pro-260628"
+DEFAULT_AUDIO_MODEL = "mureka-9.5"
 
 def get_models_by_category(category: str) -> List[Dict[str, Any]]:
     """Returns all models under a specific category as dicts."""
@@ -573,6 +669,7 @@ def get_all_models_grouped() -> Dict[str, List[Dict[str, Any]]]:
     grouped: Dict[str, List[Dict[str, Any]]] = {
         "video": [],
         "image": [],
+        "audio": [],
         "director_llm": [],
         "3d": [],
         "vision_embedding": []
@@ -581,6 +678,7 @@ def get_all_models_grouped() -> Dict[str, List[Dict[str, Any]]]:
         if m.category in grouped:
             grouped[m.category].append(asdict(m))
     return grouped
+
 
 def get_model_info(model_id: str) -> Optional[ModelInfo]:
     """Returns metadata for a specific model ID."""
@@ -604,6 +702,11 @@ def calculate_model_cost(
     res = (resolution or "720p").lower()
     clips = max(1, int(clip_count or 1))
     dur = max(1, int(duration or 5))
+    # 0. Mureka Audio Models
+    if "mureka" in mid or "soundtrack" in mid or "instrumental" in mid:
+        songs = max(1, int(clip_count or 1))
+        cost = 0.1000 * songs
+        return f"USD {cost:.4f} ({10 * songs} credits)"
 
     # 1. xAI Grok Imagine images (must beat generic "image" and grok video)
     if "grok" in mid and "image" in mid:

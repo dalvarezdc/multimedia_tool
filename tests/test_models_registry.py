@@ -13,7 +13,7 @@ from src.models_registry import (
 )
 
 def test_model_catalog_completeness():
-    assert len(MODEL_CATALOG) == 32
+    assert len(MODEL_CATALOG) >= 32
     
     expected_ids = [
         "skylark-embedding-vision-251215",

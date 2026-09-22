@@ -22,6 +22,7 @@ from src.models_registry import (
     DEFAULT_VIDEO_MODEL,
     DEFAULT_DIRECTOR_MODEL,
     DEFAULT_IMAGE_MODEL,
+    DEFAULT_AUDIO_MODEL,
 )
 
 logger = logging.getLogger("model_inventory")
@@ -287,6 +288,24 @@ def infer_model_capabilities(model_id: str, provider: str = "seedance", display_
             provider=provider
         )
 
+    # 5. Audio / Music Models
+    if "mureka" in mid or any(k in mid for k in ["audio", "song", "soundtrack", "instrumental", "bgm"]):
+        return ModelInfo(
+            id=model_id,
+            display_name=name,
+            category="audio",
+            description=f"{provider.capitalize()} Audio & Music Generation Model ({model_id}).",
+            recommended_for="Vocal songs, soundtracks, and background music.",
+            ui_layout_type="audio_music",
+            headline="Experience music generation and let melodies flow",
+            icon_type="audio",
+            placeholder="Describe your song theme, mood, tempo, or instrumentation.",
+            input_slots=[{"id": "reference", "label": "Audio Ref", "icon": "plus"}],
+            sample_cost="10 credits (~$0.10)",
+            provider=provider if provider in ("mureka", "skywork") else "mureka",
+            clip_counts=[1, 2, 3]
+        )
+
     # Default fallback: Treat as video if provider is seedance/grok, else generic
     return ModelInfo(
         id=model_id,
@@ -469,6 +488,7 @@ class ModelInventoryManager:
         grouped: Dict[str, List[Dict[str, Any]]] = {
             "video": [],
             "image": [],
+            "audio": [],
             "director_llm": [],
             "3d": [],
             "vision_embedding": [],
@@ -492,13 +512,15 @@ class ModelInventoryManager:
             "custom_count": len(custom_models),
             "providers_checked": {
                 "byteplus": bool(ark_key or os.getenv("ARK_API_KEY")),
-                "xai": bool(xai_key or os.getenv("XAI_API_KEY"))
+                "xai": bool(xai_key or os.getenv("XAI_API_KEY")),
+                "mureka": bool(os.getenv("MUREKA_API_KEY"))
             },
             "catalog": grouped,
             "all_models": list(merged_map.values()),
             "active_video_model": os.getenv("ARK_SEEDANCE_MODEL", DEFAULT_VIDEO_MODEL),
             "active_director_model": os.getenv("ARK_LLM_MODEL", DEFAULT_DIRECTOR_MODEL),
-            "active_image_model": os.getenv("ARK_SEEDREAM_MODEL", DEFAULT_IMAGE_MODEL)
+            "active_image_model": os.getenv("ARK_SEEDREAM_MODEL", DEFAULT_IMAGE_MODEL),
+            "active_audio_model": os.getenv("MUREKA_MODEL", DEFAULT_AUDIO_MODEL)
         }
 
         self.save_cached_snapshot(snapshot)
