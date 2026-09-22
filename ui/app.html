@@ -623,8 +623,21 @@
 
           <!-- Inside Card Bottom Bar -->
           <div class="mt-2 pt-3 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3 text-xs">
-            <!-- Left Controls: Mode & Model & Vocal Gender -->
-            <div class="flex flex-wrap items-center gap-2">
+            <!-- Model-aware audio settings; selects remain the source of truth for generation. -->
+            <div class="relative min-w-0" id="audio-settings-root">
+              <button id="audio-settings-trigger" type="button" aria-expanded="false" aria-controls="audio-settings-panel"
+                class="flex max-w-full items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-left text-xs text-slate-200 hover:border-cyan-400/40 hover:bg-white/[0.08] transition-colors">
+                <span class="text-cyan-300">♫</span><span id="audio-settings-summary" class="truncate">Lyrics to Song · Mureka 9.5 · 2 songs</span><span class="text-slate-400">⌄</span>
+              </button>
+              <div id="audio-settings-panel" class="hidden absolute bottom-full left-0 z-50 mb-2 w-[min(32rem,calc(100vw-2rem))] max-h-[min(70vh,38rem)] overflow-y-auto rounded-2xl border border-white/15 bg-[#191b22] p-4 shadow-2xl space-y-4">
+                <div class="flex items-center justify-between"><span class="text-sm font-semibold text-white">Audio settings</span><button id="audio-settings-close" type="button" class="text-slate-400 hover:text-white" aria-label="Close audio settings">✕</button></div>
+                <div><p class="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400">Create</p><div id="audio-mode-options" class="grid grid-cols-2 gap-1.5"></div></div>
+                <div><p class="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400">Model</p><div id="audio-model-options" class="grid grid-cols-2 gap-1.5"></div><p id="audio-model-note" class="mt-2 text-[11px] text-slate-500"></p></div>
+                <div id="audio-gender-options-wrap"><p class="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400">Vocal preference</p><div id="audio-gender-options" class="grid grid-cols-3 gap-1.5"></div></div>
+                <div id="audio-count-options-wrap"><p class="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400">Outputs</p><div id="audio-count-options" class="grid grid-cols-3 gap-1.5"></div></div>
+                <div id="audio-extend-type-options-wrap" class="hidden"><p class="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400">Extend from</p><div id="audio-extend-type-options" class="grid grid-cols-2 gap-1.5"></div></div>
+              </div>
+              <div class="hidden">
               <!-- Mode Selector Pill -->
               <div class="relative">
                 <select id="audio-select-mode"
@@ -658,6 +671,9 @@
                   <option value="female">Female Vocal</option>
                   <option value="male">Male Vocal</option>
                 </select>
+              </div>
+              <select id="audio-select-count"><option value="1">1 song</option><option value="2" selected>2 songs</option><option value="3">3 songs</option></select>
+              <select id="audio-select-extend-type"><option value="tail">End</option><option value="head">Beginning</option></select>
               </div>
             </div>
 
@@ -1595,6 +1611,7 @@
     let rpgResolution = localStorage.getItem("RPG_CANVAS_RESOLUTION") || "1080p";
     let selectedVideoMode = "ref_to_video";
     let selectedAudioMode = "song_generate";
+    let audioStudioInitialized = false;
     let visionSettingsDismissBound = false;
     let selectedAudioStyles = [];
     let activeAudioTaskId = null;
@@ -2049,14 +2066,6 @@
       librarySort = librarySortSelect.value;
       renderLibrary();
     };
-
-    // Check URL path or hash to restore view
-    const pathView = window.location.pathname.replace("/", "");
-    if (viewMeta[pathView]) {
-      switchView(pathView);
-    } else {
-      switchView("video");
-    }
 
     // --- Key Status Indicator Refresher ---
     const sidebarKeyDot = document.getElementById("sidebar-key-dot");
@@ -3237,7 +3246,7 @@ print("Task submitted:", task.id)`;
             localStorage.setItem("DEFAULT_AUDIO_MODEL", mid);
             switchView("audio");
             const compSel = document.getElementById("audio-select-model");
-            if (compSel) compSel.value = mid;
+            if (compSel) { compSel.value = mid; compSel.dispatchEvent(new Event("change")); }
           } else if (cat === "director_llm") {
             const dirSel = document.getElementById("pref-director-model");
             if (dirSel) dirSel.value = mid;
@@ -3319,12 +3328,11 @@ print("Task submitted:", task.id)`;
         activeAudioModel = modelSelect.value;
         localStorage.setItem("DEFAULT_AUDIO_MODEL", activeAudioModel);
         const composerSel = document.getElementById("audio-select-model");
-        if (composerSel) composerSel.value = activeAudioModel;
+        if (composerSel) { composerSel.value = activeAudioModel; composerSel.dispatchEvent(new Event("change")); }
         const prefSel = document.getElementById("pref-audio-model");
         if (prefSel) prefSel.value = activeAudioModel;
         const mainBadge = document.getElementById("main-audio-model-badge");
         if (mainBadge) mainBadge.innerText = activeAudioModel;
-        if (typeof updateAudioCost === "function") updateAudioCost();
       } else {
         activeVideoModel = modelSelect.value;
         localStorage.setItem("ARK_SEEDANCE_MODEL", activeVideoModel);
@@ -4510,8 +4518,6 @@ print("Task submitted:", task.id)`;
     // =========================================================================
     // --- Service: Audio Studio (Mureka AI Music & Audio Engine) ---
     // =========================================================================
-    let audioStudioInitialized = false;
-
     function initAudioStudioOnce() {
       if (audioStudioInitialized) return;
       audioStudioInitialized = true;
@@ -4522,6 +4528,11 @@ print("Task submitted:", task.id)`;
       const modeSelect = document.getElementById("audio-select-mode");
       const modelSelectEl = document.getElementById("audio-select-model");
       const genderSelect = document.getElementById("audio-select-gender");
+      const countSelect = document.getElementById("audio-select-count");
+      const extendTypeSelect = document.getElementById("audio-select-extend-type");
+      const settingsRoot = document.getElementById("audio-settings-root");
+      const settingsPanel = document.getElementById("audio-settings-panel");
+      const settingsTrigger = document.getElementById("audio-settings-trigger");
       const titleInput = document.getElementById("audio-title-input");
       const titleCounter = document.getElementById("audio-title-counter");
       const promptInput = document.getElementById("audio-prompt-input");
@@ -4598,25 +4609,81 @@ print("Task submitted:", task.id)`;
       const refFilename = document.getElementById("audio-ref-filename");
       const btnClearRef = document.getElementById("btn-clear-audio-ref");
 
+      const audioModeLabels = { song_generate: "Lyrics to Song", easy_generate: "Prompt to Song", soundtrack: "Soundtrack / BGM", instrumental: "Instrumental", extend: "Extend Song" };
+      const audioModelLabels = { "mureka-9.5": "Mureka 9.5", "mureka-9": "Mureka 9", "mureka-8": "Mureka 8", "mureka-7.6": "Mureka 7.6" };
+      const audioBaseModels = Object.keys(audioModelLabels);
+      const audioSettingsButtonClass = "rounded-lg border px-2.5 py-2 text-xs text-left transition-colors ";
+
+      function syncAudioModel() {
+        activeAudioModel = modelSelectEl.value;
+        localStorage.setItem("DEFAULT_AUDIO_MODEL", activeAudioModel);
+        if (activeView === "audio" && modelSelect) modelSelect.value = activeAudioModel;
+        const prefSel = document.getElementById("pref-audio-model");
+        if (prefSel) prefSel.value = activeAudioModel;
+        const mainBadge = document.getElementById("main-audio-model-badge");
+        if (mainBadge) mainBadge.innerText = activeAudioModel;
+        if (activeView === "audio" && modalApiRef && !modalApiRef.classList.contains("hidden")) updateApiModal(activeAudioModel);
+      }
+
+      function renderAudioSettings() {
+        const mode = selectedAudioMode;
+        const model = modelSelectEl.value;
+        const allowedModels = mode === "extend" ? ["mureka-8", "mureka-7.6"] : audioBaseModels;
+        const renderGroup = (id, values, current, onPick) => {
+          const group = document.getElementById(id);
+          if (!group) return;
+          group.replaceChildren();
+          values.forEach(([value, label]) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.textContent = label;
+            button.className = audioSettingsButtonClass + (value === current ? "border-cyan-400/50 bg-cyan-500/15 text-cyan-200" : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/10");
+            button.setAttribute("aria-pressed", String(value === current));
+            button.onclick = () => onPick(value);
+            group.appendChild(button);
+          });
+        };
+        renderGroup("audio-mode-options", Object.entries(audioModeLabels), mode, value => { modeSelect.value = value; modeSelect.dispatchEvent(new Event("change")); });
+        renderGroup("audio-model-options", allowedModels.map(value => [value, audioModelLabels[value]]), model, value => { modelSelectEl.value = value; modelSelectEl.dispatchEvent(new Event("change")); });
+        renderGroup("audio-gender-options", [["", "Any vocal"], ["female", "Female"], ["male", "Male"]], genderSelect.value, value => { genderSelect.value = value; renderAudioSettings(); });
+        renderGroup("audio-count-options", [["1", "1 song"], ["2", "2 songs"], ["3", "3 songs"]], countSelect.value, value => { countSelect.value = value; updateAudioCost(); renderAudioSettings(); });
+        renderGroup("audio-extend-type-options", [["tail", "End"], ["head", "Beginning"]], extendTypeSelect.value, value => { extendTypeSelect.value = value; renderAudioSettings(); });
+        document.getElementById("audio-gender-options-wrap").classList.toggle("hidden", mode !== "song_generate");
+        document.getElementById("audio-count-options-wrap").classList.toggle("hidden", mode === "extend");
+        document.getElementById("audio-extend-type-options-wrap").classList.toggle("hidden", mode !== "extend" || model !== "mureka-8");
+        extendAtSec.min = model === "mureka-7.6" ? "8" : "0";
+        extendAtSec.max = model === "mureka-7.6" ? "420" : "";
+        if (mode === "extend" && model === "mureka-7.6" && Number(extendAtSec.value) < 8) extendAtSec.value = "8";
+        document.getElementById("audio-model-note").textContent = mode === "extend" ? "Extension is available with Mureka 8 or 7.6. Beginning extension requires Mureka 8." : "Available models for this creation mode.";
+        document.getElementById("audio-settings-summary").textContent = `${audioModeLabels[mode]} · ${audioModelLabels[model] || model} · ${mode === "extend" ? "1 extension" : `${countSelect.value} songs`}`;
+      }
+
+      function closeAudioSettings() {
+        settingsPanel.classList.add("hidden");
+        settingsTrigger.setAttribute("aria-expanded", "false");
+      }
+      settingsTrigger.onclick = () => {
+        const opening = settingsPanel.classList.contains("hidden");
+        settingsPanel.classList.toggle("hidden", !opening);
+        settingsTrigger.setAttribute("aria-expanded", String(opening));
+      };
+      document.getElementById("audio-settings-close").onclick = closeAudioSettings;
+      document.addEventListener("click", event => { if (!event.composedPath().includes(settingsRoot)) closeAudioSettings(); });
+      document.addEventListener("keydown", event => { if (event.key === "Escape") closeAudioSettings(); });
+
       // Set default model
       if (modelSelectEl && activeAudioModel) {
         modelSelectEl.value = activeAudioModel;
       }
       if (modelSelectEl) {
         modelSelectEl.onchange = () => {
-          activeAudioModel = modelSelectEl.value;
-          localStorage.setItem("DEFAULT_AUDIO_MODEL", activeAudioModel);
-          if (activeView === "audio" && modelSelect) {
-            modelSelect.value = activeAudioModel;
-          }
-          const prefSel = document.getElementById("pref-audio-model");
-          if (prefSel) prefSel.value = activeAudioModel;
-          const mainBadge = document.getElementById("main-audio-model-badge");
-          if (mainBadge) mainBadge.innerText = activeAudioModel;
+          if (modelSelectEl.value === "mureka-soundtrack") { modeSelect.value = "soundtrack"; modelSelectEl.value = "mureka-9"; }
+          if (modelSelectEl.value === "mureka-instrumental") { modeSelect.value = "instrumental"; modelSelectEl.value = "mureka-9.5"; }
+          if (selectedAudioMode === "extend" && !["mureka-8", "mureka-7.6"].includes(modelSelectEl.value)) modeSelect.value = "song_generate";
+          if (modeSelect.value !== selectedAudioMode) updateModeUi(modeSelect.value);
+          syncAudioModel();
           updateAudioCost();
-          if (activeView === "audio" && modalApiRef && !modalApiRef.classList.contains("hidden")) {
-            updateApiModal(activeAudioModel);
-          }
+          renderAudioSettings();
         };
       }
 
@@ -4632,7 +4699,7 @@ print("Task submitted:", task.id)`;
           extend: { "mureka-8": 0.10, "mureka-7.6": 0.036 }
         };
         const rate = rates[mode] && rates[mode][model];
-        const count = mode === "extend" ? 1 : 2;
+        const count = mode === "extend" ? 1 : Number(countSelect.value || 2);
         costLabel.innerText = rate == null ? "Price unavailable" : `Estimated $${(rate * count).toFixed(mode === "extend" ? 3 : 2)} · ${count} ${mode === "extend" ? "extension" : "songs"}`;
         costLabel.title = rate == null ? "Check Mureka billing for this model and mode." : "Based on Mureka's published API price per song. Additional actions are charged separately.";
       }
@@ -4726,28 +4793,19 @@ print("Task submitted:", task.id)`;
           promptInput.placeholder = "Describe soundtrack mood, tempo, instruments (e.g., 'Epic cinematic orchestral score with pounding war drums, soaring brass, and emotional string crescendo').";
           if (lyricsWrap) lyricsWrap.classList.add("hidden");
           if (extendWrap) extendWrap.classList.add("hidden");
-          if (modelSelectEl) {
-            const hasOption = modelSelectEl.querySelector('option[value="mureka-soundtrack"]');
-            if (hasOption) modelSelectEl.value = "mureka-soundtrack";
-          }
+          if (modelSelectEl.value === "mureka-soundtrack") modelSelectEl.value = "mureka-9";
         } else if (mode === "instrumental") {
           dynamicHeadline.innerText = "Compose pure instrumental arrangements & backing tracks";
           promptInput.placeholder = "Describe the arrangement, instrumentation, vibe (e.g., 'Chill lo-fi study instrumental with jazz Rhodes piano and mellow drums').";
           if (lyricsWrap) lyricsWrap.classList.add("hidden");
           if (extendWrap) extendWrap.classList.add("hidden");
-          if (modelSelectEl) {
-            const hasOpt = modelSelectEl.querySelector('option[value="mureka-instrumental"]');
-            if (hasOpt) modelSelectEl.value = "mureka-instrumental";
-          }
+          if (modelSelectEl.value === "mureka-instrumental") modelSelectEl.value = "mureka-9.5";
         } else if (mode === "extend") {
           dynamicHeadline.innerText = "Extend existing tracks seamlessly";
           promptInput.placeholder = "Musical direction or transition notes for the extended section.";
           if (lyricsWrap) lyricsWrap.classList.remove("hidden");
           if (extendWrap) extendWrap.classList.remove("hidden");
-          if (modelSelectEl) {
-            const hasOpt = modelSelectEl.querySelector('option[value="mureka-8"]');
-            if (hasOpt) modelSelectEl.value = "mureka-8";
-          }
+          if (!["mureka-8", "mureka-7.6"].includes(modelSelectEl.value)) modelSelectEl.value = "mureka-8";
         } else if (mode === "easy_generate") {
           dynamicHeadline.innerText = "Experience music generation and let melodies flow";
           promptInput.placeholder = "Describe your song theme, mood, tempo, or instruments (e.g., 'An energetic retro synthwave track with soaring lead melodies and driving 80s bassline').";
@@ -4765,19 +4823,10 @@ print("Task submitted:", task.id)`;
             modelSelectEl.value = "mureka-9.5";
           }
         }
-        if (modelSelectEl) {
-          activeAudioModel = modelSelectEl.value;
-          localStorage.setItem("DEFAULT_AUDIO_MODEL", activeAudioModel);
-          if (activeView === "audio" && modelSelect) {
-            modelSelect.value = activeAudioModel;
-          }
-          const mainBadge = document.getElementById("main-audio-model-badge");
-          if (mainBadge) mainBadge.innerText = activeAudioModel;
-        }
+        if (mode !== "extend" || modelSelectEl.value !== "mureka-8") extendTypeSelect.value = "tail";
+        syncAudioModel();
         updateAudioCost();
-        if (activeView === "audio" && modalApiRef && !modalApiRef.classList.contains("hidden")) {
-          updateApiModal(activeAudioModel);
-        }
+        renderAudioSettings();
       }
 
       if (modeSelect) {
@@ -5502,7 +5551,9 @@ print("Task submitted:", task.id)`;
             lyrics: lyricsVal || undefined,
             styles: selectedAudioStyles.length ? selectedAudioStyles : undefined,
             model: modelVal,
-            gender: genderVal || undefined
+            gender: modeVal === "song_generate" ? (genderVal || undefined) : undefined,
+            n: modeVal === "extend" ? undefined : Number(countSelect.value),
+            extend_type: modeVal === "extend" && modelVal === "mureka-8" ? extendTypeSelect.value : "tail"
           };
 
           if (lyricsVal || modeVal === "song_generate" || modeVal === "extend") {
@@ -6022,7 +6073,7 @@ print("Task submitted:", task.id)`;
         activeAudioModel = audioSel.value;
         localStorage.setItem("DEFAULT_AUDIO_MODEL", activeAudioModel);
         const composerAudioModel = document.getElementById("audio-select-model");
-        if (composerAudioModel) composerAudioModel.value = activeAudioModel;
+        if (composerAudioModel) { composerAudioModel.value = activeAudioModel; composerAudioModel.dispatchEvent(new Event("change")); }
         const mainBadge = document.getElementById("main-audio-model-badge");
         if (mainBadge) mainBadge.innerText = activeAudioModel;
       }
@@ -6115,6 +6166,10 @@ print("Task submitted:", task.id)`;
     document.getElementById("btn-info-modes-inline").onclick = () => modalInfo.classList.remove("hidden");
     document.getElementById("btn-close-modal-info").onclick = () => modalInfo.classList.add("hidden");
     document.getElementById("btn-got-it").onclick = () => modalInfo.classList.add("hidden");
+
+    // Restore the route after every view dependency has been initialized.
+    const pathView = window.location.pathname.replace("/", "");
+    switchView(viewMeta[pathView] ? pathView : "video");
   </script>
 </body>
 
