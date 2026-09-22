@@ -1,133 +1,122 @@
-# Multimedia Tool: Autonomous Retro Pixel & AI Video Generator
+# Multimedia Tool
 
-An autonomous, multi-agent video production engine that generates explainer videos by marrying **16-bit retro pixel-art platformer roadmaps** with **watermark-free AI video cutscenes** powered by ByteDance's **Seedance API** via **BytePlus ModelArk**.
+Create AI images, videos, music, and interactive story worlds from one browser-based Studio.
 
-![Multimedia Studio](docs/images/studio.png)
+You do not need to know Python or TypeScript to use it. The `Makefile` handles setup and startup for you.
 
-![Studio inputs fold into one generation hub](docs/diagrams/system-overview.svg)
+![Multimedia Studio prompt and generation controls](docs/images/studio.png)
 
----
+## Start here
 
-## Key Features
+You need these free tools installed first:
 
-* **Retro 16-Bit Platformer Roadmap**: Procedural parallax backgrounds, floating stone platforms, illuminated milestone scrolls, and an animated Hermes/messenger avatar.
-* **BytePlus ModelArk Integration**:
-  * **Director Agent**: Powered by `seed-2-0-lite-260228` to break down raw concepts into structured storyboards and spatial platform layouts.
-  * **AI Video Generator**: Powered by **Seedance 2.0 / 2.5** via `arkruntime` to render cinematic, high-definition concept cutscenes.
-* **Guaranteed Zero-Watermark Pipeline**:
-  * Programmatic `watermark=False` request configuration.
-  * Automatic negative prompt filtering (`--no watermark, logo, text overlay`).
-  * Automated computer-vision QA auditing of generated video corners.
-* **Remotion + TypeScript Video Engine**: Fully scriptable, frame-accurate 60 FPS video rendering with zero GPU driver headaches in headless CI/CD.
-* **Autonomous Multi-Agent Workflow**: End-to-end orchestration from raw text prompt to final rendered MP4.
+- [Git](https://git-scm.com/downloads)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- [Node.js 20 or newer](https://nodejs.org/en/download)
+- [FFmpeg](https://ffmpeg.org/download.html)
 
----
+Then open a terminal in this project folder and run:
 
-## Architecture & Workflow Documentation
+```bash
+make install
+make dev
+```
 
-![Browser, API, and providers](docs/diagrams/runtime-pipeline.svg)
+Open **[http://localhost:8000](http://localhost:8000)** in your browser. Keep the terminal window open while you use the Studio.
 
-![From prompt to master file](docs/diagrams/generation-steps.svg)
+![Install once, start the Studio, then create and download](docs/diagrams/quickstart.svg)
 
-* **[Architecture Document](docs/architecture.md)**: Deep dive into the 5 core subsystems, data schemas, parallax rendering, and physics models.
-* **[Agentic Workflow Document](docs/agentic_workflow.md)**: Detailed specification of agent roles, the state machine lifecycle, QA audit gates, and self-healing strategies.
-* **[Remotion engine](remotion/README.md)**: Pixel roadmap composition that stitches cutscenes into a 60 FPS master.
+> You only need `make install` the first time. On later visits, run `make dev`.
 
----
+## Add an API key
 
-## Repository Structure
+The Studio needs a key from the service that creates your media. You can add it inside the app—there is no need to edit a configuration file.
+
+1. Open **Settings** in the left sidebar.
+2. Paste the key for the service you want to use:
+   - **BytePlus ModelArk** for Seedance and Seedream
+   - **xAI** for Grok image and video generation
+   - **Mureka** for music and audio
+3. Save the settings.
+
+API keys are private credentials. Do not paste them into the README, commit them to Git, or share them in screenshots.
+
+## Create something
+
+1. Choose a workspace from the left sidebar, such as image/video, audio, or RPG world generation.
+2. Describe what you want in the large prompt box.
+3. Optionally add reference files and change the output settings.
+4. Select **Generate** (the arrow button).
+5. Wait for the preview, then select **Download**.
+
+The Studio shows an estimated API cost before generation when the provider supplies pricing information. Generated files are also written to the `renders/` folder.
+
+Creating an account is optional. Sign in only if you want the Studio to keep your generation history and show it in **Library** after a restart.
+
+## Everyday commands
+
+Run these commands from the project folder:
 
 ```text
-multimedia_tool/
-├── .beads/                  # Beads (bd) issue tracking database
-├── .claude/                 # Claude Code agent hooks & configurations
-├── docs/
-│   ├── architecture.md      # Full technical architecture specification
-│   └── agentic_workflow.md  # Multi-agent roles & execution lifecycle
-├── src/
-│   ├── director/            # seed-2-0-lite topic decomposition & prompt generation
-│   ├── seedance/            # BytePlus arkruntime client & task polling (no watermark)
-│   ├── qa/                  # Video verification & watermark detection hooks
-│   └── audio/               # Voiceover & 8-bit sound effects synthesizer
-├── remotion/                # Pixel platformer video engine (React + TypeScript)
-│   ├── src/
-│   │   ├── components/      # ParallaxBackground, PlatformNode, HermesAvatar
-│   │   ├── compositions/    # MasterRoadmapVideo composition
-│   │   └── Root.tsx         # Remotion entrypoint
-│   └── package.json
-├── assets/                  # Pixel sprites, tilesets, and 8-bit audio samples
-├── cutscenes/               # Cached, watermark-free Seedance MP4 outputs (gitignored)
-├── renders/                 # Final rendered master videos (gitignored)
-├── .env.example             # Environment variable template
-├── .gitignore               # Multi-language & media ignore configuration
-└── README.md                # Project documentation
+make dev          Start the Studio at http://localhost:8000
+make install      Install or refresh the required packages
+make docker-up    Start the Docker version at http://localhost:8080
+make docker-down  Stop the Docker version
+make help         Show every available command
 ```
 
----
+Press `Control+C` in the terminal to stop `make dev`.
 
-## Prerequisites
+## If something goes wrong
 
-* **Python**: 3.11 or higher
-* **uv**: Modern, fast Python package manager (`brew install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`)
-* **Node.js**: 20.x or higher (with `npm` or `pnpm`)
-* **FFmpeg**: Installed and accessible on your `PATH`
-* **BytePlus Account**: ModelArk API key with access to:
-  * `seed-2-0-lite-260228` (Director / Storyboarder)
-  * `dreamina-seedance-2-0-260128` (or custom Seedance endpoint ID)
+**The browser says it cannot connect**
 
----
+Make sure `make dev` is still running and shows no error in the terminal, then reload [http://localhost:8000](http://localhost:8000).
 
-## Quickstart
+**The terminal says a command is missing**
 
-### 1. Clone & Configure Environment
-```bash
-cp .env.example .env
-# Edit .env with your ARK_API_KEY and model endpoints
-```
+Install the missing prerequisite from the links above, close and reopen the terminal, then run `make install` again.
 
-### 2. Install Dependencies (Using `uv`)
-```bash
-# Create virtual environment and install Python dependencies via uv
-uv venv
-uv pip install -r requirements.txt
-uv pip install -e .
+**Generate says an API key is required**
 
-# Install Remotion dependencies
-cd remotion && npm install && cd ..
-```
+Open **Settings**, add the key for the selected provider, and save it. A BytePlus key cannot be used with xAI, and an xAI key cannot be used with BytePlus.
 
-### 3. Launch the Web Studio
-```bash
-# Start the FastAPI backend and interactive web studio (http://localhost:8000)
-uv run python -m src.server
-```
+**Generation takes a long time**
 
-Local `make dev` still serves API and UI from one process. For Docker they are split: nginx serves `ui/` on port 8080 and reverse-proxies `/api`, `/uploads`, and `/renders` to FastAPI (`SERVE_UI=0`).
+Video and audio providers process jobs remotely, so they can take several minutes. Keep the Studio and terminal open while the job is running.
+
+**I changed dependencies or pulled a project update**
+
+Run `make install` again, then restart the Studio with `make dev`.
+
+## Docker option
+
+If Docker Desktop is already installed, you can use the containerized version instead:
 
 ```bash
-cp .env.example .env   # if you have not already
-make docker-up         # http://localhost:8080
+make docker-up
 ```
 
-GitHub Actions (`.github/workflows/ci.yml`) runs pytest with a 90% coverage floor and builds both images on every push and pull request.
+Open **[http://localhost:8080](http://localhost:8080)**. Stop it later with `make docker-down`.
 
-### Accounts and session history
-Sign in from the header to keep Recent Creations across restarts. Email + password always works. Optional TOTP 2FA lives under Settings → Account. Google, GitHub, and Proton OAuth buttons appear when you set the matching `*_CLIENT_ID` / `*_CLIENT_SECRET` in `.env`. Proton's public "Sign in with Proton" is partner-only; without those credentials you can still register with a Proton Mail address.
+## For developers
 
-![Sign in, then keep history](docs/diagrams/auth-history.svg)
+The beginner workflow ends above. These documents explain the internals:
 
-### 4. Or Run Headless via CLI
-```bash
-# Run the pipeline with a custom topic and context file
-uv run python -m src.cli \
-  --topic "How Local LLMs Work" \
-  --context-file "notes/architecture.md" \
-  --chapters 4
+- [System architecture](docs/architecture.md)
+- [Agent workflow](docs/agentic_workflow.md)
+- [Remotion video engine](remotion/README.md)
+- [Frontend design notes](docs/frontend_design.md)
+
+Useful development commands:
+
+```text
+make test        Run the test suite
+make coverage    Run tests and build a coverage report
+make remotion    Open the Remotion preview
+make cli         Run the demo Seedance pipeline
+make cli-grok    Run the demo Grok pipeline
+make clean       Remove generated caches and temporary render files
 ```
 
-The system will:
-1. Decompose the topic into milestone platforms using `seed-2-0-lite`.
-2. Generate watermark-free cinematic cutscenes using `Seedance`.
-3. QA audit the generated clips.
-4. Render the master 60 FPS pixel roadmap video using Remotion.
-5. Export the final MP4 to `renders/final_output.mp4`.
+The application is built with FastAPI, Python, Remotion, React, and TypeScript. For local development, `make dev` serves the API and browser UI together. In Docker, nginx serves the UI on port 8080 and forwards API requests to FastAPI.
