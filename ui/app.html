@@ -672,12 +672,21 @@
             </select>
           </div>
           <div>
-            <label class="label" for="pref-director-model">Director LLM</label>
+            <div class="flex items-center justify-between mb-1">
+              <label class="label mb-0" for="pref-director-model">Director LLM / Endpoint</label>
+              <span class="text-[10px] text-zinc-500 font-mono">ModelArk or ep-...</span>
+            </div>
             <select id="pref-director-model" class="field">
-              <option value="seed-2-0-lite-260228">seed-2-0-lite-260228</option>
-              <option value="seed-2-0-lite-260428">seed-2-0-lite-260428</option>
-              <option value="seed-2-0-pro-260328">seed-2-0-pro-260328</option>
+              <option value="seed-2-0-lite-260428">seed-2-0-lite-260428 (Seed 2.0 Lite - Latest)</option>
+              <option value="seed-2-0-lite-260228">seed-2-0-lite-260228 (Seed 2.0 Lite)</option>
+              <option value="deepseek-v4-1-flash-260910">deepseek-v4-1-flash-260910 (DeepSeek V4.1 Flash)</option>
+              <option value="seed-2-0-pro-260328">seed-2-0-pro-260328 (Seed 2.0 Pro)</option>
+              <option value="custom">Custom Endpoint ID (ep-...)</option>
             </select>
+            <div id="pref-director-custom-wrap" class="mt-2 hidden">
+              <input id="pref-director-custom-endpoint" type="text" class="field text-xs font-mono" placeholder="e.g. ep-20260228123456-abcde" />
+              <p class="text-[10px] text-zinc-500 mt-1">Paste your ModelArk Inference Endpoint ID from BytePlus Console.</p>
+            </div>
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
@@ -2176,6 +2185,28 @@ print("Task submitted:", task.id)`;
 
         // Render Inventory in Settings
         renderInventorySettings(data);
+
+        // Populate Director LLMs in Settings
+        const dirSel = document.getElementById("pref-director-model");
+        if (dirSel && catalog.director_llm && catalog.director_llm.length) {
+          const knownValues = new Set([
+            "seed-2-0-lite-260428",
+            "seed-2-0-lite-260228",
+            "deepseek-v4-1-flash-260910",
+            "seed-2-0-pro-260328",
+            "custom"
+          ]);
+          catalog.director_llm.forEach(m => {
+            if (!knownValues.has(m.id)) {
+              knownValues.add(m.id);
+              const opt = document.createElement("option");
+              opt.value = m.id;
+              const livePrefix = m.is_live ? "● " : "";
+              opt.innerText = `${livePrefix}${m.display_name || m.id}`;
+              dirSel.insertBefore(opt, dirSel.lastElementChild);
+            }
+          });
+        }
       } catch (err) {
         console.error("Failed to load models catalog", err);
       }
@@ -3728,6 +3759,13 @@ print("Task submitted:", task.id)`;
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Director LLM failed");
         applyRpgWorld(data.storyboard);
+        if (data.note) {
+          console.info("[Director Planner]", data.note);
+          const topicEl = document.getElementById("rpg-world-topic");
+          if (topicEl) {
+            topicEl.innerText = `${topicEl.innerText} (Local Director)`;
+          }
+        }
       } catch (err) {
         alert(err.message || "Planning failed");
       } finally {
@@ -3787,11 +3825,34 @@ print("Task submitted:", task.id)`;
       setTimeout(() => recorder.stop(), Math.max(4000, rpgShrines.length * 6000));
     };
 
+    const dirSelEl = document.getElementById("pref-director-model");
+    if (dirSelEl) {
+      dirSelEl.onchange = () => {
+        const wrap = document.getElementById("pref-director-custom-wrap");
+        if (dirSelEl.value === "custom") {
+          if (wrap) wrap.classList.remove("hidden");
+        } else {
+          if (wrap) wrap.classList.add("hidden");
+        }
+      };
+    }
+
     function fillSettingsForm() {
       const videoSel = document.getElementById("pref-video-model");
       const dirSel = document.getElementById("pref-director-model");
-      if (videoSel.querySelector(`option[value="${activeVideoModel}"]`)) videoSel.value = activeVideoModel;
-      if (dirSel.querySelector(`option[value="${activeDirectorModel}"]`)) dirSel.value = activeDirectorModel;
+      const customWrap = document.getElementById("pref-director-custom-wrap");
+      const customInput = document.getElementById("pref-director-custom-endpoint");
+      if (videoSel && videoSel.querySelector(`option[value="${activeVideoModel}"]`)) videoSel.value = activeVideoModel;
+      if (dirSel) {
+        if (dirSel.querySelector(`option[value="${activeDirectorModel}"]`)) {
+          dirSel.value = activeDirectorModel;
+          if (customWrap) customWrap.classList.add("hidden");
+        } else {
+          dirSel.value = "custom";
+          if (customWrap) customWrap.classList.remove("hidden");
+          if (customInput) customInput.value = activeDirectorModel;
+        }
+      }
       document.getElementById("pref-provider").value = localProvider;
       document.getElementById("pref-chapter-count").value = String(rpgChapterCount);
       document.getElementById("pref-resolution").value = rpgResolution;
@@ -3799,7 +3860,12 @@ print("Task submitted:", task.id)`;
 
     document.getElementById("btn-save-pref").onclick = async () => {
       activeVideoModel = document.getElementById("pref-video-model").value;
-      activeDirectorModel = document.getElementById("pref-director-model").value;
+      const dirVal = document.getElementById("pref-director-model").value;
+      if (dirVal === "custom") {
+        activeDirectorModel = (document.getElementById("pref-director-custom-endpoint").value || "").trim() || "seed-2-0-lite-260428";
+      } else {
+        activeDirectorModel = dirVal;
+      }
       localProvider = document.getElementById("pref-provider").value;
       rpgChapterCount = parseInt(document.getElementById("pref-chapter-count").value, 10);
       rpgResolution = document.getElementById("pref-resolution").value;

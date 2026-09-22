@@ -112,3 +112,89 @@ def test_improve_storyboard_with_and_without_instruction(monkeypatch):
     assert "Tighten pedagogy" in captured[0]
     planner.improve_storyboard({"chapters": []}, instruction="Make it funnier")
     assert "Make it funnier" in captured[1]
+
+
+def test_plan_storyboard_falls_back_to_candidate_on_404(monkeypatch):
+    monkeypatch.setenv("ARK_API_KEY", "mock_ark")
+
+    attempts = []
+
+    class FakeCompletions:
+        def create(self, model, messages):
+            attempts.append(model)
+            if model == "seed-2-0-lite-260228":
+                raise RuntimeError("404: The model or endpoint seed-2-0-lite-260228 does not exist or you do not have access to it.")
+            # Fallback model succeeds
+            class Msg:
+                content = '{"theme": "fallback_sky", "chapters": [{"id": 1}]}'
+            class Choice:
+                message = Msg()
+            class ChatResp:
+                choices = [Choice()]
+            return ChatResp()
+
+    class FakeArk:
+        def __init__(self, **kwargs):
+            self.chat = self
+            self.completions = FakeCompletions()
+            self.responses = self
+
+    monkeypatch.setattr("src.director.planner.Ark", FakeArk)
+    planner = DirectorPlanner(api_key="mock_ark", model_id="seed-2-0-lite-260228")
+    result = planner.plan_storyboard("How Local LLMs Work on Apple Silicon")
+    assert result["theme"] == "fallback_sky"
+    assert result["_director_mode"] == "cloud_llm"
+    assert "seed-2-0-lite-260228" in attempts
+    assert "seed-2-0-lite-260428" in attempts
+
+
+def test_plan_storyboard_falls_back_to_heuristic_when_all_fail(monkeypatch):
+    monkeypatch.setenv("ARK_API_KEY", "mock_ark")
+
+    class FakeArk:
+        def __init__(self, **kwargs):
+            self.chat = self
+            self.completions = self
+            self.responses = self
+
+        def create(self, **kwargs):
+            raise RuntimeError("404: InvalidEndpointOrModel.NotFound")
+
+    monkeypatch.setattr("src.director.planner.Ark", FakeArk)
+    planner = DirectorPlanner(api_key="mock_ark", model_id="seed-2-0-lite-260228")
+    result = planner.plan_storyboard("How Local LLMs Work on Apple Silicon", chapter_count=4)
+    assert result["_director_mode"] == "heuristic_fallback"
+    assert len(result["chapters"]) == 4
+    # Character consistency
+    for ch in result["chapters"]:
+        assert "Hermes" in ch["speaker"] or "Hermes" in ch["narration_text"]
+        assert "Image 1" in ch["seedance_prompt"]
+        assert ch["platform"]["width"] >= 160
+
+
+def test_improve_storyboard_heuristic_fallback(monkeypatch):
+    monkeypatch.setenv("ARK_API_KEY", "mock_ark")
+
+    class FakeArk:
+        def __init__(self, **kwargs):
+            self.chat = self
+            self.completions = self
+            self.responses = self
+
+        def create(self, **kwargs):
+            raise RuntimeError("API unavailable")
+
+    monkeypatch.setattr("src.director.planner.Ark", FakeArk)
+    planner = DirectorPlanner(api_key="mock_ark", model_id="seed-2-0-lite-260228")
+    existing = {
+        "theme": "greek_night_sky",
+        "character_profile": {"name": "Hermes"},
+        "chapters": [
+            {"id": 1, "title": "A Very Long Title That Needs Tightening", "narration_text": "Spoken text"}
+        ]
+    }
+    improved = planner.improve_storyboard(existing)
+    assert improved["_director_mode"] == "heuristic_fallback"
+    assert len(improved["chapters"][0]["title"].split()) <= 3
+    assert improved["chapters"][0]["platform"]["x"] == 350
+

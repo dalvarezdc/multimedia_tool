@@ -456,19 +456,27 @@ def create_app():
                     chapter_count=req.chapter_count,
                     purpose=req.purpose,
                 )
+            director_mode = storyboard.get("_director_mode", "cloud_llm")
+            active_model = getattr(planner, "active_model_used", model_id)
             store["storyboard"] = storyboard
             store["usage_records"].insert(0, {
                 "id": f"rpg-{int(time.time())}",
                 "timestamp": time.strftime("%Y-%m-%d %H:%M"),
                 "service": "RPG Studio",
-                "model": model_id,
-                "mode": "improve" if req.storyboard else req.purpose,
+                "model": active_model,
+                "mode": f"{'improve' if req.storyboard else req.purpose} ({director_mode})",
                 "prompt": req.topic or storyboard.get("theme", "storyboard"),
                 "duration": f"{len(storyboard.get('chapters', []))} shrines",
                 "status": "succeeded",
                 "watermark_free": False
             })
-            return {"status": "success", "storyboard": storyboard, "director_model": model_id}
+            return {
+                "status": "success",
+                "storyboard": storyboard,
+                "director_model": active_model,
+                "director_mode": director_mode,
+                "note": storyboard.get("_director_note")
+            }
         except Exception as e:
             logger.error(f"Planning failed: {e}")
             raise HTTPException(status_code=500, detail=str(e))
