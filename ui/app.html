@@ -377,8 +377,8 @@
           <!-- Inside Card Bottom Bar -->
           <div class="mt-4 pt-3 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3 text-xs">
             <!-- Left Dynamic Mode and Pills -->
-            <div id="dynamic-pills-bar" class="flex flex-wrap items-center gap-2">
-              <!-- Rendered dynamically by JS: mode dropdown, ratio, resolution, duration, sound, piece count, draft mode -->
+            <div id="dynamic-pills-bar" class="relative flex flex-wrap items-center gap-2">
+              <!-- Rendered dynamically by JS: mode and grouped output settings -->
             </div>
 
             <!-- Right Cost & Submit Button -->
@@ -591,7 +591,7 @@
               </label>
               <div class="flex items-center gap-2">
                 <span id="audio-lyrics-counter" class="text-[10px] font-mono text-slate-500 select-none">0 / 5,000</span>
-                <button id="btn-ai-generate-lyrics" type="button" class="text-[11px] font-medium text-cyan-400 hover:text-cyan-300 bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-800/40 px-2.5 py-1 rounded-lg transition-colors cursor-pointer">✨ AI Lyrics</button>
+                <button id="btn-ai-generate-lyrics" type="button" title="Mureka charges $0.009 per generated lyric" class="text-[11px] font-medium text-cyan-400 hover:text-cyan-300 bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-800/40 px-2.5 py-1 rounded-lg transition-colors cursor-pointer">✨ AI Lyrics · $0.009</button>
               </div>
             </div>
             <div class="flex items-center gap-1 overflow-x-auto pb-0.5" aria-label="Insert lyrics section">
@@ -1595,6 +1595,7 @@
     let rpgResolution = localStorage.getItem("RPG_CANVAS_RESOLUTION") || "1080p";
     let selectedVideoMode = "ref_to_video";
     let selectedAudioMode = "song_generate";
+    let visionSettingsDismissBound = false;
     let selectedAudioStyles = [];
     let activeAudioTaskId = null;
     let currentSongId = null;
@@ -2887,6 +2888,14 @@ print("Task submitted:", task.id)`;
       if (pillsBar) {
         let html = "";
         const selClass = "bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[11px] font-medium rounded-lg px-2.5 py-1 cursor-pointer focus:ring-0";
+        const settingGroup = (title, selectId, options) => `
+          <div class="space-y-1.5">
+            <div class="text-[11px] font-medium text-slate-400">${title}</div>
+            <div class="flex flex-wrap gap-1 rounded-xl bg-white/[0.03] p-1 border border-white/[0.05]">
+              ${options.map(([value, label]) => `<button type="button" class="vision-setting-option px-3 py-1.5 rounded-lg text-[11px] text-slate-300 hover:bg-white/10 transition-colors" data-setting-select="${selectId}" data-setting-value="${value}">${label}</button>`).join("")}
+            </div>
+          </div>`;
+        let settingsGroups = "";
         if (model.mode_selector && model.mode_selector.enabled) {
           const isFirstLast = selectedVideoMode === "first_last_frame";
           html += `
@@ -2924,42 +2933,59 @@ print("Task submitted:", task.id)`;
           `;
         }
         const ratios = model.ratios && model.ratios.length ? model.ratios : ["16:9", "9:16", "1:1"];
-        html += `<select id="video-aspect-ratio" class="${selClass}" title="Aspect ratio">
+        html += `<select id="video-aspect-ratio" class="hidden" aria-label="Aspect ratio">
           ${ratios.map(r => `<option value="${r}" class="bg-[#11131C]">${r}</option>`).join('')}
         </select>`;
+        settingsGroups += settingGroup("Ratio", "video-aspect-ratio", ratios.map(r => [r, r]));
         const resolutions = model.resolutions || [];
         if (resolutions.length) {
-          html += `<select id="video-resolution" class="${selClass}" title="Resolution">
+          html += `<select id="video-resolution" class="hidden" aria-label="Resolution">
             ${resolutions.map(r => `<option value="${r}" class="bg-[#11131C]">${String(r).toUpperCase()}</option>`).join('')}
           </select>`;
+          settingsGroups += settingGroup("Resolution", "video-resolution", resolutions.map(r => [r, String(r).toUpperCase()]));
         }
         if (model.category !== "image") {
           const durations = model.durations && model.durations.length ? model.durations : [5, 10];
-          html += `<select id="video-duration" class="${selClass}" title="Duration">
+          html += `<select id="video-duration" class="hidden" aria-label="Duration">
             ${durations.map(d => `<option value="${d}" class="bg-[#11131C]">${d} seconds</option>`).join('')}
           </select>`;
+          settingsGroups += settingGroup("Duration", "video-duration", durations.map(d => [d, `${d}s`]));
           if (model.supports_audio) {
-            html += `<select id="video-audio" class="${selClass}" title="Audio">
+            html += `<select id="video-audio" class="hidden" aria-label="Output sound">
               <option value="on" selected class="bg-[#11131C]">Sound on</option>
               <option value="off" class="bg-[#11131C]">Sound off</option>
             </select>`;
+            settingsGroups += settingGroup("Output sound", "video-audio", [["on", "On"], ["off", "Off"]]);
           }
           const clips = model.clip_counts && model.clip_counts.length ? model.clip_counts : [1];
-          html += `<select id="video-clip-count" class="${selClass}" title="Number of videos">
+          html += `<select id="video-clip-count" class="hidden" aria-label="Number of videos">
             ${clips.map(n => `<option value="${n}" class="bg-[#11131C]">${n} video${n === 1 ? '' : 's'}</option>`).join('')}
           </select>`;
+          settingsGroups += settingGroup("Videos", "video-clip-count", clips.map(n => [n, String(n)]));
           if (model.supports_draft) {
-            html += `<select id="video-draft" class="${selClass}" title="Draft mode">
+            html += `<select id="video-draft" class="hidden" aria-label="Draft mode">
               <option value="off" selected class="bg-[#11131C]">Final</option>
               <option value="on" class="bg-[#11131C]">Draft mode</option>
             </select>`;
+            settingsGroups += settingGroup("Render", "video-draft", [["off", "Final"], ["on", "Draft"]]);
           }
         } else {
           const pieces = model.clip_counts && model.clip_counts.length ? model.clip_counts : [1];
-          html += `<select id="video-clip-count" class="${selClass}" title="Number of images">
+          html += `<select id="video-clip-count" class="hidden" aria-label="Number of images">
             ${pieces.map(n => `<option value="${n}" class="bg-[#11131C]">${n} piece${n === 1 ? '' : 's'}</option>`).join('')}
           </select>`;
+          settingsGroups += settingGroup("Images", "video-clip-count", pieces.map(n => [n, String(n)]));
         }
+        html += `
+          <div id="vision-settings-wrapper" class="relative">
+            <button id="vision-settings-trigger" type="button" aria-expanded="false" aria-controls="vision-settings-menu" class="${selClass} flex items-center gap-1.5 max-w-full" title="Output settings">
+              <span class="text-purple-300">⚙</span><span id="vision-settings-summary" class="truncate">Output settings</span><span class="text-slate-500">⌄</span>
+            </button>
+            <div id="vision-settings-menu" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-50 w-[min(32rem,calc(100vw-2rem))] max-h-[calc(100vh-5rem)] overflow-y-auto bg-[#12141F] border border-white/15 rounded-2xl shadow-2xl p-4 space-y-4">
+              <div class="flex items-center justify-between border-b border-white/10 pb-2"><span class="text-xs font-semibold text-white">Output settings</span><button id="vision-settings-close" type="button" class="text-slate-400 hover:text-white text-lg leading-none" aria-label="Close output settings">×</button></div>
+              ${settingsGroups}
+            </div>
+          </div>`;
         pillsBar.innerHTML = html;
 
         // Wire generation mode trigger & options
@@ -3010,6 +3036,69 @@ print("Task submitted:", task.id)`;
           };
         }
         if (draftEl) draftEl.onchange = updateDynamicCost;
+        const settingsTrigger = document.getElementById("vision-settings-trigger");
+        const settingsMenu = document.getElementById("vision-settings-menu");
+        const settingsSummary = document.getElementById("vision-settings-summary");
+        const updateSettingsSummary = () => {
+          const parts = [ratioEl && ratioEl.value, resEl && resEl.value.toUpperCase()];
+          if (durEl) parts.push(`${durEl.value}s`);
+          if (audioEl) parts.push(audioEl.value === "on" ? "Sound on" : "Sound off");
+          if (clipEl) parts.push(`${clipEl.value} ${model.category === "image" ? "image" : "video"}${clipEl.value === "1" ? "" : "s"}`);
+          if (draftEl && draftEl.value === "on") parts.push("Draft");
+          if (settingsSummary) settingsSummary.innerText = parts.filter(Boolean).join(" · ");
+          if (settingsMenu) settingsMenu.querySelectorAll(".vision-setting-option").forEach((button) => {
+            const select = document.getElementById(button.dataset.settingSelect);
+            const selected = !!select && select.value === button.dataset.settingValue;
+            button.classList.toggle("bg-white/15", selected);
+            button.classList.toggle("text-white", selected);
+            button.classList.toggle("ring-1", selected);
+            button.classList.toggle("ring-purple-400/40", selected);
+            button.setAttribute("aria-pressed", String(selected));
+          });
+        };
+        [ratioEl, resEl, durEl, audioEl, clipEl, draftEl].filter(Boolean).forEach((select) => select.addEventListener("change", updateSettingsSummary));
+        if (settingsTrigger && settingsMenu) {
+          settingsTrigger.onclick = (event) => {
+            event.stopPropagation();
+            settingsMenu.classList.toggle("hidden");
+            settingsTrigger.setAttribute("aria-expanded", String(!settingsMenu.classList.contains("hidden")));
+          };
+          document.getElementById("vision-settings-close").onclick = () => {
+            settingsMenu.classList.add("hidden");
+            settingsTrigger.setAttribute("aria-expanded", "false");
+            settingsTrigger.focus();
+          };
+          settingsMenu.querySelectorAll(".vision-setting-option").forEach((button) => {
+            button.onclick = () => {
+              const select = document.getElementById(button.dataset.settingSelect);
+              if (!select) return;
+              select.value = button.dataset.settingValue;
+              select.dispatchEvent(new Event("change", { bubbles: true }));
+            };
+          });
+        }
+        if (!visionSettingsDismissBound) {
+          document.addEventListener("click", (event) => {
+            const wrapper = document.getElementById("vision-settings-wrapper");
+            const menu = document.getElementById("vision-settings-menu");
+            if (wrapper && menu && !wrapper.contains(event.target)) {
+              menu.classList.add("hidden");
+              document.getElementById("vision-settings-trigger")?.setAttribute("aria-expanded", "false");
+            }
+          });
+          document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+              const menu = document.getElementById("vision-settings-menu");
+              if (menu && !menu.classList.contains("hidden")) {
+                menu.classList.add("hidden");
+                document.getElementById("vision-settings-trigger")?.setAttribute("aria-expanded", "false");
+                document.getElementById("vision-settings-trigger")?.focus();
+              }
+            }
+          });
+          visionSettingsDismissBound = true;
+        }
+        updateSettingsSummary();
         updatePreviewSpec();
       }
 
@@ -4532,18 +4621,20 @@ print("Task submitted:", task.id)`;
       }
 
       function updateAudioCost() {
-        const model = modelSelectEl ? modelSelectEl.value : activeAudioModel;
+        let model = modelSelectEl ? modelSelectEl.value : activeAudioModel;
         const mode = selectedAudioMode;
-        if (model === "mureka-9.5" && mode === "song_generate") {
-          costLabel.innerText = "Estimated $0.30 · 2 songs";
-          costLabel.title = "Based on your Mureka 9.5 lyrics-to-song charge; actual billing may change.";
-        } else if (model === "mureka-9.5" && mode === "easy_generate") {
-          costLabel.innerText = "Estimated $1.00 · 2 songs";
-          costLabel.title = "Based on your Mureka 9.5 prompt-to-song charge; actual billing may change.";
-        } else {
-          costLabel.innerText = "Price unavailable";
-          costLabel.title = "Check Mureka billing for this model and mode.";
-        }
+        model = ({ "mureka-soundtrack": "mureka-9", "mureka-instrumental": "mureka-9.5" })[model] || model;
+        const rates = {
+          song_generate: { "mureka-9.5": 0.15, "mureka-9": 0.045, "mureka-8": 0.045, "mureka-7.6": 0.03 },
+          easy_generate: { "mureka-9.5": 0.50, "mureka-9": 0.30, "mureka-8": 0.30, "mureka-7.6": 0.30 },
+          soundtrack: { "mureka-9": 0.10 },
+          instrumental: { "mureka-9.5": 0.15, "mureka-9": 0.045, "mureka-8": 0.045, "mureka-7.6": 0.03 },
+          extend: { "mureka-8": 0.10, "mureka-7.6": 0.036 }
+        };
+        const rate = rates[mode] && rates[mode][model];
+        const count = mode === "extend" ? 1 : 2;
+        costLabel.innerText = rate == null ? "Price unavailable" : `Estimated $${(rate * count).toFixed(mode === "extend" ? 3 : 2)} · ${count} ${mode === "extend" ? "extension" : "songs"}`;
+        costLabel.title = rate == null ? "Check Mureka billing for this model and mode." : "Based on Mureka's published API price per song. Additional actions are charged separately.";
       }
 
       function updateAnalysisCost() {

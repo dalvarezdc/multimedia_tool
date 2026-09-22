@@ -296,8 +296,40 @@ def test_mureka_cost_calculation():
     assert calculate_model_cost("mureka-9.5", clip_count=2, mode="song_generate") == "USD 0.30 estimated (2 songs)"
     assert calculate_model_cost("mureka-9.5", clip_count=2, mode="easy_generate") == "USD 1.00 estimated (2 songs)"
     assert calculate_model_cost("mureka-9.5", clip_count=1, mode="easy_generate") == "USD 0.50 estimated (1 song)"
-    assert calculate_model_cost("mureka-9.5", mode="instrumental") == "Price unavailable — check Mureka billing"
-    assert calculate_model_cost("mureka-9", mode="song_generate") == "Price unavailable — check Mureka billing"
+    assert calculate_model_cost("mureka-9.5", clip_count=2, mode="instrumental") == "USD 0.30 estimated (2 songs)"
+    assert calculate_model_cost("mureka-9", clip_count=2, mode="song_generate") == "USD 0.09 estimated (2 songs)"
+    assert calculate_model_cost("mureka-8", clip_count=2, mode="easy_generate") == "USD 0.60 estimated (2 songs)"
+    assert calculate_model_cost("mureka-7.6", clip_count=2, mode="song_generate") == "USD 0.06 estimated (2 songs)"
+    assert calculate_model_cost("mureka-soundtrack", clip_count=2, mode="soundtrack") == "USD 0.20 estimated (2 songs)"
+    assert calculate_model_cost("mureka-instrumental", clip_count=2, mode="instrumental") == "USD 0.30 estimated (2 songs)"
+    assert calculate_model_cost("mureka-8", mode="extend") == "USD 0.100 estimated (1 extension)"
+    assert calculate_model_cost("mureka-7.6", mode="extend") == "USD 0.036 estimated (1 extension)"
+
+
+def test_mureka_pricing_endpoint_by_mode(app_client):
+    lyrics = app_client.get("/api/cost/estimate", params={"model": "mureka-9.5", "mode": "song_generate", "clips": 2})
+    prompt = app_client.get("/api/cost/estimate", params={"model": "mureka-9.5", "mode": "easy_generate", "clips": 2})
+    soundtrack = app_client.get("/api/cost/estimate", params={"model": "mureka-soundtrack", "mode": "soundtrack", "clips": 2})
+    assert lyrics.json()["cost"] == "USD 0.30 estimated (2 songs)"
+    assert prompt.json()["cost"] == "USD 1.00 estimated (2 songs)"
+    assert soundtrack.json()["cost"] == "USD 0.20 estimated (2 songs)"
+
+
+@patch.object(MurekaAudioClient, "generate_soundtrack")
+@patch.object(MurekaAudioClient, "generate_instrumental")
+def test_audio_category_models_resolve_to_mureka_models(mock_instrumental, mock_soundtrack, app_client):
+    mock_soundtrack.return_value = {"id": "soundtrack_task", "status": "preparing"}
+    mock_instrumental.return_value = {"id": "instrumental_task", "status": "preparing"}
+    soundtrack = app_client.post("/api/audio/generate", json={
+        "mode": "soundtrack", "prompt": "Cinematic score", "model": "mureka-soundtrack", "api_key": "test_key",
+    })
+    instrumental = app_client.post("/api/audio/generate", json={
+        "mode": "instrumental", "prompt": "Jazz piano", "model": "mureka-instrumental", "api_key": "test_key",
+    })
+    assert soundtrack.status_code == 200
+    assert instrumental.status_code == 200
+    assert mock_soundtrack.call_args.kwargs["model"] == "mureka-9"
+    assert mock_instrumental.call_args.kwargs["model"] == "mureka-9.5"
 
 
 def test_inventory_audio_capabilities():

@@ -586,7 +586,7 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         icon_type="audio",
         placeholder="Describe your song theme, mood, tempo, or instrumentation.",
         input_slots=[{"id": "reference", "label": "Audio Ref", "icon": "plus"}],
-        sample_cost="Price unavailable",
+        sample_cost="USD 0.09 lyrics-to-song / USD 0.60 prompt-to-song (2 songs)",
         provider="mureka",
         clip_counts=[1, 2, 3]
     ),
@@ -601,7 +601,7 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         icon_type="audio",
         placeholder="Enter lyrics and style to extend the track.",
         input_slots=[{"id": "reference", "label": "Song Ref", "icon": "plus"}],
-        sample_cost="Price unavailable",
+        sample_cost="USD 0.09 lyrics-to-song / USD 0.60 prompt-to-song (2 songs)",
         provider="mureka",
         clip_counts=[1, 2, 3]
     ),
@@ -616,7 +616,7 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         icon_type="audio",
         placeholder="Describe your song theme or enter lyrics.",
         input_slots=[{"id": "reference", "label": "Audio Ref", "icon": "plus"}],
-        sample_cost="Price unavailable",
+        sample_cost="USD 0.06 lyrics-to-song / USD 0.60 prompt-to-song (2 songs)",
         provider="mureka",
         clip_counts=[1, 2, 3]
     ),
@@ -631,7 +631,7 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         icon_type="audio",
         placeholder="Describe the mood, emotion, and scene ambiance for your soundtrack.",
         input_slots=[{"id": "scene_ref", "label": "Scene Ref", "icon": "plus"}],
-        sample_cost="Price unavailable",
+        sample_cost="USD 0.20 soundtrack (2 songs, V9)",
         provider="mureka",
         clip_counts=[1, 2, 3]
     ),
@@ -646,7 +646,7 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         icon_type="audio",
         placeholder="Describe the instrumental arrangement, instruments, and style.",
         input_slots=[{"id": "reference", "label": "Audio Ref", "icon": "plus"}],
-        sample_cost="Price unavailable",
+        sample_cost="USD 0.30 instrumental (2 tracks, V9.5)",
         provider="mureka",
         clip_counts=[1, 2, 3]
     )
@@ -703,15 +703,32 @@ def calculate_model_cost(
     res = (resolution or "720p").lower()
     clips = max(1, int(clip_count or 1))
     dur = max(1, int(duration or 5))
-    # 0. Mureka Audio Models. Rates inferred from the account's observed
-    # two-song Mureka 9.5 charges; Mureka bills per generated song.
+    # 0. Mureka API pricing: https://platform.mureka.ai/pricing
+    # The category aliases map to real model IDs in the audio generation route.
     if "mureka" in mid or "soundtrack" in mid or "instrumental" in mid:
         audio_mode = (mode or "song_generate").lower()
-        if mid == "mureka-9.5" and audio_mode in ("song", "song_generate", "lyrics_to_song"):
-            return f"USD {0.15 * clips:.2f} estimated ({clips} song{'s' if clips != 1 else ''})"
-        if mid == "mureka-9.5" and audio_mode in ("easy_generate", "prompt_to_song"):
-            return f"USD {0.50 * clips:.2f} estimated ({clips} song{'s' if clips != 1 else ''})"
-        return "Price unavailable — check Mureka billing"
+        if mid == "mureka-soundtrack":
+            mid = "mureka-9"
+            audio_mode = "soundtrack"
+        elif mid == "mureka-instrumental":
+            mid = "mureka-9.5"
+            audio_mode = "instrumental"
+        if audio_mode in ("extend", "song_extend"):
+            rate = {"mureka-8": 0.10, "mureka-7.6": 0.036}.get(mid)
+            return f"USD {rate:.3f} estimated (1 extension)" if rate is not None else "Price unavailable — check Mureka billing"
+        if audio_mode in ("song", "song_generate", "lyrics_to_song"):
+            rate = {"mureka-9.5": 0.15, "mureka-9": 0.045, "mureka-8": 0.045, "mureka-7.6": 0.03}.get(mid)
+        elif audio_mode in ("easy_generate", "prompt_to_song"):
+            rate = {"mureka-9.5": 0.50, "mureka-9": 0.30, "mureka-8": 0.30, "mureka-7.6": 0.30}.get(mid)
+        elif audio_mode in ("instrumental", "bgm"):
+            rate = {"mureka-9.5": 0.15, "mureka-9": 0.045, "mureka-8": 0.045, "mureka-7.6": 0.03}.get(mid)
+        elif audio_mode == "soundtrack":
+            rate = {"mureka-9": 0.10}.get(mid)
+        else:
+            rate = None
+        if rate is None:
+            return "Price unavailable — check Mureka billing"
+        return f"USD {rate * clips:.2f} estimated ({clips} song{'s' if clips != 1 else ''})"
 
     # 1. xAI Grok Imagine images (must beat generic "image" and grok video)
     if "grok" in mid and "image" in mid:

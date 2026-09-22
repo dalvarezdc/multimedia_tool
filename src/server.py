@@ -1134,11 +1134,15 @@ def create_app():
                 detail="MUREKA_API_KEY is not configured. Please set your key in Settings."
             )
 
+        mode = (req.mode or "easy_generate").lower()
+        # These UI category choices are not Mureka model IDs.
+        resolved_model = {"mureka-soundtrack": "mureka-9", "mureka-instrumental": "mureka-9.5"}.get(
+            req.model or "", req.model
+        )
         try:
-            client = get_audio_generator(api_key=key, model_id=req.model)
+            client = get_audio_generator(api_key=key, model_id=resolved_model)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
-        mode = (req.mode or "easy_generate").lower()
 
         try:
             track_title = (req.title or "").strip()
@@ -1150,7 +1154,7 @@ def create_app():
                     prompt=req.prompt,
                     image_id=req.image_id,
                     video_id=req.video_id,
-                    model=req.model,
+                    model=resolved_model,
                     n=req.n,
                     audio_start=req.audio_start,
                     audio_end=req.audio_end,
@@ -1162,7 +1166,7 @@ def create_app():
                 result = client.generate_song(
                     lyrics=lyrics_val,
                     prompt=req.prompt if req.lyrics else None,
-                    model=req.model,
+                    model=resolved_model,
                     gender=req.gender,
                     n=req.n,
                     reference_id=req.reference_id,
@@ -1179,13 +1183,13 @@ def create_app():
                     song_id=req.song_id,
                     upload_audio_id=req.upload_audio_id,
                     extend_type=req.extend_type or "tail",
-                    model=req.model or "mureka-8",
+                    model=resolved_model or "mureka-8",
                 )
             elif mode in ("instrumental",):
                 result = client.generate_instrumental(
                     prompt=req.prompt,
                     instrumental_id=req.reference_id,
-                    model=req.model,
+                    model=resolved_model,
                     n=req.n,
                     stream=req.stream,
                 )
@@ -1196,7 +1200,7 @@ def create_app():
                 result = client.easy_generate(
                     prompt=prompt_val,
                     styles=req.styles,
-                    model=req.model,
+                    model=resolved_model,
                     n=req.n,
                     reference_id=req.reference_id,
                     vocal_id=req.vocal_id,
@@ -1222,7 +1226,7 @@ def create_app():
                 "status": result.get("status", "preparing"),
                 "mode": mode,
                 "n": req.n,
-                "model": result.get("model", req.model or "mureka-9.5"),
+                "model": result.get("model", resolved_model or "mureka-9.5"),
                 "created_at": result.get("created_at", time.time()),
                 "prompt": req.prompt,
                 "lyrics": req.lyrics,
@@ -1238,7 +1242,7 @@ def create_app():
                 "title": track_title,
                 "status": "started",
                 "mode": mode,
-                "model": result.get("model", req.model),
+                "model": result.get("model", resolved_model),
                 "data": result
             }
         except HTTPException:
