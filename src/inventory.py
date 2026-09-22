@@ -301,7 +301,7 @@ def infer_model_capabilities(model_id: str, provider: str = "seedance", display_
             icon_type="audio",
             placeholder="Describe your song theme, mood, tempo, or instrumentation.",
             input_slots=[{"id": "reference", "label": "Audio Ref", "icon": "plus"}],
-            sample_cost="10 credits (~$0.10)",
+            sample_cost="Price varies by model and generation mode",
             provider=provider if provider in ("mureka", "skywork") else "mureka",
             clip_counts=[1, 2, 3]
         )

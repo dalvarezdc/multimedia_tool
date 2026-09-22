@@ -282,7 +282,7 @@ def test_mureka_models_registered():
     assert info is not None
     assert info.category == "audio"
     assert info.provider == "mureka"
-    assert info.sample_cost == "10 credits (~$0.10)"
+    assert info.sample_cost == "USD 0.30 lyrics-to-song / USD 1.00 prompt-to-song (2 songs)"
 
     groups = get_all_models_grouped()
     assert "audio" in groups
@@ -293,9 +293,11 @@ def test_mureka_models_registered():
 
 
 def test_mureka_cost_calculation():
-    cost_str = calculate_model_cost("mureka-9.5")
-    assert "0.1000" in cost_str
-    assert "10 credits" in cost_str
+    assert calculate_model_cost("mureka-9.5", clip_count=2, mode="song_generate") == "USD 0.30 estimated (2 songs)"
+    assert calculate_model_cost("mureka-9.5", clip_count=2, mode="easy_generate") == "USD 1.00 estimated (2 songs)"
+    assert calculate_model_cost("mureka-9.5", clip_count=1, mode="easy_generate") == "USD 0.50 estimated (1 song)"
+    assert calculate_model_cost("mureka-9.5", mode="instrumental") == "Price unavailable — check Mureka billing"
+    assert calculate_model_cost("mureka-9", mode="song_generate") == "Price unavailable — check Mureka billing"
 
 
 def test_inventory_audio_capabilities():

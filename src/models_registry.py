@@ -571,7 +571,7 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         icon_type="audio",
         placeholder="Describe your song theme, mood, tempo, or instrumentation (e.g., 'An energetic retro synthwave track with soaring lead melodies and driving 80s bassline').",
         input_slots=[{"id": "reference", "label": "Audio Ref", "icon": "plus"}],
-        sample_cost="10 credits (~$0.10)",
+        sample_cost="USD 0.30 lyrics-to-song / USD 1.00 prompt-to-song (2 songs)",
         provider="mureka",
         clip_counts=[1, 2, 3]
     ),
@@ -586,7 +586,7 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         icon_type="audio",
         placeholder="Describe your song theme, mood, tempo, or instrumentation.",
         input_slots=[{"id": "reference", "label": "Audio Ref", "icon": "plus"}],
-        sample_cost="10 credits (~$0.10)",
+        sample_cost="Price unavailable",
         provider="mureka",
         clip_counts=[1, 2, 3]
     ),
@@ -601,7 +601,7 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         icon_type="audio",
         placeholder="Enter lyrics and style to extend the track.",
         input_slots=[{"id": "reference", "label": "Song Ref", "icon": "plus"}],
-        sample_cost="10 credits (~$0.10)",
+        sample_cost="Price unavailable",
         provider="mureka",
         clip_counts=[1, 2, 3]
     ),
@@ -616,7 +616,7 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         icon_type="audio",
         placeholder="Describe your song theme or enter lyrics.",
         input_slots=[{"id": "reference", "label": "Audio Ref", "icon": "plus"}],
-        sample_cost="10 credits (~$0.10)",
+        sample_cost="Price unavailable",
         provider="mureka",
         clip_counts=[1, 2, 3]
     ),
@@ -631,7 +631,7 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         icon_type="audio",
         placeholder="Describe the mood, emotion, and scene ambiance for your soundtrack.",
         input_slots=[{"id": "scene_ref", "label": "Scene Ref", "icon": "plus"}],
-        sample_cost="10 credits (~$0.10)",
+        sample_cost="Price unavailable",
         provider="mureka",
         clip_counts=[1, 2, 3]
     ),
@@ -646,7 +646,7 @@ MODEL_CATALOG: Dict[str, ModelInfo] = {
         icon_type="audio",
         placeholder="Describe the instrumental arrangement, instruments, and style.",
         input_slots=[{"id": "reference", "label": "Audio Ref", "icon": "plus"}],
-        sample_cost="10 credits (~$0.10)",
+        sample_cost="Price unavailable",
         provider="mureka",
         clip_counts=[1, 2, 3]
     )
@@ -692,7 +692,8 @@ def calculate_model_cost(
     clip_count: int = 1,
     audio: bool = True,
     draft_mode: bool = False,
-    reference_asset_count: int = 0
+    reference_asset_count: int = 0,
+    mode: str = "song_generate"
 ) -> str:
     """Calculates accurate expected cost for video and image model generations
 
@@ -702,11 +703,15 @@ def calculate_model_cost(
     res = (resolution or "720p").lower()
     clips = max(1, int(clip_count or 1))
     dur = max(1, int(duration or 5))
-    # 0. Mureka Audio Models
+    # 0. Mureka Audio Models. Rates inferred from the account's observed
+    # two-song Mureka 9.5 charges; Mureka bills per generated song.
     if "mureka" in mid or "soundtrack" in mid or "instrumental" in mid:
-        songs = max(1, int(clip_count or 1))
-        cost = 0.1000 * songs
-        return f"USD {cost:.4f} ({10 * songs} credits)"
+        audio_mode = (mode or "song_generate").lower()
+        if mid == "mureka-9.5" and audio_mode in ("song", "song_generate", "lyrics_to_song"):
+            return f"USD {0.15 * clips:.2f} estimated ({clips} song{'s' if clips != 1 else ''})"
+        if mid == "mureka-9.5" and audio_mode in ("easy_generate", "prompt_to_song"):
+            return f"USD {0.50 * clips:.2f} estimated ({clips} song{'s' if clips != 1 else ''})"
+        return "Price unavailable — check Mureka billing"
 
     # 1. xAI Grok Imagine images (must beat generic "image" and grok video)
     if "grok" in mid and "image" in mid:
@@ -813,4 +818,3 @@ def calculate_model_cost(
     multiplier = 0.5 if draft_mode else 1.0
     cost = rate_per_sec * dur * multiplier * clips
     return f"USD {cost:.4f}"
-

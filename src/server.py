@@ -471,7 +471,8 @@ def create_app():
         clips: int = 1,
         audio: bool = True,
         draft: bool = False,
-        ref_count: int = 0
+        ref_count: int = 0,
+        mode: str = "song_generate"
     ):
         """Returns accurate cost estimate based on official BytePlus ModelArk and xAI pricing."""
         cost_str = calculate_model_cost(
@@ -481,7 +482,8 @@ def create_app():
             clip_count=clips,
             audio=audio,
             draft_mode=draft,
-            reference_asset_count=ref_count
+            reference_asset_count=ref_count,
+            mode=mode
         )
         return {
             "model": model,
@@ -1219,6 +1221,7 @@ def create_app():
                 "title": track_title,
                 "status": result.get("status", "preparing"),
                 "mode": mode,
+                "n": req.n,
                 "model": result.get("model", req.model or "mureka-9.5"),
                 "created_at": result.get("created_at", time.time()),
                 "prompt": req.prompt,
@@ -1302,7 +1305,11 @@ def create_app():
                     "mode": cached.get("mode", "easy_generate"),
                     "prompt": cached.get("prompt") or cached.get("lyrics", ""),
                     "duration": "audio",
-                    "cost": "10 credits",
+                    "cost": calculate_model_cost(
+                        cached.get("model", "mureka-9.5"),
+                        clip_count=cached.get("n", 2),
+                        mode=cached.get("mode", "easy_generate"),
+                    ),
                     "status": "succeeded",
                     "path": primary_url,
                     "watermark_free": True
